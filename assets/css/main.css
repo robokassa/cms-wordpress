@@ -1,0 +1,39 @@
+.sms-settings textarea.custom-settings
+{
+	width: 100%;
+	min-height: 100px;
+}
+
+.sms-settings p.description.float
+{
+	float: right;
+}
+
+.sms-settings p.description.float span.text
+{
+	font-weight: bold;
+}
+
+.robomarket-settings img.robomarket-preview-image
+{
+	border: 2px solid; margin-bottom: 15px;
+}
+
+.robomarket-settings .btn-main
+{
+	padding: 4px;
+}
+
+.main-settings .spoiler_body
+{
+	display: none;
+}
+
+.main-settings .btn-main
+{
+	padding: 4px;
+}
+.main-settings .btn-main span.text-description
+{
+	line-height: 1;font-weight: normal;font-style: italic;font-size: 12px;
+}

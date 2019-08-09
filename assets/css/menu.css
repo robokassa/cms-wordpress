@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,700');
+
+#wpcontent
+{
+	/* padding-left: 0; */
+}
+
+.content_holder
+{
+	padding-left: 20px;
+	height: 100%;
+}
+
+.content_holder .big_title_rb
+{
+	font-size: 36px;
+	margin:0;
+	padding: 1em 0;
+	font-family: inherit;
+	font-weight: 300
+}
+
+.content_holder .mid_title_rb
+{
+	font-size: 24px;
+	margin:0;
+	padding: 15px 0 5px 0;
+	font-family: inherit;
+	font-weight: 300
+}
+
+.content_holder .sml_title_rb
+{
+	font-size: 18px;
+	margin:0;
+	font-family: inherit;
+	font-weight: 300
+}
+
+span.code_tregor
+{
+	background-color: #555555;
+	border: 1px solid #878787;
+	border-radius: 4px;
+	color: yellow;
+	padding: 1px 5px;
+}
+
+.menu_rb ul
+{
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: #333;
+}
+
+.menu_rb li
+{
+	float: left;
+	margin: 0;
+}
+
+.menu_rb li a
+{
+	display: block;
+	color: white;
+	text-align: center;
+	padding: 14px 16px;
+	text-decoration: none;
+}
+
+.menu_rb li a:hover
+{
+	background-color: #191E23;
+	color: #00b9eb;
+}
+
+.menu_rb .active
+{
+	background-color: #0073AA;
+	color: #ffffff
+}
