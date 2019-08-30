@@ -6,7 +6,7 @@
   Description: Данный плагин добавляет на Ваш сайт метод оплаты Робокасса для WooCommerce
   Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
   Author: Робокасса
-  Version: 1.2.34
+  Version: 1.2.35
 */
 
 use Robokassa\Payment\RoboDataBase;
@@ -36,9 +36,9 @@ define('ROBOKASSA_PAYMENT_DEBUG_STATUS', false);
 	}
 );
 
-add_action( 'woocommerce_cart_calculate_fees', 'action_function_name_5262');
+add_action( 'woocommerce_cart_calculate_fees', 'robokassa_chosen_payment_method');
 
-function action_function_name_5262(WC_Cart $cart)
+function robokassa_chosen_payment_method(WC_Cart $cart)
 {
 
     if(
@@ -254,81 +254,95 @@ function robokassa_payment_get_success_fail_url($name, $order_id) {
 function robokassa_payment_wp_robokassa_checkPayment()
 {
 
-    if (isset($_REQUEST['robokassa'])) {
-        $mrhLogin = get_option('robokassa_payment_MerchantLogin');
+	if (isset($_REQUEST['robokassa']))
+	{
 
-        if (get_option('robokassa_payment_test_onoff') == 'true') {
-            $pass1 = get_option('robokassa_payment_testshoppass1');
-            $pass2 = get_option('robokassa_payment_testshoppass2');
-        } else {
-            $pass1 = get_option('robokassa_payment_shoppass1');
-            $pass2 = get_option('robokassa_payment_shoppass2');
-        }
+		/** @var string $returner */
+		$returner = '';
 
-        $returner = '';
+		if ($_REQUEST['robokassa'] === 'result')
+		{
 
-        if ($_REQUEST['robokassa'] === 'result')
-        {
+			/** @var string $crc_confirm */
+			$crc_confirm = \strtoupper(
+				\md5(
+					implode(
+						':',
+						[
+							$_REQUEST['OutSum'],
+							$_REQUEST['InvId'],
+							(
+							(get_option('robokassa_payment_test_onoff') == 'true')
+								?  get_option('robokassa_payment_testshoppass2')
+								: get_option('robokassa_payment_shoppass2')
+							)
+						]
+					)
+				)
+			);
 
-            $OutSum_confirm = $_REQUEST['OutSum'];
-            $InvId_confirm = $_REQUEST['InvId'];
-            $sign = $_REQUEST['SignatureValue'];
+			if ($crc_confirm == $_REQUEST['SignatureValue'])
+			{
 
-            $str = "$OutSum_confirm:$InvId_confirm:$pass2";
+				$order = new WC_Order($_REQUEST['InvId']);
+				$order->add_order_note('Заказ успешно оплачен!');
+				$order->payment_complete();
 
-            $crc_confirm = \strtoupper(\md5($str));
+				global $woocommerce;
+				$woocommerce->cart->empty_cart();
 
-            if ($crc_confirm == $sign)
-            {
+				$returner = 'OK'.$_REQUEST['InvId'];
 
-                $order = new WC_Order($_REQUEST['InvId']);
-                $order->add_order_note('Заказ успешно оплачен!');
-                $order->payment_complete();
+				if (get_option('robokassa_payment_sms1_enabled') == 'on')
+				{
 
-                global $woocommerce;
-                $woocommerce->cart->empty_cart();
+					try
+					{
 
-                $returner = 'OK'.$_REQUEST['InvId'];
+						(new RobokassaSms(
+							(new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME))),
+							(new RobokassaPayAPI(
+								get_option('robokassa_payment_MerchantLogin'),
+								get_option('robokassa_payment_shoppass1'),
+								get_option('robokassa_payment_shoppass2')
+							)
+							),
+							$order->billing_phone,
+							get_option('robokassa_payment_sms1_text'),
+							(get_option('robokassa_payment_sms_translit') == 'on'),
+							$_REQUEST['InvId'],
+							1
+						))->send();
+					} catch (Exception $e)
+					{}
+				}
+			}
+			else
+			{
 
-                if (get_option('robokassa_payment_sms1_enabled') == 'on')
-                {
+				$order = new WC_Order($_REQUEST['InvId']);
+				$order->add_order_note('Bad CRC');
+				$order->update_status('failed');
 
-	                $phone = $order->billing_phone;
-                    $message = get_option('robokassa_payment_sms1_text');
-                    $translit = (get_option('robokassa_payment_sms_translit') == 'on');
-                    $order_id = $_REQUEST['InvId'];
+				$returner = 'NOT 1 OK'.$_REQUEST['InvId'];
+			}
+		}
 
-                    $dataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
-                    $robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
+		if ($_REQUEST['robokassa'] == 'success')
+		{
+			header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $_REQUEST['InvId']));
+			die;
+		}
 
-                    $sms = new RobokassaSms($dataBase, $robokassa, $phone, $message, $translit, $order_id, 1);
-                    $sms->send();
-                }
-            }
-            else
-            {
+		if ($_REQUEST['robokassa'] == 'fail')
+		{
+			header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_FailURL'), $_REQUEST['InvId']));
+			die;
+		}
 
-                $order = new WC_Order($_REQUEST['InvId']);
-                $order->add_order_note('Bad CRC');
-                $order->update_status('failed');
-
-                $returner = 'NOT 1 OK'.$_REQUEST['InvId'];
-            }
-        }
-
-        if ($_REQUEST['robokassa'] == 'success') {
-            header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $_REQUEST['InvId']));
-            die;
-        }
-
-        if ($_REQUEST['robokassa'] == 'fail') {
-            header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_FailURL'), $_REQUEST['InvId']));
-            die;
-        }
-
-        echo $returner;
-        die;
-    }
+		echo $returner;
+		die;
+	}
 }
 
 /**

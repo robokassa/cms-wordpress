@@ -1,8 +1,8 @@
-=== Robokassa payment gateway for WooСommerce ===
+=== Robokassa payment gateway for Woocommerce ===
 Contributors: ipol
 Donate link: http://ipolh.com/
 Tags: robokassa payment gateway, robokassa, robokassa woocommerce, ecommerce, payment gateway, woo-commerce, woocommerce ===
-Requires at least: 4.9
+Requires at least: 5.0.2
 Tested up to: 5.0.2
 Stable tag: 5.0.2
 Requires PHP: 5.6.32
@@ -13,7 +13,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 == Description ==
 
-Данный плагин позволяет принимать платежи в WooСommerce через платежный шлюз Robokassa.
+Данный плагин позволяет принимать платежи в Woocommerce через платежный шлюз Robokassa.
 
 В плагине осуществлена  поддержка всех необходимых функций для приема платежей, такие как:
 * Выбор типа плательщика (физ. / юр лицо)
@@ -80,6 +80,9 @@ https://www.robokassa.ru/ru/Support/SendMsg.aspx
 3. `/assets/images/screenshot-3.png`
 
 == Changelog ==
+= 1.2.35 =
+* Исправлена ошибка обработки платежа для физического лица
+* Исправлена ошибка расчета комиссии для физического лица
 
 = 1.2.33 =
 * Исправлена ошибка обработки платежа
