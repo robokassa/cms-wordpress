@@ -775,7 +775,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $invDesc = "Заказ номер $order_id";
     }
 
-    $receiptForForm = (get_option('robokassa_payment_type_commission') == 'false') ? $receipt : array();
+    $receiptForForm = (get_option('robokassa_payment_type_commission') == 'false' && get_option('robokassa_country_code') != 'KZ') ? $receipt : array();
 
     echo $rb->createForm(
         $sum,

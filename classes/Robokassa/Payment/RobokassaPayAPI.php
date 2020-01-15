@@ -101,6 +101,18 @@ class RobokassaPayAPI {
     private function getSignatureString($sum, $invId, $receiptJson)
     {
 
+    	/** @var null|string $outCurrency */
+    	$outCurrency = null;
+
+	    if(
+		    mb_strlen(get_option('robokassa_out_currency')) > 0
+		    && !(
+			    get_option('robokassa_country_code') == 'KZ'
+			    && get_option('robokassa_out_currency') == 'KZT'
+		    )
+	    )
+	        $outCurrency = get_option('robokassa_out_currency');
+
         return \implode(
         	':',
             \array_diff(
@@ -108,6 +120,7 @@ class RobokassaPayAPI {
 	                $this->mrh_login,
 	                $sum,
 	                $invId,
+		            $outCurrency,
 	                $receiptJson,
 	                $this->mrh_pass1,
 	            ),
@@ -175,6 +188,17 @@ class RobokassaPayAPI {
             'Desc' => $invDesc,
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
+
+	    if(
+	        mb_strlen(get_option('robokassa_out_currency')) > 0
+	        && !(
+	        	get_option('robokassa_country_code') == 'KZ'
+		        && get_option('robokassa_out_currency') == 'KZT'
+	        )
+	    )
+	    {
+	    	$formData['OutSumCurrency'] = get_option('robokassa_out_currency');
+	    }
 
         if($email !== null)
             $formData['Email'] = $email;

@@ -303,7 +303,7 @@ class payment_robokassa_pay_method_request_Biocoin extends \Robokassa\Payment\WC
  *
  * @return array
  */
-function robokassa_payment_add_WC_WP_robokassa_class($methods = null){
+function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
     if (get_option('robokassa_payment_wc_robokassa_enabled') == 'no') {
         return $methods;
     }

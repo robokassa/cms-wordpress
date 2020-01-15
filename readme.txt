@@ -3,8 +3,8 @@ Contributors: ipol
 Donate link: http://ipolh.com/
 Tags: robokassa payment gateway, robokassa, robokassa woocommerce, ecommerce, payment gateway, woo-commerce, woocommerce ===
 Requires at least: 5.0.2
-Tested up to: 5.0.2
-Stable tag: 5.0.2
+Tested up to: 5.3
+Stable tag: 5.3
 Requires PHP: 5.6.32
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -40,6 +40,10 @@ Robokassa – ведущий сервис по приёму платежей в 
 Почта: techsupport@robokassa.ru
 Телефон: 8 (800) 500-25-57
 https://www.robokassa.ru/ru/Support/SendMsg.aspx
+
+Если вы уже клиент - просим вас написать запрос из личного кабинета Робокассы в поддержку, будьте готовы предоставить доступ к административной части сайта, а при необходимости FTP доступ.
+
+Если вы еще не клиент - то просим писать запрос на support@robokassa.ru
 
 == Installation ==
 
@@ -81,6 +85,10 @@ https://www.robokassa.ru/ru/Support/SendMsg.aspx
 
 == Changelog ==
 = 1.2.35 =
+* Добавлена поддержки работы магазинов Казахстана
+
+== Changelog ==
+= 1.2.34 =
 * Исправлена ошибка обработки платежа для физического лица
 * Исправлена ошибка расчета комиссии для физического лица
 
