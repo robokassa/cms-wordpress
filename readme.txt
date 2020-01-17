@@ -84,6 +84,10 @@ https://www.robokassa.ru/ru/Support/SendMsg.aspx
 3. `/assets/images/screenshot-3.png`
 
 == Changelog ==
+= 1.2.36 =
+* Исправление ответа обработчика при ошибочной подписи
+
+== Changelog ==
 = 1.2.35 =
 * Добавлена поддержки работы магазинов Казахстана
 
