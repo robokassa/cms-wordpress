@@ -263,8 +263,6 @@ class RobokassaPayAPI {
 			
 			$form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
 			$form .= "<input type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
-			
-			return $form;
 		} else {
 			$form = "<form action=\"$formUrl\" method=\"POST\">";
 
@@ -275,9 +273,9 @@ class RobokassaPayAPI {
 			}
 			
 			$form .= "<input type=\"submit\" value=\"Оплатить\"></form>";
-
-			return $form;
 		}
+		
+		return $form;
     }
 
 	/**
