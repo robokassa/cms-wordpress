@@ -46,6 +46,7 @@
 	    'robokassa_payment_paymentObject',
 	    'robokassa_patyment_markup',
 	    'robokassa_culture',
+		'robokassa_iframe',
 	    'robokassa_country_code',
 	    'robokassa_out_currency',
     ];
@@ -181,6 +182,20 @@
                         <?php foreach(\Robokassa\Payment\Helper::$culture as $culture):?>
                             <option<?php if(get_option('robokassa_culture') == $culture['code']):?> selected="selected"<?php endif;?> value="<?=$culture['code'];?>"><?=$culture['title'];?></option>
                         <?php endforeach;?>
+                    </select>
+                </td>
+            </tr>
+			<tr valign="top">
+                <th scope="row">Включить iframe</th>
+                <td>
+                    <select name="robokassa_iframe">
+						<?php if(get_option('robokassa_iframe') == 1){ ?>
+                            <option selected="selected" value="1">Включено</option>
+							<option value="0">Отключено</option>
+                        <?php }else{ ?>
+							<option value="1">Включено</option>
+							<option selected="selected" value="0">Отключено</option>
+						<?php }	?>
                     </select>
                 </td>
             </tr>

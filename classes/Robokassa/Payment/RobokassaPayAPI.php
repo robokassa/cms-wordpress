@@ -241,18 +241,43 @@ class RobokassaPayAPI {
      *
      * @return string
      */
-    private function renderForm($formUrl, array $formData) {
-        $form = "<form action=\"$formUrl\" method=\"POST\">";
+    private function renderForm($formUrl, array $formData) {		
+		
+		if (get_option('robokassa_iframe')) {
+			unset($formData['IsTest']);
+			
+			$params = '';
+			$lastParam = end($formData);
+						
+			foreach ($formData as $inputName => $inputValue){
+				if($inputName != 'IsTest'){
+					$value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+					
+					if($lastParam == $inputValue){
+						$params .= $inputName . ": '" . $value . "'";
+					}else{
+						$params .= $inputName . ": '" . $value . "', ";
+					}
+				}
+			}
+			
+			$form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
+			$form .= "<input type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
+			
+			return $form;
+		} else {
+			$form = "<form action=\"$formUrl\" method=\"POST\">";
 
-        foreach ($formData as $inputName => $inputValue) {
-            $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+			foreach ($formData as $inputName => $inputValue) {
+				$value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
 
-            $form .= "<input type=\"hidden\" name=\"$inputName\" value=\"$value\">";
-        }
+				$form .= "<input type=\"hidden\" name=\"$inputName\" value=\"$value\">";
+			}
+			
+			$form .= "<input type=\"submit\" value=\"Оплатить\"></form>";
 
-        $form .= "<input type=\"submit\" value=\"Оплатить\"></form>";
-
-        return $form;
+			return $form;
+		}
     }
 
 	/**
