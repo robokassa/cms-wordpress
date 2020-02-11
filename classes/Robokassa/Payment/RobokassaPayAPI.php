@@ -325,7 +325,11 @@ class RobokassaPayAPI {
             'IncSum' => (int) $sum,
         ));
 
-        return abs(round(($sum - $parsed['OutSum']) / $parsed['OutSum'] * 100));
+        if($parsed['OutSum'] != 0){
+			return abs(round(($sum - $parsed['OutSum']) / $parsed['OutSum'] * 100));
+		}else{
+			return $sum;
+		}
     }
 
     /**
