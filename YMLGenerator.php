@@ -21,7 +21,12 @@ function robokassa_payment_generateYML()
     $currencies['RUB'] = '1';
 
     //Получаем список продуктов для генерации YML
-    $loop = new WP_Query(array('post_type' => 'product'));
+    $loop = new WP_Query(array(
+		'post_type' => 'product',
+		'posts_per_page' => 99999,
+		)
+	);
+    
     $products = array();
 
     while ($loop->have_posts()) {
