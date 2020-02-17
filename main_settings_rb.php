@@ -196,8 +196,9 @@
 							<option value="1">Включено</option>
 							<option selected="selected" value="0">Отключено</option>
 						<?php }	?>
-                    </select>
-                </td>
+                    </select><br />
+                    <span class="text-description">При включённом iframe, способов оплаты меньше, чем в обычной платежной странице - только карты, Apple и Samsung pay, Qiwi. incurlabel работает, но ограничено.<span>
+				</td>
             </tr>
         </table>
 
