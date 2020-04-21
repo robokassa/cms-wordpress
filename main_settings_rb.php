@@ -197,7 +197,7 @@
 							<option selected="selected" value="0">Отключено</option>
 						<?php }	?>
                     </select><br />
-                    <span class="text-description">При включённом iframe, способов оплаты меньше, чем в обычной платежной странице - только карты, Apple и Samsung pay, Qiwi. incurlabel работает, но ограничено.<span>
+	                <span class="text-description">При включённом iframe, способов оплаты меньше, чем в обычной платежной странице - только карты, Apple и Samsung pay, Qiwi. incurlabel работает, но ограничено.<span>
 				</td>
             </tr>
         </table>
@@ -349,7 +349,7 @@
                     </td>
                 </tr>
 
-                <tr valign="top">
+                <tr valign="top" id="payment-method-rk">
                     <th scope="row">Выбор способа оплаты</th>
                     <td>
                         <input type="radio" id="robopaytype" name="robokassa_payment_paytype"
@@ -440,3 +440,28 @@
 
     </form>
 </div>
+<script
+  src="https://code.jquery.com/jquery-3.5.0.min.js"
+  integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
+  crossorigin="anonymous"></script>
+<script type="text/javascript">
+	<?php if(get_option('robokassa_country_code') == 'KZ'){ ?>
+		$('#robopaytype').trigger('click');
+		$('#shoppaytype').attr('disabled','true');
+	<?php } ?>
+	$('#robokassa_country_code').on(
+		'change',
+		function ()
+		{
+			if ($(this).val() == 'KZ')
+			{
+				$('#robopaytype').trigger('click');
+				$('#shoppaytype').attr('disabled','true');
+			}
+			else
+			{
+				$('#shoppaytype').removeAttr('disabled');
+			}
+		}
+	);
+</script>

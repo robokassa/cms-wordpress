@@ -8,7 +8,7 @@ $robokassa = new \Robokassa\Payment\RobokassaPayAPI(
 
 $currLabels = $robokassa->getCurrLabels();
 
-if (empty($currLabels))
+if (empty($currLabels) && \get_option('robokassa_country_code') != 'KZ')
 {
 	echo 'Не удалось загрузить методы оплаты.';
     die();
