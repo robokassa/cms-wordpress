@@ -123,6 +123,7 @@ class RobokassaPayAPI {
 		            $outCurrency,
 	                $receiptJson,
 	                $this->mrh_pass1,
+	                'shp_label=official_wordpress',
 	            ),
 	            array(
 	            	false,
@@ -186,6 +187,7 @@ class RobokassaPayAPI {
             'OutSum' => $sum,
             'InvId' => $invId,
             'Desc' => $invDesc,
+            'shp_label' => 'official_wordpress',
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
 
