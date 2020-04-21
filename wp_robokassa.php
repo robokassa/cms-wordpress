@@ -6,7 +6,7 @@
   Description: Данный плагин добавляет на Ваш сайт метод оплаты Робокасса для WooCommerce
   Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
   Author: Робокасса
-  Version: 1.2.36
+  Version: 1.3.4
 */
 
 use Robokassa\Payment\RoboDataBase;
@@ -48,7 +48,6 @@ function robokassa_chosen_payment_method(WC_Cart $cart)
             array_map(
                 function($class)
                 {
-                    return (new $class())->id;
                 },
                 robokassa_payment_add_WC_WP_robokassa_class()
             )
