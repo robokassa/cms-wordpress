@@ -274,7 +274,8 @@ function robokassa_payment_wp_robokassa_checkPayment()
 							(get_option('robokassa_payment_test_onoff') == 'true')
 								?  get_option('robokassa_payment_testshoppass2')
 								: get_option('robokassa_payment_shoppass2')
-							)
+							),
+							'shp_label=official_wordpress'
 						]
 					)
 				)
