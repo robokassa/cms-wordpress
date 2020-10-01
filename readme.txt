@@ -85,6 +85,12 @@ https://www.robokassa.ru/ru/Support/SendMsg.aspx
 3. `/assets/images/screenshot-3.png`
 
 == Changelog ==
+= 1.3.6 =
+* Добавлен 2 чек, срабатывает при статусе completed
+
+= 1.3.5 =
+* Изменение описания
+
 = 1.3.4 =
 * Исправлена ошибка выбора способа оплаты и внедрена поддержка следующих версий:
 	1. WordPress 5 (5.4)
