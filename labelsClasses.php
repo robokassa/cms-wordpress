@@ -64,19 +64,6 @@ class payment_robokassa_pay_method_request_ElecsnetWalletRIBR extends \Robokassa
     }
 }
 
-class payment_robokassa_pay_method_request_W1RIBR extends \Robokassa\Payment\WC_WP_robokassa {
-    public function __construct() {
-        $this->id = 'W1';
-        $this->method_title = 'RUR Единый кошелек (Робокасса)';
-        $this->long_name='Оплата через RUR Единый кошелек (Робокасса)';
-        $this->title = 'RUR Единый кошелек';
-        $this->description = 'Оплатить через RUR Единый кошелек (Робокасса). Комиссия: 0';
-        $this->commission = 0;
-
-        parent::__construct();
-    }
-}
-
 class payment_robokassa_pay_method_request_AlfaBankRIBR extends \Robokassa\Payment\WC_WP_robokassa {
     public function __construct() {
         $this->id = 'AlfaBank';
@@ -97,19 +84,6 @@ class payment_robokassa_pay_method_request_VTB24RIBR extends \Robokassa\Payment\
         $this->long_name='Оплата через ВТБ (Робокасса)';
         $this->title = 'ВТБ';
         $this->description = 'Оплатить через ВТБ (Робокасса). Комиссия: 0';
-        $this->commission = 0;
-
-        parent::__construct();
-    }
-}
-
-class payment_robokassa_pay_method_request_W1RIBPSBR extends \Robokassa\Payment\WC_WP_robokassa {
-    public function __construct() {
-        $this->id = 'W1';
-        $this->method_title = 'RUR Единый кошелек (Робокасса)';
-        $this->long_name='Оплата через RUR Единый кошелек (Робокасса)';
-        $this->title = 'RUR Единый кошелек';
-        $this->description = 'Оплатить через RUR Единый кошелек (Робокасса). Комиссия: 0';
         $this->commission = 0;
 
         parent::__construct();
@@ -233,6 +207,32 @@ class payment_robokassa_pay_method_request_CardHalvaRIBR extends \Robokassa\Paym
     }
 }
 
+class payment_robokassa_pay_method_request_CardHomeCreditRIBR extends \Robokassa\Payment\WC_WP_robokassa {
+    public function __construct() {
+        $this->id = 'BankCardHomeCredit';
+        $this->method_title = 'Карта Свобода (Робокасса)';
+        $this->long_name='Оплата через Карта Свобода (Робокасса)';
+        $this->title = 'Карта Свобода';
+        $this->description = 'Оплатить через Карта Свобода (Робокасса). Комиссия: 0';
+        $this->commission = 0;
+
+        parent::__construct();
+    }
+}
+
+class payment_robokassa_pay_method_request_CardSovestRIBR extends \Robokassa\Payment\WC_WP_robokassa {
+    public function __construct() {
+        $this->id = 'BankCardSovest';
+        $this->method_title = 'Карта Совесть (Робокасса)';
+        $this->long_name='Оплата через Карта Совесть (Робокасса)';
+        $this->title = 'Карта Совесть';
+        $this->description = 'Оплатить через Карта Совесть (Робокасса). Комиссия: 0';
+        $this->commission = 0;
+
+        parent::__construct();
+    }
+}
+
 class payment_robokassa_pay_method_request_ApplePayRIBR extends \Robokassa\Payment\WC_WP_robokassa {
     public function __construct() {
         $this->id = 'ApplePay';
@@ -314,10 +314,8 @@ function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
         $methods[] = 'payment_robokassa_pay_method_request_YandexMerchantRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_WMR30RM';
         $methods[] = 'payment_robokassa_pay_method_request_ElecsnetWalletRIBR';
-        $methods[] = 'payment_robokassa_pay_method_request_W1RIBR';
         $methods[] = 'payment_robokassa_pay_method_request_AlfaBankRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_VTB24RIBR';
-        $methods[] = 'payment_robokassa_pay_method_request_W1RIBPSBR';
         $methods[] = 'payment_robokassa_pay_method_request_MINBankRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_BSSIntezaRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_BSSAvtovazbankR';
@@ -327,6 +325,8 @@ function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
         $methods[] = 'payment_robokassa_pay_method_request_BSSNationalBankTRUSTR';
         $methods[] = 'payment_robokassa_pay_method_request_BANKOCEAN3R';
         $methods[] = 'payment_robokassa_pay_method_request_CardHalvaRIBR';
+        $methods[] = 'payment_robokassa_pay_method_request_CardHomeCreditRIBR';
+        $methods[] = 'payment_robokassa_pay_method_request_CardSovestRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_ApplePayRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_SamsungPayRIBR';
         $methods[] = 'payment_robokassa_pay_method_request_RapidaRIBEurosetR';
