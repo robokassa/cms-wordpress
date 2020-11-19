@@ -53,7 +53,7 @@
 
     require_once __DIR__ . '/labelsClasses.php';
 
-	foreach(robokassa_payment_add_WC_WP_robokassa_class() as $class):
+	foreach((array) robokassa_payment_add_WC_WP_robokassa_class() as $class):
 		$method = new $class;
 		$formProperties[] = 'RobokassaOrderPageTitle_'.$method->id;
 		$formProperties[] = 'RobokassaOrderPageDescription_'.$method->id;
@@ -123,7 +123,7 @@
                 </td>
             </tr>
 
-	        <?php if((int) \count(robokassa_payment_add_WC_WP_robokassa_class()) === 1):?>
+	        <?php if((int) \count((array) robokassa_payment_add_WC_WP_robokassa_class()) === 1):?>
 		        <tr valign="top">
 			        <th scope="row">Заголовок на странице оформления заказа</th>
 			        <td>
@@ -138,7 +138,7 @@
 		        </tr>
 
 	        <?php else:?>
-		        <?php foreach(robokassa_payment_add_WC_WP_robokassa_class() as $class): $method = new $class;?>
+		        <?php foreach((array) robokassa_payment_add_WC_WP_robokassa_class() as $class): $method = new $class;?>
 
 		            <tr>
 			            <th colspan="2">
