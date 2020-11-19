@@ -85,6 +85,10 @@ https://www.robokassa.ru/ru/Support/SendMsg.aspx
 3. `/assets/images/screenshot-3.png`
 
 == Changelog ==
+
+= 1.3.9 =
+* Устранены ошибки внутри плагина
+
 = 1.3.6 =
 * Добавлен 2 чек, срабатывает при статусе completed
 
