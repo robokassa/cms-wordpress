@@ -30,7 +30,7 @@
             <a href="?page=robokassa_payment_sms_rb" <?php echo ($_GET['li'] == 'sms') ? 'class="active"' : ''; ?>>Настройки оповещений</a>
         </li>
         <li>
-            <a href="?page=robokassa_payment_robomarket_rb" <?php echo ($_GET['li'] == 'robomarket') ? 'class="active"' : ''; ?>>Настройки РобоМаркет</a>
+            <a href="?page=robokassa_payment_robomarket_rb" <?php echo ($_GET['li'] == 'robomarket') ? 'class="active"' : ''; ?>>Выгрузка XML с вашими товарами</a>
         </li>
     </ul>
 </div>
