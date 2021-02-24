@@ -86,6 +86,9 @@ https://www.robokassa.ru/ru/Support/SendMsg.aspx
 
 == Changelog ==
 
+= 1.3.11 =
+* Фискализация для Казахстана
+
 = 1.3.9 =
 * Устранены ошибки внутри плагина
 

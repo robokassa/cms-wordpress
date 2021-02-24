@@ -57,7 +57,7 @@
 				'code' => self::PAYMENT_METHOD_PREPAYMENT,
 			],
 			self::PAYMENT_METHOD_ADVANCE => [
-				'title' => 'Аванас',
+				'title' => 'Аванс',
 				'code' => self::PAYMENT_METHOD_ADVANCE,
 			],
 			self::PAYMENT_METHOD_FULL_PAYMENT => [
