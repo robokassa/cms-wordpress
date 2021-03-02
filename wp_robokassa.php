@@ -56,7 +56,7 @@ function robokassa_chosen_payment_method(WC_Cart $cart)
         )
     ) {
 
-        $cart->add_fee(
+      $cart->add_fee(
             'Наценка',
             $cart->get_cart_contents_total() / 100 * (double)get_option('robokassa_patyment_markup'),
             false
