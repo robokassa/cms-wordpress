@@ -715,6 +715,32 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 
         $receipt['items'][] = $current;
     }
+  
+    if (!count($receipt['items'])) {
+
+        foreach ($order->get_items() as $item)
+        {
+
+            $product = $item->get_product();
+
+            $current['name'] = $product->get_title();
+            $current['quantity'] = (float) $item->get_quantity();
+
+            $current['sum'] = $useMarkup ? ($item->get_total() * $item->get_quantity() + ($item->get_total() * $item->get_quantity() / 100 * $markup)) : $item->get_total() * $item->get_quantity();
+
+            $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+            $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+
+            if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
+                $current['tax'] = $tax;
+            } else {
+                $current['tax'] = 'none';
+            }
+
+            $receipt['items'][] = $current;
+        }
+
+    }
 
     if ((double)$order->get_shipping_total() > 0) {
 
