@@ -6,7 +6,7 @@
   Description: Данный плагин добавляет на Ваш сайт метод оплаты Робокасса для WooCommerce
   Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
   Author: Робокасса
-  Version: 1.3.11
+  Version: 1.3.12
 */
 
 use Robokassa\Payment\RoboDataBase;
@@ -56,7 +56,7 @@ function robokassa_chosen_payment_method(WC_Cart $cart)
         )
     ) {
 
-        $cart->add_fee(
+      $cart->add_fee(
             'Наценка',
             $cart->get_cart_contents_total() / 100 * (double)get_option('robokassa_patyment_markup'),
             false
@@ -661,8 +661,6 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 {
 
     $mrhLogin = get_option('robokassa_payment_MerchantLogin');
-    $markup = (double)get_option('robokassa_patyment_markup');
-    $useMarkup = $markup > 0;
 
     if (get_option('robokassa_payment_test_onoff') == 'true') {
         $pass1 = get_option('robokassa_payment_testshoppass1');
@@ -698,7 +696,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $current['name'] = $product->get_title();
         $current['quantity'] = (float)$item['quantity'];
 
-        $current['sum'] = $useMarkup ? ($item['line_total'] + ($item['line_total'] / 100 * $markup)) : $item['line_total'];
+        $current['sum'] = $item['line_total'];
 
         if (get_option('robokassa_country_code') == 'KZ') {
         } else {
@@ -715,6 +713,32 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 
         $receipt['items'][] = $current;
     }
+  
+    if (!count($receipt['items'])) {
+
+        foreach ($order->get_items() as $item)
+        {
+
+            $product = $item->get_product();
+
+            $current['name'] = $product->get_title();
+            $current['quantity'] = (float) $item->get_quantity();
+
+            $current['sum'] = $item->get_total() * $item->get_quantity();
+
+            $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+            $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+
+            if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
+                $current['tax'] = $tax;
+            } else {
+                $current['tax'] = 'none';
+            }
+
+            $receipt['items'][] = $current;
+        }
+
+    }
 
     if ((double)$order->get_shipping_total() > 0) {
 
@@ -722,11 +746,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $current['quantity'] = 1;
         $current['sum'] = (double)\sprintf(
             "%01.2f",
-            (
-            $useMarkup
-                ? ((double)$order->get_shipping_total() + (double)($order->get_shipping_total() / 100 * $markup))
-                : $order->get_shipping_total()
-            )
+            $order->get_shipping_total()
         );
 
         if (get_option('robokassa_country_code') == 'KZ') {
@@ -744,7 +764,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $receipt['items'][] = $current;
     }
 
-    $order_total = (float)($markup ? ($order->get_total() + ($order->get_total() / 100 * $markup)) : $order->get_total());
+    $order_total = $order->get_total();
 
     if (get_option('robokassa_payment_paytype') == 'true') {
 
