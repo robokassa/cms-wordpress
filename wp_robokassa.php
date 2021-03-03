@@ -661,8 +661,6 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 {
 
     $mrhLogin = get_option('robokassa_payment_MerchantLogin');
-    $markup = (double)get_option('robokassa_patyment_markup');
-    $useMarkup = $markup > 0;
 
     if (get_option('robokassa_payment_test_onoff') == 'true') {
         $pass1 = get_option('robokassa_payment_testshoppass1');
@@ -698,7 +696,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $current['name'] = $product->get_title();
         $current['quantity'] = (float)$item['quantity'];
 
-        $current['sum'] = $useMarkup ? ($item['line_total'] + ($item['line_total'] / 100 * $markup)) : $item['line_total'];
+        $current['sum'] = $item['line_total'];
 
         if (get_option('robokassa_country_code') == 'KZ') {
         } else {
@@ -726,7 +724,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
             $current['name'] = $product->get_title();
             $current['quantity'] = (float) $item->get_quantity();
 
-            $current['sum'] = $useMarkup ? ($item->get_total() * $item->get_quantity() + ($item->get_total() * $item->get_quantity() / 100 * $markup)) : $item->get_total() * $item->get_quantity();
+            $current['sum'] = $item->get_total() * $item->get_quantity();
 
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
@@ -748,11 +746,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $current['quantity'] = 1;
         $current['sum'] = (double)\sprintf(
             "%01.2f",
-            (
-            $useMarkup
-                ? ((double)$order->get_shipping_total() + (double)($order->get_shipping_total() / 100 * $markup))
-                : $order->get_shipping_total()
-            )
+            $order->get_shipping_total()
         );
 
         if (get_option('robokassa_country_code') == 'KZ') {
@@ -770,7 +764,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $receipt['items'][] = $current;
     }
 
-    $order_total = (float)($markup ? ($order->get_total() + ($order->get_total() / 100 * $markup)) : $order->get_total());
+    $order_total = $order->get_total();
 
     if (get_option('robokassa_payment_paytype') == 'true') {
 
