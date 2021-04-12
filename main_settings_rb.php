@@ -242,20 +242,11 @@
         <div class="spoiler_body">
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row">Наценка на стоимость заказа (%)</th>
-                    <td>
-                        <input type="number"  step="0.01" id="robokassa_patyment_markup" name="robokassa_patyment_markup" value="<?php echo get_option('robokassa_patyment_markup');?>" onchange="spoleer();">
-                    </td>
-                </tr>
-                <tr valign="top">
                     <th scope="row">Статус продавца</th>
                     <td>
-                        <input type="radio" id="type_fiz" name="robokassa_payment_type_commission"
-                               value="true" <?php echo get_option('robokassa_payment_type_commission') == 'true' ? 'checked="checked"'
-                            : ''; ?> onchange="spoleer();"><label for="type_fiz">Физ. лицо</label>
                         <input type="radio" id="type_ur" name="robokassa_payment_type_commission"
                                value="false" <?php echo get_option('robokassa_payment_type_commission') == 'false' ? 'checked="checked"'
-                            : ''; ?> onchange="spoleer();"><label for="type_ur">Юр. лицо</label>
+                            : ''; ?> onchange="spoleer();"><label for="type_ur">Юридическое лицо</label>
                     </td>
                 </tr>
 
@@ -325,31 +316,6 @@
                             <option value="vat8" <?php echo((get_option('robokassa_payment_tax') == 'vat8') ? ' selected' : ''); ?>>НДС чека по ставке 8% (Казахстан)</option>
                             <option value="vat12" <?php echo((get_option('robokassa_payment_tax') == 'vat12') ? ' selected' : ''); ?>>НДС чека по ставке 12% (Казахстан)</option>
                         </select>
-                    </td>
-                </tr>
-
-                <tr valign="top" id="commission">
-                    <th scope="row">Кто оплачивает комиссию?</th>
-                    <td>
-                        <input type="radio" id="who_shop" name="robokassa_payment_who_commission"
-                               value="shop" <?php echo get_option('robokassa_payment_who_commission') == 'shop' ? 'checked="checked"'
-                            : ''; ?> onchange="spoleer();"><label for="who_shop">Магазин</label>
-                        <input type="radio" id="who_client" name="robokassa_payment_who_commission"
-                               value="client" <?php echo get_option('robokassa_payment_who_commission') == 'client' ? 'checked="checked"'
-                            : ''; ?> onchange="spoleer();"><label for="who_client">Покупатель</label>
-                        <input type="radio" id="who_both" name="robokassa_payment_who_commission"
-                               value="both" <?php echo get_option('robokassa_payment_who_commission') == 'both' ? 'checked="checked"'
-                            : ''; ?> onchange="spoleer();"><label for="who_both">Оба</label>
-                        <br />
-                        <span class="text-description">Для переноса комиссии на магазин, в блоке "Выбор способа оплаты" необходимо выбрать "В магазине". <span>
-                    </td>
-                </tr>
-
-                <tr valign="top" id="size_commission">
-                    <th scope="row">Доля комиссии, оплачиваемой покупателем(%)</th>
-                    <td>
-                        <input type="text" name="robokassa_payment_size_commission" id="size_commission1"
-                               value="<?php echo get_option('robokassa_payment_size_commission'); ?>"/>
                     </td>
                 </tr>
 
