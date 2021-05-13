@@ -29,7 +29,7 @@
 
 ### Настройка модуля
 
-Настройка магазина на стороне [Робокассы](https://auth.robokassa.ru/partner/Login.aspx)
+Настройка магазина на стороне [Робокассы](http://partner.robokassa.ru/)
 1. Алгоритм расчета хеша – MD5
 1. Result Url – http(s)://your-domain.ru/?robokassa=result
 1. Success Url – http(s)://your-domain.ru/?robokassa=success
