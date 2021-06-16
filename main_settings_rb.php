@@ -34,7 +34,6 @@
 	    'robokassa_payment_test_onoff',
 	    'robokassa_payment_testshoppass1',
 	    'robokassa_payment_testshoppass2',
-	    'robokassa_payment_type_commission',
 	    'robokassa_payment_sno',
 	    'robokassa_payment_tax',
 	    'robokassa_payment_who_commission',
