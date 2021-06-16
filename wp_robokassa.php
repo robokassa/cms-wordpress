@@ -818,7 +818,6 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $invDesc = "Заказ номер $order_id";
     }
 
-    $receiptForForm = (get_option('robokassa_payment_type_commission') == 'false') ? $receipt : array();
 
     echo $rb->createForm(
         $sum,
@@ -826,7 +825,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $invDesc,
         get_option('robokassa_payment_test_onoff'),
         $label,
-        $receiptForForm,
+        $receipt,
         $order->get_billing_email()
     );
 }
