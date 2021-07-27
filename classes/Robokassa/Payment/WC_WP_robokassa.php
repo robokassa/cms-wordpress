@@ -3,6 +3,24 @@
 namespace Robokassa\Payment;
 
 /**
+ * Проверка активности плагина WooCommerce
+ */
+
+if ( ! function_exists( 'is_plugin_active' ) ) {
+		require_once ABSPATH . '/wp-admin/includes/plugin.php';
+	}
+	if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
+		add_action(
+			'admin_notices',
+			function() {
+				echo '<div class="error"><p><strong>' . sprintf( esc_html__( 'Robokassa WooCommerce requires WooCommerce to be installed and active. You can download %s here.', 'woocommerce-payments' ), '<a href="https://wordpress.org/plugins/woocommerce/" target="_blank">WooCommerce</a>' ) . '</strong></p></div>';
+			}
+		);
+
+		return;
+	}
+
+/**
  * Класс выбора типа оплаты на стороне Робокассы
  */
 class WC_WP_robokassa extends \WC_Payment_Gateway {
