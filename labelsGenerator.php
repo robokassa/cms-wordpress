@@ -10,7 +10,7 @@ $currLabels = $robokassa->getCurrLabels();
 
 if (empty($currLabels) && \get_option('robokassa_country_code') != 'KZ')
 {
-	echo 'Не удалось загрузить методы оплаты.';
+	echo 'Не удалось загрузить методы оплаты. Убедитесь, что вы указали корректный идентификатор магазина и ваш магазин активирован';
     die();
 }
 
