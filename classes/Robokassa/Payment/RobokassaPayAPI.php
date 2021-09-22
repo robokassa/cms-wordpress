@@ -264,7 +264,8 @@ class RobokassaPayAPI {
 			}
 			
 			$form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
-			$form .= "<input type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
+			$form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
+			$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
 		} else {
 			$form = '<div class="preloader">
 			  <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -331,7 +332,7 @@ class RobokassaPayAPI {
 			}
 			
 			$form .= "<input id=\"robokassa\"  type=\"submit\" value=\"Оплатить\"></form>";
-			$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script";
+			$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
 		}
 		
 		return $form;
