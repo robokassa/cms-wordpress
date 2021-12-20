@@ -228,11 +228,11 @@ function robokassa_payment_getCurrLabels()
  */
 function robokassa_payment_initMenu()
 {
-    add_submenu_page('woocommerce', 'Настройки Робокассы', 'Настройки Робокассы', 8, 'robokassa_payment_main_settings_rb', 'robokassa_payment_main_settings');
-    add_submenu_page('main_settings_rb.php', 'Основные настройки', 'Основные настройки', 8, 'robokassa_payment_main_rb', 'robokassa_payment_main_settings');
-    add_submenu_page('main_settings_rb.php', 'Настройки СМС', 'Настройки СМС', 8, 'robokassa_payment_sms_rb', 'robokassa_payment_sms_settings');
-    add_submenu_page('main_settings_rb.php', 'РобоМаркет', 'РобоМаркет', 8, 'robokassa_payment_robomarket_rb', 'robokassa_payment_robomarket_settings');
-    add_submenu_page('main_settings_rb.php', 'Генерировать YML', 'Генерировать YML', 8, 'robokassa_payment_YMLGenerator', 'robokassa_payment_yml_generator');
+    add_submenu_page('woocommerce', 'Настройки Робокассы', 'Настройки Робокассы', 'edit_pages', 'robokassa_payment_main_settings_rb', 'robokassa_payment_main_settings');
+    add_submenu_page('main_settings_rb.php', 'Основные настройки', 'Основные настройки', 'edit_pages', 'robokassa_payment_main_rb', 'robokassa_payment_main_settings');
+    add_submenu_page('main_settings_rb.php', 'Настройки СМС', 'Настройки СМС', 'edit_pages', 'robokassa_payment_sms_rb', 'robokassa_payment_sms_settings');
+    add_submenu_page('main_settings_rb.php', 'РобоМаркет', 'РобоМаркет', 'edit_pages', 'robokassa_payment_robomarket_rb', 'robokassa_payment_robomarket_settings');
+    add_submenu_page('main_settings_rb.php', 'Генерировать YML', 'Генерировать YML', 'edit_pages', 'robokassa_payment_YMLGenerator', 'robokassa_payment_yml_generator');
 }
 
 /**
@@ -605,7 +605,7 @@ function robokassa_payment_robomarketRequest()
                 }
             }
 
-            $order->set_address(array(// Здесь наверное что-то должно быть, но Егорушка малолетний долбоклюй
+            $order->set_address(array(
             ), 'billing');
 
             $order->calculate_totals();
@@ -712,7 +712,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 
         $receipt['items'][] = $current;
     }
-  
+
     if (!count($receipt['items'])) {
 
         foreach ($order->get_items() as $item)
@@ -1047,7 +1047,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
             'quantity' => 1,
             'sum' => $shipping_total,
             'tax' => $tax,
-            'payment_method' => 'full_prepayment',
+            'payment_method' => 'full_payment',
             'payment_object' => get_option('robokassa_payment_paymentObject'),
         ];
 
@@ -1078,7 +1078,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
             'quantity' => $item['quantity'],
             'sum' => $item['line_total'],
             'tax' => $tax,
-            'payment_method' => 'full_prepayment',
+            'payment_method' => 'full_payment',
             'payment_object' => get_option('robokassa_payment_paymentObject'),
         ];
 
