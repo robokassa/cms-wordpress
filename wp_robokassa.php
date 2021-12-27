@@ -991,161 +991,169 @@ if (!function_exists('getallheaders')) {
  * @return void
  */
 function robokassa_2check_send($order_id, $old_status, $new_status)
+
+
 {
+    $payment_method = get_option('robokassa_payment_paymentMethod');
     $sno = get_option('robokassa_payment_sno');
     $tax = get_option('robokassa_payment_tax');
 
-    if ($sno == 'fckoff') {
-        return;
-    }
+    if ($payment_method == 'advance' || $payment_method == 'full_prepayment' || $payment_method == 'prepayment') {
 
-    $trigger_status = 'completed'; //get_option('robokassa_2check_status');
+        if ($sno == 'fckoff') {
+            return;
+        }
 
-    if ($new_status != $trigger_status) {
-        return;
-    }
+        $trigger_status = 'completed'; //get_option('robokassa_2check_status');
 
-    $order = new WC_Order($order_id);
+        if ($new_status != $trigger_status) {
+            return;
+        }
 
-    if (!$order) {
-        return;
-    }
+        $order = new WC_Order($order_id);
 
-    if ($order->get_payment_method_title() != get_option('RobokassaOrderPageTitle_all')) {
-        return;
-    }
+        if (!$order) {
+            return;
+        }
 
-    /** @var array $fields */
-    $fields = [
-        'merchantId' => get_option('robokassa_payment_MerchantLogin'),
-        'id' => $order->get_id() + 1,
-        'originId' => $order->get_id(),
-        'operation' => 'sell',
-        'sno' => $sno,
-        'url' => \urlencode('http://' . $_SERVER['HTTP_HOST']),
-        'total' => $order->get_total(),
-        'items' => [],
-        'client' => [
-            'email' => $order->get_billing_email(),
-            'phone' => $order->get_billing_phone(),
-        ],
-        'payments' => [
-            [
-                'type' => 2,
-                'sum' => $order->get_total()
-            ]
-        ],
-        'vats' => []
-    ];
+        if ($order->get_payment_method_title() != get_option('RobokassaOrderPageTitle_all')) {
+            return;
+        }
 
-    $items = $order->get_items();
-    $shipping_total = $order->get_shipping_total();
-
-    if ($shipping_total > 0) {
-        $products_items = [
-            'name' => 'Доставка',
-            'quantity' => 1,
-            'sum' => $shipping_total,
-            'tax' => $tax,
-            'payment_method' => 'full_payment',
-            'payment_object' => get_option('robokassa_payment_paymentObject'),
+        /** @var array $fields */
+        $fields = [
+            'merchantId' => get_option('robokassa_payment_MerchantLogin'),
+            'id' => $order->get_id() + 1,
+            'originId' => $order->get_id(),
+            'operation' => 'sell',
+            'sno' => $sno,
+            'url' => \urlencode('http://' . $_SERVER['HTTP_HOST']),
+            'total' => $order->get_total(),
+            'items' => [],
+            'client' => [
+                'email' => $order->get_billing_email(),
+                'phone' => $order->get_billing_phone(),
+            ],
+            'payments' => [
+                [
+                    'type' => 2,
+                    'sum' => $order->get_total()
+                ]
+            ],
+            'vats' => []
         ];
 
-        $fields['items'][] = $products_items;
+        $items = $order->get_items();
+        $shipping_total = $order->get_shipping_total();
 
-        switch ($tax) {
-            case "vat0":
-                $fields['vats'][] = ['type' => $tax, 'sum' => 0];
-            case "none":
-                $fields['vats'][] = ['type' => $tax, 'sum' => 0];
-                break;
+        if ($shipping_total > 0) {
+            $products_items = [
+                'name' => 'Доставка',
+                'quantity' => 1,
+                'sum' => $shipping_total,
+                'tax' => $tax,
+                'payment_method' => 'full_payment',
+                'payment_object' => get_option('robokassa_payment_paymentObject'),
+            ];
 
-            default:
-                $fields['vats'][] = ['type' => 'novat', 'sum' => 0];
-                break;
+            $fields['items'][] = $products_items;
 
-            case "vat10":
-                $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 10];
-            case "vat20":
-                $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 20];
-                break;
-        }
-    }
+            switch ($tax) {
+                case "vat0":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => 0];
+                case "none":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => 0];
+                    break;
 
-    foreach ($items as $item) {
-        $products_items = [
-            'name' => $item['name'],
-            'quantity' => $item['quantity'],
-            'sum' => $item['line_total'],
-            'tax' => $tax,
-            'payment_method' => 'full_payment',
-            'payment_object' => get_option('robokassa_payment_paymentObject'),
-        ];
+                default:
+                    $fields['vats'][] = ['type' => 'novat', 'sum' => 0];
+                    break;
 
-        $product = wc_get_product($item['product_id']);
-        $sku = $product->get_sku();
-
-        if (!empty($sku)) {
-            $products_items['nomenclature_code'] = mb_convert_encoding($sku, 'UTF-8');
+                case "vat10":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 10];
+                case "vat20":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 20];
+                    break;
+            }
         }
 
-        $fields['items'][] = $products_items;
+        foreach ($items as $item) {
+            $products_items = [
+                'name' => $item['name'],
+                'quantity' => $item['quantity'],
+                'sum' => $item['line_total'],
+                'tax' => $tax,
+                'payment_method' => 'full_payment',
+                'payment_object' => get_option('robokassa_payment_paymentObject'),
+            ];
 
-        switch ($tax) {
-            case "vat0":
-                $fields['vats'][] = ['type' => $tax, 'sum' => 0];
-            case "none":
-                $fields['vats'][] = ['type' => $tax, 'sum' => 0];
-                break;
+            $product = wc_get_product($item['product_id']);
+            $sku = $product->get_sku();
 
-            default:
-                $fields['vats'][] = ['type' => 'novat', 'sum' => 0];
-                break;
+            if (!empty($sku)) {
+                $products_items['nomenclature_code'] = mb_convert_encoding($sku, 'UTF-8');
+            }
 
-            case "vat10":
-                $fields['vats'][] = ['type' => $tax, 'sum' => ($item['line_total'] / 100) * 18];
-            case "vat20":
-                $fields['vats'][] = ['type' => $tax, 'sum' => ($item['line_total'] / 100) * 20];
-                break;
+            $fields['items'][] = $products_items;
+
+            switch ($tax) {
+                case "vat0":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => 0];
+                case "none":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => 0];
+                    break;
+
+                default:
+                    $fields['vats'][] = ['type' => 'novat', 'sum' => 0];
+                    break;
+
+                case "vat10":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($item['line_total'] / 100) * 18];
+                case "vat20":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($item['line_total'] / 100) * 20];
+                    break;
+            }
+
         }
 
-    }
-
-    /** @var string $startupHash */
-    $startupHash = formatSignFinish(
-        \base64_encode(
-            formatSignReplace(
-                json_encode($fields)
+        /** @var string $startupHash */
+        $startupHash = formatSignFinish(
+            \base64_encode(
+                formatSignReplace(
+                    json_encode($fields)
+                )
             )
-        )
-    );
+        );
 
-    if (get_option('robokassa_payment_test_onoff') == 'true') {
-        $pass1 = get_option('robokassa_payment_testshoppass1');
-        $pass2 = get_option('robokassa_payment_testshoppass2');
+        if (get_option('robokassa_payment_test_onoff') == 'true') {
+            $pass1 = get_option('robokassa_payment_testshoppass1');
+            $pass2 = get_option('robokassa_payment_testshoppass2');
+        } else {
+            $pass1 = get_option('robokassa_payment_shoppass1');
+            $pass2 = get_option('robokassa_payment_shoppass2');
+        }
+
+        /** @var string $sign */
+        $sign = formatSignFinish(
+            \base64_encode(
+                \md5(
+                    $startupHash .
+                    ($pass1)
+                )
+            )
+        );
+
+        $curl = curl_init('https://ws.roboxchange.com/RoboFiscal/Receipt/Attach');
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $startupHash . '.' . $sign);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($startupHash . '.' . $sign))
+        );
+        $result = curl_exec($curl);
+        curl_close($curl);
     } else {
-        $pass1 = get_option('robokassa_payment_shoppass1');
-        $pass2 = get_option('robokassa_payment_shoppass2');
+
     }
-
-    /** @var string $sign */
-    $sign = formatSignFinish(
-        \base64_encode(
-            \md5(
-                $startupHash .
-                ($pass1)
-            )
-        )
-    );
-
-    $curl = curl_init('https://ws.roboxchange.com/RoboFiscal/Receipt/Attach');
-    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-    curl_setopt($curl, CURLOPT_POSTFIELDS, $startupHash . '.' . $sign);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-            'Content-Type: application/json',
-            'Content-Length: ' . strlen($startupHash . '.' . $sign))
-    );
-    $result = curl_exec($curl);
-    curl_close($curl);
 }
