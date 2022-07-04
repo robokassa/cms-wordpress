@@ -1,18 +1,12 @@
 <?php
 
 $robokassa = new \Robokassa\Payment\RobokassaPayAPI(
-	\get_option('robokassa_payment_MerchantLogin'),
-	\get_option('robokassa_payment_shoppass1'),
-	\get_option('robokassa_payment_shoppass2')
+    \get_option('robokassa_payment_MerchantLogin'),
+    \get_option('robokassa_payment_shoppass1'),
+    \get_option('robokassa_payment_shoppass2')
 );
 
 $currLabels = $robokassa->getCurrLabels();
-
-if (empty($currLabels) && \get_option('robokassa_country_code') != 'KZ')
-{
-	echo 'Не удалось загрузить методы оплаты. Убедитесь, что вы указали корректный идентификатор магазина и ваш магазин активирован';
-    die();
-}
 
 $labels = __DIR__ . '/labelsClasses.php';
 
@@ -22,15 +16,15 @@ chmod($labels, 0666);
 fwrite($labelsFile, "<?php \n\n");
 
 $method = "class payment_robokassa_pay_method_request_all extends \Robokassa\Payment\WC_WP_robokassa {\n"
-        . "    public function __construct() {\n"
-        . "        \$this->id = 'all';\n"
-        . "        \$this->method_title = 'Робокасса';\n"
-        . "        \$this->long_name = 'Оплата через Робокасса';\n"
-        . "        \$this->description = get_option('RobokassaOrderPageDescription', 'Оплатить через Робокасса');\n"
-        . "        \$this->commission = 0;\n\n"
-        . "        parent::__construct();\n"
-        . "    }\n"
-        . "}\n";
+    . "    public function __construct() {\n"
+    . "        \$this->id = 'all';\n"
+    . "        \$this->method_title = 'Робокасса';\n"
+    . "        \$this->long_name = 'Оплата через Робокасса';\n"
+    . "        \$this->description = get_option('RobokassaOrderPageDescription', 'Оплатить через Робокасса');\n"
+    . "        \$this->commission = 0;\n\n"
+    . "        parent::__construct();\n"
+    . "    }\n"
+    . "}\n";
 fwrite($labelsFile, "$method\n");
 
 $array = array();
@@ -41,16 +35,16 @@ foreach ($currLabels as $key => $value) {
     $name = $value['Name'];
 
     $method = "class payment_robokassa_pay_method_request_$label extends \Robokassa\Payment\WC_WP_robokassa {\n"
-            . "    public function __construct() {\n"
-            . "        \$this->id = '$alias';\n"
-            . "        \$this->method_title = '$name (Робокасса)';\n"
-            . "        \$this->long_name='Оплата через $name (Робокасса)';\n"
-            . "        \$this->title = '$name';\n"
-            . "        \$this->description = 'Оплатить через $name (Робокасса). Комиссия: {$value['Commission']}';\n"
-            . "        \$this->commission = {$value['Commission']};\n\n"
-            . "        parent::__construct();\n"
-            . "    }\n"
-            . "}\n";
+        . "    public function __construct() {\n"
+        . "        \$this->id = '$alias';\n"
+        . "        \$this->method_title = '$name (Робокасса)';\n"
+        . "        \$this->long_name='Оплата через $name (Робокасса)';\n"
+        . "        \$this->title = '$name';\n"
+        . "        \$this->description = 'Оплатить через $name (Робокасса). Комиссия: {$value['Commission']}';\n"
+        . "        \$this->commission = {$value['Commission']};\n\n"
+        . "        parent::__construct();\n"
+        . "    }\n"
+        . "}\n";
 
     $array[] = "payment_robokassa_pay_method_request_$label";
 
