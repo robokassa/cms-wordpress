@@ -176,6 +176,15 @@ class RobokassaPayAPI {
         $receipt = null,
         $email = null
     ) {
+	    
+	$kzUrl = 'https://auth.robokassa.kz/Merchant/Index.aspx';
+        $ruUrl = 'https://auth.robokassa.ru/Merchant/Index.aspx';
+
+        if (get_option('robokassa_country_code') == "RU")
+            $paymentUrl = $ruUrl;
+        elseif(get_option('robokassa_country_code') == "KZ")
+            $paymentUrl = $kzUrl;
+
 
 	    $receiptJson = (!empty($receipt) && \is_array($receipt))
 	        ? \urlencode(\json_encode($receipt, 256))
@@ -228,7 +237,7 @@ class RobokassaPayAPI {
                 $formUrl = 'http://robo.market/cart/insert';
                 break;
             case 'yes':
-                $formUrl = 'https://auth.robokassa.ru/Merchant/Index.aspx';
+                $formUrl = $paymentUrl;
                 break;
             default:
                 throw new \Exception('Не ожиданное значение опции "wc_robokassa_enabled"');
@@ -248,6 +257,14 @@ class RobokassaPayAPI {
 		if (get_option('robokassa_iframe')) {
 			unset($formData['IsTest']);
 			
+	    $kzIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.kz/Merchant/bundle/robokassa_iframe.js\"></script>";
+            $ruIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
+			
+	    if (get_option('robokassa_country_code') == "RU")
+                $iframeUrl = $ruIframe;
+            elseif(get_option('robokassa_country_code') == "KZ")
+                $iframeUrl = $kzIframe;
+			
 			$params = '';
 			$lastParam = end($formData);
 						
@@ -263,7 +280,7 @@ class RobokassaPayAPI {
 				}
 			}
 			
-			$form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
+			$form = $iframeUrl;
 			$form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
 			$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
 		} else {
