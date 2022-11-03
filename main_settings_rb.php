@@ -166,6 +166,28 @@ if(!\current_user_can('activate_plugins'))
                         </tr>
                     <?php endforeach;?>
                 <?php endif;?>
+		    
+		                        <tr valign="top">
+                        <th scope="row">Страна магазина</th>
+                        <td>
+                            <select id="robokassa_country_code" name="robokassa_country_code">
+                                <option value="RU" <?php echo((get_option('robokassa_country_code') == 'RU') ? ' selected' : ''); ?>>Россия</option>
+                                <option value="KZ" <?php echo((get_option('robokassa_country_code') == 'KZ') ? ' selected' : ''); ?>>Казахстан</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr valign="top">
+                        <th scope="row">Валюта заказа</th>
+                        <td>
+                            <select id="robokassa_out_currency" name="robokassa_out_currency">
+                                <option value="" <?php echo((get_option('robokassa_out_currency') == '') ? ' selected' : ''); ?>>Рубли</option>
+                                <option value="USD" <?php echo((get_option('robokassa_out_currency') == 'USD') ? ' selected' : ''); ?>>Доллары</option>
+                                <option value="EUR" <?php echo((get_option('robokassa_out_currency') == 'EUR') ? ' selected' : ''); ?>>Евро</option>
+                                <option value="KZT" <?php echo((get_option('robokassa_out_currency') == 'KZT') ? ' selected' : ''); ?>>Тенге</option>
+                            </select>
+                        </td>
+                    </tr>
 
                 <tr valign="top">
                     <th scope="row">Идентификатор магазина</th>
@@ -393,27 +415,6 @@ if(!\current_user_can('activate_plugins'))
                         </td>
                     </tr>
 
-                    <tr valign="top">
-                        <th scope="row">Страна магазина</th>
-                        <td>
-                            <select id="robokassa_country_code" name="robokassa_country_code">
-                                <option value="RU" <?php echo((get_option('robokassa_country_code') == 'RU') ? ' selected' : ''); ?>>Россия</option>
-                                <option value="KZ" <?php echo((get_option('robokassa_country_code') == 'KZ') ? ' selected' : ''); ?>>Казахстан</option>
-                            </select>
-                        </td>
-                    </tr>
-
-                    <tr valign="top">
-                        <th scope="row">Валюта заказа</th>
-                        <td>
-                            <select id="robokassa_out_currency" name="robokassa_out_currency">
-                                <option value="" <?php echo((get_option('robokassa_out_currency') == '') ? ' selected' : ''); ?>>Рубли</option>
-                                <option value="USD" <?php echo((get_option('robokassa_out_currency') == 'USD') ? ' selected' : ''); ?>>Доллары</option>
-                                <option value="EUR" <?php echo((get_option('robokassa_out_currency') == 'EUR') ? ' selected' : ''); ?>>Евро</option>
-                                <option value="KZT" <?php echo((get_option('robokassa_out_currency') == 'KZT') ? ' selected' : ''); ?>>Тенге</option>
-                            </select>
-                        </td>
-                    </tr>
                 </table>
             </div>
 
