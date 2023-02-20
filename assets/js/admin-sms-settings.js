@@ -174,7 +174,7 @@ function robokassa_payment_counter(e, id) {
 		transler = false;
 	}
 
-	max = 200 * multipler;
+	max = 128 * multipler;
 
 	if (transler) {
 		jQuery('#sms' + id + '_text').liTranslit({
