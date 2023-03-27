@@ -697,62 +697,59 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 		$receipt['sno'] = $sno;
 	}
 
-	global $woocommerce;
-	$cart = $woocommerce->cart->get_cart();
+    global $woocommerce;
+    $cart = $woocommerce->cart->get_cart();
 
-	foreach ($cart as $item) {
+    foreach ($cart as $item) {
 
-		$product = wc_get_product($item['product_id']);
+        $product = wc_get_product($item['product_id']);
 
-        $current = [];
         $current['name'] = $product->get_title();
-		$current['quantity'] = (float)$item['quantity'];
+        $current['quantity'] = (float)$item['quantity'];
 
-        $discount_total = WC()->cart->get_cart_discount_total() / $current['quantity'];
+        $current['cost'] = $item['line_total'] / $current['quantity'];
 
-        $current['cost'] = number_format( $item['data'] ? $item['data']->get_price() : $product->get_price(), 2, '.', '' ) - $discount_total;
+        if (get_option('robokassa_country_code') == 'KZ') {
+        } else {
+            $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+            $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+        }
 
-		if (get_option('robokassa_country_code') == 'KZ') {
-		} else {
-			$current['payment_object'] = \get_option('robokassa_payment_paymentObject');
-			$current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
-		}
-
-		if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
-			$current['tax'] = $tax;
-		} else {
-			$current['tax'] = 'none';
-		}
+        if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
+            $current['tax'] = $tax;
+        } else {
+            $current['tax'] = 'none';
+        }
 
 
-		$receipt['items'][] = $current;
-	}
+        $receipt['items'][] = $current;
+    }
 
-	if (!count($receipt['items'])) {
+    if (!count($receipt['items'])) {
 
-		foreach ($order->get_items() as $item)
-		{
+        foreach ($order->get_items() as $item)
+        {
 
-			$product = $item->get_product();
+            $product = $item->get_product();
 
-			$current['name'] = $product->get_title();
-			$current['quantity'] = (float) $item->get_quantity();
+            $current['name'] = $product->get_title();
+            $current['quantity'] = (float) $item->get_quantity();
 
-			$current['cost'] = number_format( $product->get_price(), 2, '.', '' );
+            $current['cost'] = number_format( $product->get_price(), 2, '.', '' );
 
-			$current['payment_object'] = \get_option('robokassa_payment_paymentObject');
-			$current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+            $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+            $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
-			if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
-				$current['tax'] = $tax;
-			} else {
-				$current['tax'] = 'none';
-			}
+            if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
+                $current['tax'] = $tax;
+            } else {
+                $current['tax'] = 'none';
+            }
 
-			$receipt['items'][] = $current;
-		}
+            $receipt['items'][] = $current;
+        }
 
-	}
+    }
 
 	if ((double)$order->get_shipping_total() > 0) {
 
