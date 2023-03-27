@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.4.6
+ * Version: 1.4.7
 */
 
 use Robokassa\Payment\RoboDataBase;
