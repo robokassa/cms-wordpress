@@ -755,7 +755,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 
 		$current['name'] = 'Доставка';
 		$current['quantity'] = 1;
-		$current['sum'] = (double)\sprintf(
+		$current['cost'] = (double)\sprintf(
 			"%01.2f",
 			$order->get_shipping_total()
 		);
@@ -983,7 +983,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			$products_items = [
 				'name' => 'Доставка',
 				'quantity' => 1,
-				'sum' => $shipping_total,
+				'cost' => $shipping_total,
 				'tax' => $tax,
 				'payment_method' => 'full_payment',
 				'payment_object' => get_option('robokassa_payment_paymentObject'),
