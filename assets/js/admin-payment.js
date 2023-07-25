@@ -5,6 +5,7 @@ function spoleer()
 	var sno = document.getElementById("sno_select");
 
 	if (e1.options[e1.selectedIndex].value === 'KZ') {
+		document.getElementById("podeli").style.display = 'none';
 		document.getElementById("tax").style.display = 'table-row';
 		document.getElementById("sno").style.display = 'none';
 		document.getElementById("payment_method").style.display = 'none';

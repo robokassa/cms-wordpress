@@ -1,10 +1,9 @@
 <?php
 
-$json = file_get_contents($_SERVER['DOCUMENT_ROOT']."/wp-content/plugins/robokassa/data/registration_data.json");
+$json = file_get_contents($_SERVER['DOCUMENT_ROOT'] . "/wp-content/plugins/robokassa/data/registration_data.json");
 $data = json_decode($json, TRUE);
 
-if(!\current_user_can('activate_plugins'))
-{
+if (!\current_user_can('activate_plugins')) {
 
     echo '<br /><br />
 				<div class="error notice">
@@ -28,10 +27,10 @@ if(!\current_user_can('activate_plugins'))
 <div class="content_holder">
     <?php
 
-    if (isset($_REQUEST['settings-updated']))
-    {
-        include 'labelsGenerator.php';
-    }
+    /*    if (isset($_REQUEST['settings-updated']))
+        {
+            include 'labelsGenerator.php';
+        }*/
 
     /** @var array $formProperties */
     $formProperties = [
@@ -56,14 +55,17 @@ if(!\current_user_can('activate_plugins'))
         'robokassa_iframe',
         'robokassa_country_code',
         'robokassa_out_currency',
+        'robokassa_podeli',
+        'robokassa_payment_podeli_widget_onoff',
+        'robokassa_podeli_widget_style',
     ];
 
     require_once __DIR__ . '/labelsClasses.php';
 
-    foreach((array) robokassa_payment_add_WC_WP_robokassa_class() as $class):
+    foreach ((array)robokassa_payment_add_WC_WP_robokassa_class() as $class):
         $method = new $class;
-        $formProperties[] = 'RobokassaOrderPageTitle_'.$method->id;
-        $formProperties[] = 'RobokassaOrderPageDescription_'.$method->id;
+        $formProperties[] = 'RobokassaOrderPageTitle_' . $method->id;
+        $formProperties[] = 'RobokassaOrderPageDescription_' . $method->id;
     endforeach;
     ?>
 
@@ -76,7 +78,8 @@ if(!\current_user_can('activate_plugins'))
                 <td>ResultURL:</td>
                 <td><code id="ResultURL"><?php echo site_url('/?robokassa=result'); ?></code></td>
                 <td>
-                    <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#ResultURL" onclick="event.preventDefault();">
+                    <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#ResultURL"
+                            onclick="event.preventDefault();">
                         Скопировать
                     </button>
                 </td>
@@ -85,7 +88,8 @@ if(!\current_user_can('activate_plugins'))
                 <td>SuccessURL:</td>
                 <td><code id="SuccessURL"><?php echo site_url('/?robokassa=success'); ?></td>
                 <td>
-                    <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#SuccessURL" onclick="event.preventDefault();">
+                    <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#SuccessURL"
+                            onclick="event.preventDefault();">
                         Скопировать
                     </button>
                 </td>
@@ -94,7 +98,8 @@ if(!\current_user_can('activate_plugins'))
                 <td>FailURL:</td>
                 <td><code id="FailURL"><?php echo site_url('/?robokassa=fail'); ?></code></td>
                 <td>
-                    <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#FailURL" onclick="event.preventDefault();">
+                    <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#FailURL"
+                            onclick="event.preventDefault();">
                         Скопировать
                     </button>
                 </td>
@@ -130,69 +135,59 @@ if(!\current_user_can('activate_plugins'))
                     </td>
                 </tr>
 
-                <?php if((int) \count((array) robokassa_payment_add_WC_WP_robokassa_class()) === 1):?>
-                    <tr valign="top">
-                        <th scope="row">Заголовок на странице оформления заказа</th>
-                        <td>
-                            <input type="text" name="RobokassaOrderPageTitle_all" value="<?php echo get_option('RobokassaOrderPageTitle_all'); ?>"/>
-                        </td>
-                    </tr>
-                    <tr valign="top">
-                        <th scope="row">Описание на странице оформления заказа</th>
-                        <td>
-                            <input type="text" name="RobokassaOrderPageDescription_all" value="<?php echo get_option('RobokassaOrderPageDescription_all'); ?>"/>
-                        </td>
-                    </tr>
+                <tr valign="top">
+                    <th scope="row">Заголовок на странице оформления заказа</th>
+                    <td>
+                        <input type="text" name="RobokassaOrderPageTitle_all"
+                               value="<?php echo get_option('RobokassaOrderPageTitle_all'); ?>"/>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row">Описание на странице оформления заказа</th>
+                    <td>
+                        <input type="text" name="RobokassaOrderPageDescription_all"
+                               value="<?php echo get_option('RobokassaOrderPageDescription_all'); ?>"/>
+                    </td>
+                </tr>
 
-                <?php else:?>
-                    <?php foreach((array) robokassa_payment_add_WC_WP_robokassa_class() as $class): $method = new $class;?>
+                <tr valign="top">
+                    <th scope="row">Страна магазина</th>
+                    <td>
+                        <select id="robokassa_country_code" name="robokassa_country_code">
+                            <option value="RU" <?php echo((get_option('robokassa_country_code') == 'RU') ? ' selected' : ''); ?>>
+                                Россия
+                            </option>
+                            <option value="KZ" <?php echo((get_option('robokassa_country_code') == 'KZ') ? ' selected' : ''); ?>>
+                                Казахстан
+                            </option>
+                        </select>
+                    </td>
+                </tr>
 
-                        <tr>
-                            <th colspan="2">
-                                <?=$method->title;?>
-                            </th>
-                        </tr>
-                        <tr valign="top">
-                            <td scope="row">Заголовок на странице оформления заказа</td>
-                            <td>
-                                <input type="text" name="RobokassaOrderPageTitle_<?=$method->id;?>" value="<?php echo get_option('RobokassaOrderPageTitle_'.$method->id); ?>"/>
-                            </td>
-                        </tr>
-                        <tr valign="top">
-                            <td scope="row">Описание на странице оформления заказа</td>
-                            <td>
-                                <input type="text" name="RobokassaOrderPageDescription_<?=$method->id;?>" value="<?php echo get_option('RobokassaOrderPageDescription_'.$method->id); ?>"/>
-                            </td>
-                        </tr>
-                    <?php endforeach;?>
-                <?php endif;?>
-		    
-		                        <tr valign="top">
-                        <th scope="row">Страна магазина</th>
-                        <td>
-                            <select id="robokassa_country_code" name="robokassa_country_code">
-                                <option value="RU" <?php echo((get_option('robokassa_country_code') == 'RU') ? ' selected' : ''); ?>>Россия</option>
-                                <option value="KZ" <?php echo((get_option('robokassa_country_code') == 'KZ') ? ' selected' : ''); ?>>Казахстан</option>
-                            </select>
-                        </td>
-                    </tr>
-
-                    <tr valign="top">
-                        <th scope="row">Валюта заказа</th>
-                        <td>
-                            <select id="robokassa_out_currency" name="robokassa_out_currency">
-                                <option value="" <?php echo((get_option('robokassa_out_currency') == '') ? ' selected' : ''); ?>>Рубли</option>
-                                <option value="USD" <?php echo((get_option('robokassa_out_currency') == 'USD') ? ' selected' : ''); ?>>Доллары</option>
-                                <option value="EUR" <?php echo((get_option('robokassa_out_currency') == 'EUR') ? ' selected' : ''); ?>>Евро</option>
-                                <option value="KZT" <?php echo((get_option('robokassa_out_currency') == 'KZT') ? ' selected' : ''); ?>>Тенге</option>
-                            </select>
-                        </td>
-                    </tr>
+                <tr valign="top">
+                    <th scope="row">Валюта заказа</th>
+                    <td>
+                        <select id="robokassa_out_currency" name="robokassa_out_currency">
+                            <option value="" <?php echo((get_option('robokassa_out_currency') == '') ? ' selected' : ''); ?>>
+                                Рубли
+                            </option>
+                            <option value="USD" <?php echo((get_option('robokassa_out_currency') == 'USD') ? ' selected' : ''); ?>>
+                                Доллары
+                            </option>
+                            <option value="EUR" <?php echo((get_option('robokassa_out_currency') == 'EUR') ? ' selected' : ''); ?>>
+                                Евро
+                            </option>
+                            <option value="KZT" <?php echo((get_option('robokassa_out_currency') == 'KZT') ? ' selected' : ''); ?>>
+                                Тенге
+                            </option>
+                        </select>
+                    </td>
+                </tr>
 
                 <tr valign="top">
                     <th scope="row">Идентификатор магазина</th>
                     <td><input type="text" name="robokassa_payment_MerchantLogin" value="<?php
-                        if (empty($data['shopId'])){
+                        if (empty($data['shopId'])) {
                             echo get_option('robokassa_payment_MerchantLogin');
                         } else {
                             echo $data['shopId'];
@@ -203,7 +198,7 @@ if(!\current_user_can('activate_plugins'))
                 <tr valign="top">
                     <th scope="row">Пароль магазина #1</th>
                     <td><input type="password" name="robokassa_payment_shoppass1" value="<?php
-                        if (empty($data['key_1'])){
+                        if (empty($data['key_1'])) {
                             echo get_option('robokassa_payment_shoppass1');
                         } else {
                             echo $data['key_1'];
@@ -214,7 +209,7 @@ if(!\current_user_can('activate_plugins'))
                 <tr valign="top">
                     <th scope="row">Пароль магазина #2</th>
                     <td><input type="password" name="robokassa_payment_shoppass2" value="<?php
-                        if (empty($data['key_2'])){
+                        if (empty($data['key_2'])) {
                             echo get_option('robokassa_payment_shoppass2');
                         } else {
                             echo $data['key_2'];
@@ -226,9 +221,10 @@ if(!\current_user_can('activate_plugins'))
                     <th scope="row">Язык интерфейса робокассы</th>
                     <td>
                         <select name="robokassa_culture">
-                            <?php foreach(\Robokassa\Payment\Helper::$culture as $culture):?>
-                                <option<?php if(get_option('robokassa_culture') == $culture['code']):?> selected="selected"<?php endif;?> value="<?=$culture['code'];?>"><?=$culture['title'];?></option>
-                            <?php endforeach;?>
+                            <?php foreach (\Robokassa\Payment\Helper::$culture as $culture): ?>
+                                <option<?php if (get_option('robokassa_culture') == $culture['code']): ?> selected="selected"<?php endif; ?>
+                                        value="<?= $culture['code']; ?>"><?= $culture['title']; ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </td>
                 </tr>
@@ -236,14 +232,14 @@ if(!\current_user_can('activate_plugins'))
                     <th scope="row">Включить iframe</th>
                     <td>
                         <select name="robokassa_iframe">
-                            <?php if(get_option('robokassa_iframe') == 1){ ?>
+                            <?php if (get_option('robokassa_iframe') == 1) { ?>
                                 <option selected="selected" value="1">Включено</option>
                                 <option value="0">Отключено</option>
-                            <?php }else{ ?>
+                            <?php } else { ?>
                                 <option value="1">Включено</option>
                                 <option selected="selected" value="0">Отключено</option>
-                            <?php }	?>
-                        </select><br />
+                            <?php } ?>
+                        </select><br/>
                         <span class="text-description">При включённом iframe, способов оплаты меньше, чем в обычной платежной странице - только карты, Apple и Samsung pay, Qiwi. incurlabel работает, но ограничено.<span>
                     </td>
                 </tr>
@@ -270,13 +266,15 @@ if(!\current_user_can('activate_plugins'))
 
                     <tr valign="top">
                         <th scope="row">Пароль магазина для тестов #1</th>
-                        <td><input type="password" name="robokassa_payment_testshoppass1" value="<?php echo get_option('robokassa_payment_testshoppass1'); ?>"/>
+                        <td><input type="password" name="robokassa_payment_testshoppass1"
+                                   value="<?php echo get_option('robokassa_payment_testshoppass1'); ?>"/>
                         </td>
                     </tr>
 
                     <tr valign="top">
                         <th scope="row">Пароль магазина для тестов #2</th>
-                        <td><input type="password" name="robokassa_payment_testshoppass2" value="<?php echo get_option('robokassa_payment_testshoppass2'); ?>"/>
+                        <td><input type="password" name="robokassa_payment_testshoppass2"
+                                   value="<?php echo get_option('robokassa_payment_testshoppass2'); ?>"/>
                         </td>
                     </tr>
                 </table>
@@ -292,10 +290,12 @@ if(!\current_user_can('activate_plugins'))
                         <th scope="row">Система налогообложения</th>
                         <td>
                             <select id="sno_select" name="robokassa_payment_sno" onchange="spoleer();">
-                                <option value="fckoff" <?php echo((get_option('robokassa_payment_sno') == 'fckoff') ? ' selected' : ''); ?>>Не
+                                <option value="fckoff" <?php echo((get_option('robokassa_payment_sno') == 'fckoff') ? ' selected' : ''); ?>>
+                                    Не
                                     передавать
                                 </option>
-                                <option value="osn" <?php echo((get_option('robokassa_payment_sno') == 'osn') ? ' selected' : ''); ?>>Общая
+                                <option value="osn" <?php echo((get_option('robokassa_payment_sno') == 'osn') ? ' selected' : ''); ?>>
+                                    Общая
                                     СН
                                 </option>
                                 <option value="usn_income" <?php echo((get_option('robokassa_payment_sno') == 'usn_income') ? ' selected'
@@ -304,10 +304,12 @@ if(!\current_user_can('activate_plugins'))
                                 <option value="usn_income_outcome" <?php echo((get_option('robokassa_payment_sno') == 'usn_income_outcome')
                                     ? ' selected' : ''); ?>>Упрощенная СН (доходы минус расходы)
                                 </option>
-                                <option value="envd" <?php echo((get_option('robokassa_payment_sno') == 'envd') ? ' selected' : ''); ?>>Единый
+                                <option value="envd" <?php echo((get_option('robokassa_payment_sno') == 'envd') ? ' selected' : ''); ?>>
+                                    Единый
                                     налог на вмененный доход
                                 </option>
-                                <option value="esn" <?php echo((get_option('robokassa_payment_sno') == 'esn') ? ' selected' : ''); ?>>Единый
+                                <option value="esn" <?php echo((get_option('robokassa_payment_sno') == 'esn') ? ' selected' : ''); ?>>
+                                    Единый
                                     сельскохозяйственный налог
                                 </option>
                                 <option value="patent" <?php echo((get_option('robokassa_payment_sno') == 'patent') ? ' selected' : ''); ?>>
@@ -320,22 +322,27 @@ if(!\current_user_can('activate_plugins'))
                     <tr valign="top" id="payment_method">
                         <th scope="row">Признак способа расчёта</th>
                         <td>
-                            <select id="payment_method_select" name="robokassa_payment_paymentMethod" onchange="spoleer();">
+                            <select id="payment_method_select" name="robokassa_payment_paymentMethod"
+                                    onchange="spoleer();">
                                 <option value="">Не выбрано</option>
-                                <?php foreach(\Robokassa\Payment\Helper::$paymentMethods as $paymentMethod):?>
-                                    <option <?php if(\get_option('robokassa_payment_paymentMethod') === $paymentMethod['code']):?> selected="selected"<?php endif;?> value="<?php echo $paymentMethod['code'];?>"><?php echo $paymentMethod['title'];?></option>
-                                <?php endforeach;?>
+                                <?php foreach (\Robokassa\Payment\Helper::$paymentMethods as $paymentMethod): ?>
+                                    <option <?php if (\get_option('robokassa_payment_paymentMethod') === $paymentMethod['code']): ?> selected="selected"<?php endif; ?>
+                                            value="<?php echo $paymentMethod['code']; ?>"><?php echo $paymentMethod['title']; ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </td>
                     </tr>
                     <tr valign="top" id="payment_object">
                         <th scope="row">Признак предмета расчёта</th>
                         <td>
-                            <select id="payment_object_select" name="robokassa_payment_paymentObject" onchange="spoleer();">
+                            <select id="payment_object_select" name="robokassa_payment_paymentObject"
+                                    onchange="spoleer();">
                                 <option value="">Не выбрано</option>
-                                <?php foreach(\Robokassa\Payment\Helper::$paymentObjects as $paymentObject):?>
-                                    <option <?php if(\get_option('robokassa_payment_paymentObject') === $paymentObject['code']):?> selected="selected"<?php endif;?>value="<?php echo $paymentObject['code'];?>"><?php echo $paymentObject['title'];?></option>
-                                <?php endforeach;?>
+                                <?php foreach (\Robokassa\Payment\Helper::$paymentObjects as $paymentObject): ?>
+                                    <option <?php if (\get_option('robokassa_payment_paymentObject') === $paymentObject['code']): ?>
+                                            selected="selected"
+                                            <?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </td>
                     </tr>
@@ -344,30 +351,48 @@ if(!\current_user_can('activate_plugins'))
                         <th scope="row">Налоговая ставка</th>
                         <td>
                             <select id="tax_select" name="robokassa_payment_tax" onchange="spoleer();">
-                                <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Не передавать</option>
-                                <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Без НДС</option>
-                                <option value="vat0" <?php echo((get_option('robokassa_payment_tax') == 'vat0') ? ' selected' : ''); ?>>НДС по ставке 0%</option>
-                                <option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>НДС чека по ставке 10%</option>
-                                <option value="vat20" <?php echo((get_option('robokassa_payment_tax') == 'vat20') ? ' selected' : ''); ?>>НДС чека по ставке 20%</option>
-                                <option value="vat110" <?php echo((get_option('robokassa_payment_tax') == 'vat110') ? ' selected' : ''); ?>>НДС чека по расчетной ставке 10/110</option>
-                                <option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat120') ? ' selected' : ''); ?>>НДС чека по расчетной ставке 20/120</option>
-                                <option value="vat8" <?php echo((get_option('robokassa_payment_tax') == 'vat8') ? ' selected' : ''); ?>>НДС чека по ставке 8% (Казахстан)</option>
-                                <option value="vat12" <?php echo((get_option('robokassa_payment_tax') == 'vat12') ? ' selected' : ''); ?>>НДС чека по ставке 12% (Казахстан)</option>
+                                <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>
+                                    Не передавать
+                                </option>
+                                <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>
+                                    Без НДС
+                                </option>
+                                <option value="vat0" <?php echo((get_option('robokassa_payment_tax') == 'vat0') ? ' selected' : ''); ?>>
+                                    НДС по ставке 0%
+                                </option>
+                                <option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>
+                                    НДС чека по ставке 10%
+                                </option>
+                                <option value="vat20" <?php echo((get_option('robokassa_payment_tax') == 'vat20') ? ' selected' : ''); ?>>
+                                    НДС чека по ставке 20%
+                                </option>
+                                <option value="vat110" <?php echo((get_option('robokassa_payment_tax') == 'vat110') ? ' selected' : ''); ?>>
+                                    НДС чека по расчетной ставке 10/110
+                                </option>
+                                <option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat120') ? ' selected' : ''); ?>>
+                                    НДС чека по расчетной ставке 20/120
+                                </option>
+                                <option value="vat8" <?php echo((get_option('robokassa_payment_tax') == 'vat8') ? ' selected' : ''); ?>>
+                                    НДС чека по ставке 8% (Казахстан)
+                                </option>
+                                <option value="vat12" <?php echo((get_option('robokassa_payment_tax') == 'vat12') ? ' selected' : ''); ?>>
+                                    НДС чека по ставке 12% (Казахстан)
+                                </option>
                             </select>
                         </td>
                     </tr>
 
-                    <tr valign="top" id="payment-method-rk">
+                    <!--                    <tr valign="top" id="payment-method-rk">
                         <th scope="row">Выбор способа оплаты</th>
                         <td>
                             <input type="radio" id="robopaytype" name="robokassa_payment_paytype"
-                                   value="false" <?php echo get_option('robokassa_payment_paytype') == 'false' ? 'checked="checked"' : ''; ?>><label
+                                   value="false" <?php /*echo get_option('robokassa_payment_paytype') == 'false' ? 'checked="checked"' : ''; */ ?>><label
                                     for="robopaytype">В Робокассе</label>
                             <input type="radio" id="shoppaytype" name="robokassa_payment_paytype"
-                                   value="true" <?php echo get_option('robokassa_payment_paytype') == 'true' ? 'checked="checked"'
-                                : ''; ?>><label for="shoppaytype">В магазине</label>
+                                   value="true" <?php /*echo get_option('robokassa_payment_paytype') == 'true' ? 'checked="checked"'
+                                : ''; */ ?>><label for="shoppaytype">В магазине</label>
                         </td>
-                    </tr>
+                    </tr>-->
 
                     <tr valign="top">
                         <th scope="row">Страница успеха платежа</th>
@@ -383,11 +408,11 @@ if(!\current_user_can('activate_plugins'))
                                 if (get_pages()) {
                                     foreach (get_pages() as $page) {
                                         $selected = ($page->ID == get_option('robokassa_payment_SuccessURL')) ? ' selected' : '';
-                                        echo '<option value="'.$page->ID.'"'.$selected.'>'.$page->post_title.'</option>';
+                                        echo '<option value="' . $page->ID . '"' . $selected . '>' . $page->post_title . '</option>';
                                     }
                                 }
                                 ?>
-                            </select><br />
+                            </select><br/>
                             <span class="text-description">Эту страницу увидит покупатель, когда оплатит заказ<span>
                         </td>
                     </tr>
@@ -406,11 +431,11 @@ if(!\current_user_can('activate_plugins'))
                                 if ($pages = get_pages()) {
                                     foreach ($pages as $page) {
                                         $selected = ($page->ID == get_option('robokassa_payment_FailURL')) ? ' selected' : '';
-                                        echo '<option value="'.$page->ID.'"'.$selected.'>'.$page->post_title.'</option>';
+                                        echo '<option value="' . $page->ID . '"' . $selected . '>' . $page->post_title . '</option>';
                                     }
                                 }
                                 ?>
-                            </select><br />
+                            </select><br/>
                             <span class="text-description">Эту страницу увидит покупатель, если что-то пойдет не так: например, если ему не хватит денег на карте<span>
                         </td>
                     </tr>
@@ -418,8 +443,75 @@ if(!\current_user_can('activate_plugins'))
                 </table>
             </div>
 
+            <div class="podeli" id="podeli">
+                <p class="mid_title_rb">Настройка оплаты частями через сервис <a
+                            href="https://robokassa.com/offers/podeli.php">"Подели"</a></p>
+
+                <a class="spoiler_links button">Показать/скрыть</a>
+
+                <div class="spoiler_body">
+                    <table class="form-table">
+                        <tr valign="top">
+                            <th scope="row">Включить оплату частям через сервис Подели</th>
+                            <td>
+                                <select name="robokassa_podeli">
+                                    <?php if (get_option('robokassa_podeli') == 1) { ?>
+                                        <option selected="selected" value="1">Включено</option>
+                                        <option value="0">Отключено</option>
+                                    <?php } else { ?>
+                                        <option value="1">Включено</option>
+                                        <option selected="selected" value="0">Отключено</option>
+                                    <?php } ?>
+                                </select><br/>
+                                <span class="text-description">Данный метод оплаты доступен только по дополнительному согласованию.<span>
+                                    <br>Минимальная сумма оплаты - 300 руб, максимальная - 30000 руб.
+                            </td>
+                        </tr>
+                        <!--                    <tr valign="top">
+                        <th scope="row">Заголовок на странице оформления заказа</th>
+                        <td>
+                            <input type="text" name="RobokassaOrderPageTitle_Podeli" value="<?php /*echo get_option('RobokassaOrderPageTitle_Podeli'); */ ?>"/>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Описание на странице оформления заказа</th>
+                        <td>
+                            <input type="text" name="RobokassaOrderPageDescription_Podeli" value="<?php /*echo get_option('RobokassaOrderPageDescription_Podeli'); */ ?>"/>
+                        </td>
+                    </tr>-->
+                        <tr valign="top">
+                            <th scope="row">Включить виджет корзины и страницы продукта</th>
+                            <td>
+                                <input type="radio" id="podeli_widget_on" name="robokassa_payment_podeli_widget_onoff"
+                                       value="true"
+                                    <?php echo (get_option('robokassa_payment_podeli_widget_onoff', 'true') == 'true') ? 'checked="checked"' : ''; ?>>
+                                <label for="podeli_widget_on">Включен</label>
+
+                                <input type="radio" id="podeli_widget_off" name="robokassa_payment_podeli_widget_onoff"
+                                       value="false"
+                                    <?php echo get_option('robokassa_payment_podeli_widget_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
+                                <label for="podeli_widget_on">Выключен</label>
+                            </td>
+                        </tr>
+                        <tr valign="top">
+                            <th scope="row">Оформление виджета</th>
+                            <td>
+                                <select id="robokassa_podeli_widget_style" name="robokassa_podeli_widget_style">
+                                    <option value="0" <?php echo((get_option("robokassa_podeli_widget_style") == "0") ? "selected" : ""); ?>>
+                                        Выбор оплаты частями в корзине
+                                    </option>
+                                    <option value="1" <?php echo((get_option("robokassa_podeli_widget_style") == "1") ? "selected" : ""); ?>>
+                                        Переход на оформление заказа
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
             <input type="hidden" name="action" value="update"/>
-            <input type="hidden" name="page_options" value="<?php echo \implode(',', $formProperties);?>"/>
+            <input type="hidden" name="page_options" value="<?php echo \implode(',', $formProperties); ?>"/>
 
             <p class="submit">
                 <input type="submit" class="button-primary" value="<?php _e('Save Changes') ?>"/>
@@ -427,3 +519,5 @@ if(!\current_user_can('activate_plugins'))
 
         </form>
     </div>
+</div>
+
