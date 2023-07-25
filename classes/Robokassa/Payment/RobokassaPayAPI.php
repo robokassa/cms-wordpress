@@ -101,35 +101,35 @@ class RobokassaPayAPI {
     private function getSignatureString($sum, $invId, $receiptJson)
     {
 
-    	/** @var null|string $outCurrency */
-    	$outCurrency = null;
+        /** @var null|string $outCurrency */
+        $outCurrency = null;
 
-	    if(
-		    mb_strlen(get_option('robokassa_out_currency')) > 0
-		    && !(
-			    get_option('robokassa_country_code') == 'KZ'
-			    && get_option('robokassa_out_currency') == 'KZT'
-		    )
-	    )
-	        $outCurrency = get_option('robokassa_out_currency');
+        if(
+            mb_strlen(get_option('robokassa_out_currency')) > 0
+            && !(
+                get_option('robokassa_country_code') == 'KZ'
+                && get_option('robokassa_out_currency') == 'KZT'
+            )
+        )
+            $outCurrency = get_option('robokassa_out_currency');
 
         return \implode(
-        	':',
+            ':',
             \array_diff(
-	            array(
-	                $this->mrh_login,
-	                $sum,
-	                $invId,
-		            $outCurrency,
-	                $receiptJson,
-	                $this->mrh_pass1,
-	                'shp_label=official_wordpress',
-	            ),
-	            array(
-	            	false,
-		            '',
-		            null
-	            )
+                array(
+                    $this->mrh_login,
+                    $sum,
+                    $invId,
+                    $outCurrency,
+                    $receiptJson,
+                    $this->mrh_pass1,
+                    'shp_label=official_wordpress',
+                ),
+                array(
+                    false,
+                    '',
+                    null
+                )
             )
         );
     }
@@ -176,8 +176,8 @@ class RobokassaPayAPI {
         $receipt = null,
         $email = null
     ) {
-	    
-	$kzUrl = 'https://auth.robokassa.kz/Merchant/Index.aspx';
+
+        $kzUrl = 'https://auth.robokassa.kz/Merchant/Index.aspx';
         $ruUrl = 'https://auth.robokassa.ru/Merchant/Index.aspx';
 
         if (get_option('robokassa_country_code') == "RU")
@@ -186,12 +186,12 @@ class RobokassaPayAPI {
             $paymentUrl = $kzUrl;
 
 
-	    $receiptJson = (!empty($receipt) && \is_array($receipt))
-	        ? \urlencode(\json_encode($receipt, 256))
-		    : null;
+        $receiptJson = (!empty($receipt) && \is_array($receipt))
+            ? \urlencode(\json_encode($receipt, 256))
+            : null;
 
         $formData = array(
-            'Encoding' => 'utf-8',
+            //'Encoding' => 'utf-8',
             'MrchLogin' => $this->mrh_login,
             'OutSum' => $sum,
             'InvId' => $invId,
@@ -200,19 +200,20 @@ class RobokassaPayAPI {
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
 
-	    if(
-	        mb_strlen(get_option('robokassa_out_currency')) > 0
-	        && !(
-	        	get_option('robokassa_country_code') == 'KZ'
-		        && get_option('robokassa_out_currency') == 'KZT'
-	        )
-	    )
-	    {
-	    	$formData['OutSumCurrency'] = get_option('robokassa_out_currency');
-	    }
+        if(
+            mb_strlen(get_option('robokassa_out_currency')) > 0
+            && !(
+                get_option('robokassa_country_code') == 'KZ'
+                && get_option('robokassa_out_currency') == 'KZT'
+            )
+        )
+        {
+            $formData['OutSumCurrency'] = get_option('robokassa_out_currency');
+        }
 
         if($email !== null)
             $formData['Email'] = $email;
+
 
         $culture = get_option('robokassa_culture');
         if($culture !== Helper::CULTURE_AUTO)
@@ -252,39 +253,58 @@ class RobokassaPayAPI {
      *
      * @return string
      */
-    private function renderForm($formUrl, array $formData) {		
-		
-		if (get_option('robokassa_iframe')) {
-			unset($formData['IsTest']);
-			
-	    $kzIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.kz/Merchant/bundle/robokassa_iframe.js\"></script>";
+    private function renderForm($formUrl, array $formData) {
+
+        if (get_option('robokassa_iframe') && $formData['IncCurrLabel'] != 'Podeli') {
+
+            $kzIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.kz/Merchant/bundle/robokassa_iframe.js\"></script>";
             $ruIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
-			
-	    if (get_option('robokassa_country_code') == "RU")
+
+            if (get_option('robokassa_country_code') == "RU")
                 $iframeUrl = $ruIframe;
             elseif(get_option('robokassa_country_code') == "KZ")
                 $iframeUrl = $kzIframe;
-			
-			$params = '';
-			$lastParam = end($formData);
-						
-			foreach ($formData as $inputName => $inputValue){
-				if($inputName != 'IsTest'){
-					$value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
-					
-					if($lastParam == $inputValue){
-						$params .= $inputName . ": '" . $value . "'";
-					}else{
-						$params .= $inputName . ": '" . $value . "', ";
-					}
-				}
-			}
-			
-			$form = $iframeUrl;
-			$form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
-			$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
-		} else {
-			$form = '<div class="preloader">
+
+            $params = '';
+            $lastParam = end($formData);
+
+            foreach ($formData as $inputName => $inputValue){
+                if($inputName != 'IsTest'){
+                    $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+
+                    if($lastParam == $inputValue){
+                        $params .= $inputName . ": '" . $value . "'";
+                    }else{
+                        $params .= $inputName . ": '" . $value . "', ";
+                    }
+                }
+            }
+
+            $form = $iframeUrl;
+            $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
+            $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
+        }
+        elseif (get_option('robokassa_podeli') && $formData['IncCurrLabel'] == 'Podeli' ) {
+
+            $params = '';
+            $lastParam = end($formData);
+
+            foreach ($formData as $inputName => $inputValue){
+                if($inputName != 'IsTest'){
+                    $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+
+                    if($lastParam == $inputValue){
+                        $params .= $inputName . ": '" . $value . "'";
+                    }else{
+                        $params .= $inputName . ": '" . $value . "', ";
+                    }
+                }
+            }
+            $form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/PaymentForm/DirectPayment.js\"></script>";
+            $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robo.directPayment.startOp({" . $params . "})\" value=\"Оплатить\">";
+            $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
+        } else {
+            $form = '<div class="preloader">
 			  <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 				<path fill="currentColor"
 				  d="M304 48c0 26.51-21.49 48-48 48s-48-21.49-48-48 21.49-48 48-48 48 21.49 48 48zm-48 368c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm208-208c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zM96 256c0-26.51-21.49-48-48-48S0 229.49 0 256s21.49 48 48 48 48-21.49 48-48zm12.922 99.078c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.491-48-48-48zm294.156 0c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.49-48-48-48zM108.922 60.922c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.491-48-48-48z">
@@ -340,30 +360,30 @@ class RobokassaPayAPI {
 				}, 1000);
 			  }
 			</script>';
-			$form .= "<form action=\"$formUrl\" method=\"POST\">";
+            $form .= "<form action=\"$formUrl\" method=\"POST\">";
 
-			foreach ($formData as $inputName => $inputValue) {
-				$value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+            foreach ($formData as $inputName => $inputValue) {
+                $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
 
-				$form .= "<input type=\"hidden\" name=\"$inputName\" value=\"$value\">";
-			}
-			
-			$form .= "<input id=\"robokassa\"  type=\"submit\" value=\"Оплатить\"></form>";
-			$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
-		}
-		
-		return $form;
+                $form .= "<input type=\"hidden\" name=\"$inputName\" value=\"$value\">";
+            }
+
+            $form .= "<input id=\"robokassa\"  type=\"submit\" value=\"Оплатить\"></form>";
+            $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
+        }
+
+        return $form;
     }
 
-	/**
-	 * Отправляет СМС с помощью GET-запроса на робокассу
-	 *
-	 * @param string $phone
-	 * @param string $message
-	 *
-	 * @return bool
-	 * @throws \Exception
-	 */
+    /**
+     * Отправляет СМС с помощью GET-запроса на робокассу
+     *
+     * @param string $phone
+     * @param string $message
+     *
+     * @return bool
+     * @throws \Exception
+     */
     public function sendSms($phone, $message) {
         $data = array(
             'login' => $this->mrh_login,
@@ -403,10 +423,10 @@ class RobokassaPayAPI {
         ));
 
         if($parsed['OutSum'] != 0){
-			return abs(round(($sum - $parsed['OutSum']) / $parsed['OutSum'] * 100));
-		}else{
-			return $sum;
-		}
+            return abs(round(($sum - $parsed['OutSum']) / $parsed['OutSum'] * 100));
+        }else{
+            return $sum;
+        }
     }
 
     /**
@@ -439,29 +459,29 @@ class RobokassaPayAPI {
         ));
 
         $outArr = array();
-		if(isset($parsed['Groups']))
-		{
-			foreach ($parsed['Groups']['Group'] as $value) {
-				foreach ($value['Items']['Currency'] as $value2) {
-					if (isset($value2['@attributes'])) {
-						$attr = $value2['@attributes'];
+        if(isset($parsed['Groups']))
+        {
+            foreach ($parsed['Groups']['Group'] as $value) {
+                foreach ($value['Items']['Currency'] as $value2) {
+                    if (isset($value2['@attributes'])) {
+                        $attr = $value2['@attributes'];
 
-						if ($attr['Name']) {
-							$valLabel = $attr['Label'];
+                        if ($attr['Name']) {
+                            $valLabel = $attr['Label'];
 
-							$outArr[$valLabel] = array(
-								'Name' => $attr['Name'],
-								'Label' => $valLabel,
-								'Alias' => $attr['Alias'],
-								'Commission' => $this->GetCommission($valLabel),
-								'MinValue' => isset($attr['MinValue']) ? $attr['MinValue'] : 0,
-								'MaxValue' => isset($attr['MaxValue']) ? $attr['MaxValue'] : 9999999,
-							);
-						}
-					}
-				}
-			}
-		}
+                            $outArr[$valLabel] = array(
+                                'Name' => $attr['Name'],
+                                'Label' => $valLabel,
+                                'Alias' => $attr['Alias'],
+                                'Commission' => $this->GetCommission($valLabel),
+                                'MinValue' => isset($attr['MinValue']) ? $attr['MinValue'] : 0,
+                                'MaxValue' => isset($attr['MaxValue']) ? $attr['MaxValue'] : 9999999,
+                            );
+                        }
+                    }
+                }
+            }
+        }
 
         return $outArr;
     }

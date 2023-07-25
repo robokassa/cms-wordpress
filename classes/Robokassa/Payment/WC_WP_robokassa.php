@@ -48,7 +48,7 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 
 	    $this->description = \mb_strlen(get_option('RobokassaOrderPageDescription_' . $this->id, null)) > 0
 		    ? get_option('RobokassaOrderPageDescription_' . $this->id, null)
-		    : $this->title
+		    : $this->description
 	    ;
 
         $this->init_form_fields();
