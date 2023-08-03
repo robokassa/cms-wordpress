@@ -79,13 +79,13 @@ function podeli_product_widget()
         } else {
             echo '
 <div class="wiget-block-wrapper">
-  <div class="wiget-block-v2">
+  <div id="openModal" class="wiget-block-v2" id="openModal">
     <div class="wiget-head-v2">
       <div class="wiget-head-v2__text">
         <span class="text__payment"> ' . $price / 4 . ' ₽ </span>
         <span class="text__payment-length"> х 4 платежа </span>
       </div>
-      <div id="openModal" class="wiget-head-v2__button"> Оплатить 25% </div>
+      <div class="wiget-head-v2__button"> Оплатить 25% </div>
     </div>
     <div class="wiget-block-split">
       <div class="wiget-block-split__item">
@@ -371,5 +371,3 @@ add_filter('woocommerce_available_payment_gateways', 'select_payment_method');
 
 add_action('woocommerce_single_product_summary', 'podeli_product_widget', 25);
 add_action('woocommerce_proceed_to_checkout', 'podeli_cart_widget');
-
-
