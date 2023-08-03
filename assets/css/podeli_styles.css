@@ -201,6 +201,7 @@
     border: 1px solid #000000;
     box-sizing: border-box;
     margin-bottom: 20px;
+    cursor: pointer;
 }
 
 .wiget-head-v2 {
