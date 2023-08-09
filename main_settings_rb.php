@@ -444,7 +444,7 @@ if (!\current_user_can('activate_plugins')) {
             </div>
 
             <div class="podeli" id="podeli">
-                <p class="mid_title_rb">Настройка оплаты частями через сервис <a
+                <p class="mid_title_rb">Настройка оплаты по частям через сервис <a
                             href="https://robokassa.com/offers/podeli.php">"Подели"</a></p>
 
                 <a class="spoiler_links button">Показать/скрыть</a>
@@ -452,7 +452,7 @@ if (!\current_user_can('activate_plugins')) {
                 <div class="spoiler_body">
                     <table class="form-table">
                         <tr valign="top">
-                            <th scope="row">Включить оплату частям через сервис Подели</th>
+                            <th scope="row">Включить способ оплаты по частям "Подели"</th>
                             <td>
                                 <select name="robokassa_podeli">
                                     <?php if (get_option('robokassa_podeli') == 1) { ?>
@@ -463,8 +463,9 @@ if (!\current_user_can('activate_plugins')) {
                                         <option selected="selected" value="0">Отключено</option>
                                     <?php } ?>
                                 </select><br/>
-                                <span class="text-description">Данный метод оплаты доступен только по дополнительному согласованию.<span>
-                                    <br>Минимальная сумма оплаты - 300 руб, максимальная - 30000 руб.
+                                <span class="text-description">1. Пункт «Включено» добавляет отображение способа оплаты через «Подели» на вашем сайте с помощью виджета.<span>
+                                        <br>2. Оплата проходит минуя платежную страницу Robokassa и отправляет покупателя сразу на процесс «Подели».
+                                        <br>3. Минимальная сумма для оплаты через «Подели» — 300 руб., максимальная 30.000 руб.
                             </td>
                         </tr>
                         <!--                    <tr valign="top">
@@ -480,7 +481,7 @@ if (!\current_user_can('activate_plugins')) {
                         </td>
                     </tr>-->
                         <tr valign="top">
-                            <th scope="row">Включить виджет корзины и страницы продукта</th>
+                            <th scope="row">Включить виджет</th>
                             <td>
                                 <input type="radio" id="podeli_widget_on" name="robokassa_payment_podeli_widget_onoff"
                                        value="true"
@@ -490,13 +491,14 @@ if (!\current_user_can('activate_plugins')) {
                                 <input type="radio" id="podeli_widget_off" name="robokassa_payment_podeli_widget_onoff"
                                        value="false"
                                     <?php echo get_option('robokassa_payment_podeli_widget_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
-                                <label for="podeli_widget_on">Выключен</label>
+                                <label for="podeli_widget_on">Выключен</label><br>
+                                <span class="text-description">После включения виджета покупатели увидят возможность оплатить частями в корзине и в карточке товара<span>
                             </td>
                         </tr>
                         <tr valign="top">
-                            <th scope="row">Оформление виджета</th>
+                            <th scope="row">Выбрать оформление виджета</th>
                             <td>
-                                <select id="robokassa_podeli_widget_style" name="robokassa_podeli_widget_style">
+                                <select id="robokassa_podeli_widget_style" name="robokassa_podeli_widget_style" onchange="updateDescription()">
                                     <option value="0" <?php echo((get_option("robokassa_podeli_widget_style") == "0") ? "selected" : ""); ?>>
                                         Выбор оплаты частями в корзине
                                     </option>
@@ -504,6 +506,20 @@ if (!\current_user_can('activate_plugins')) {
                                         Переход на оформление заказа
                                     </option>
                                 </select>
+                                <br>
+                                <span class="text-description" id="description">
+            <?php
+            if (get_option("robokassa_podeli_widget_style") == "0") {
+                echo 'В виджете будет доступно:<br>
+                - упрощенная версия виджета для карточки товара с графиком платежей, но без кнопки «Оплатить»;<br>
+                - развернутая версия виджета для корзины.';
+            } elseif (get_option("robokassa_podeli_widget_style") == "1") {
+                echo 'В виджете будет доступно:<br>
+                - развернутая версия виджета для карточки товара с графиком платежей и кнопкой «Оплатить»;<br>
+                - развернутая версия виджета для корзины.';
+            }
+            ?>
+        </span>
                             </td>
                         </tr>
                     </table>
