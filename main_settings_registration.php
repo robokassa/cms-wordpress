@@ -3,12 +3,12 @@
 if(!\current_user_can('activate_plugins'))
 {
 
-	echo '<br /><br />
+    echo '<br /><br />
 				<div class="error notice">
 	                <p>У Вас не хватает прав на настройку компонента</p>
 				</div>
 			';
-	return;
+    return;
 }
 
 ?>

@@ -5,10 +5,10 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.5.0
+ * Version: 1.5.5
  */
 
-require_once('podeli-widget.php');
+require_once('payment-widget.php');
 
 use Robokassa\Payment\RoboDataBase;
 use Robokassa\Payment\RobokassaPayAPI;
@@ -28,11 +28,11 @@ add_action('wp_enqueue_scripts', function () {
 
     \wp_enqueue_style(
         'robokassa_payment_podeli',
-        \plugin_dir_url(__FILE__) . 'assets/css/podeli_styles.css'
+        \plugin_dir_url(__FILE__) . 'assets/css/payment_styles.css'
     );
     \wp_enqueue_script(
         'robokassa_payment_admin_config',
-        \plugin_dir_url(__FILE__) . 'assets/js/podeli_widget.js'
+        \plugin_dir_url(__FILE__) . 'assets/js/payment_widget.js'
     );
 });
 
@@ -94,14 +94,9 @@ add_action('plugins_loaded', 'robokassa_payment_initWC'); // Хук инициа
 add_action('parse_request', 'robokassa_payment_wp_robokassa_checkPayment'); // Хук парсера запросов
 add_action('parse_request', 'robokassa_payment_robomarketRequest'); // Хук парсера запросов RoboMarket
 add_action('woocommerce_order_status_completed', 'robokassa_payment_smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
-add_filter('cron_schedules', 'robokassa_payment_labelsCron'); // Добавляем CRON-период в 30 минут
-add_action('robokassaCRON1', 'robokassa_payment_getCurrLabels'); // Хук для CRONа. Обновление доступных способов оплаты.
 
 add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
 
-if (!wp_next_scheduled('robokassaCRON1')) {
-    wp_schedule_event(time(), 'halfHour', 'robokassaCRON1');
-}
 
 register_activation_hook(__FILE__, 'robokassa_payment_wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
 
@@ -177,10 +172,10 @@ function robokassa_payment_wp_robokassa_activate($debug)
 
     $dbPrefix = \robokassa_payment_getDbPrefix();
 
-    $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
+    /*    $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
 
-    $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}sms_stats` (`sms_id` int(10) unsigned NOT NULL AUTO_INCREMENT, `order_id` int(11) NOT NULL, `type` int(1) NOT NULL, `status` int(11) NOT NULL DEFAULT '0', `number` varchar(11) NOT NULL, `text` text NOT NULL, `send_time` datetime DEFAULT NULL, `response` text, `reply` text, PRIMARY KEY (`sms_id`), KEY `order_id` (`order_id`), KEY `status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
-    $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}robomarket_orders` (`post_id` int(11) NOT NULL COMMENT 'Id поста, он же id заказа', `other_id` int(11) NOT NULL COMMENT 'Id на стороне робомаркета', PRIMARY KEY (`post_id`,`other_id`), UNIQUE KEY `other_id` (`other_id`), UNIQUE KEY `post_id` (`post_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+        $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}sms_stats` (`sms_id` int(10) unsigned NOT NULL AUTO_INCREMENT, `order_id` int(11) NOT NULL, `type` int(1) NOT NULL, `status` int(11) NOT NULL DEFAULT '0', `number` varchar(11) NOT NULL, `text` text NOT NULL, `send_time` datetime DEFAULT NULL, `response` text, `reply` text, PRIMARY KEY (`sms_id`), KEY `order_id` (`order_id`), KEY `status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
+        $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}robomarket_orders` (`post_id` int(11) NOT NULL COMMENT 'Id поста, он же id заказа', `other_id` int(11) NOT NULL COMMENT 'Id на стороне робомаркета', PRIMARY KEY (`post_id`,`other_id`), UNIQUE KEY `other_id` (`other_id`), UNIQUE KEY `post_id` (`post_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");*/
 
     add_option('robokassa_payment_wc_robokassa_enabled', 'no');
     add_option('robokassa_payment_test_onoff', 'false');
@@ -191,39 +186,6 @@ function robokassa_payment_wp_robokassa_activate($debug)
     add_option('robokassa_payment_paytype', 'false');
     add_option('robokassa_payment_SuccessURL', 'wc_success');
     add_option('robokassa_payment_FailURL', 'wc_checkout');
-}
-
-/**
- * @param $schedules
- *
- * @return mixed
- */
-function robokassa_payment_labelsCron($schedules)
-{
-    $schedules['halfHour'] = array(
-        'interval' => 30 * MINUTE_IN_SECONDS, // каждые 30 минут
-        'display' => __('Half hour'),
-    );
-
-    return $schedules;
-}
-
-/**
- * @param string $returned
- *
- * @return void
- */
-function robokassa_payment_cronLog($returned = 'success')
-{
-    $file = __DIR__ . '/data/CRONLog/log.txt';
-
-    if (ROBOKASSA_PAYMENT_DEBUG_STATUS) {
-        $cronTestFile = fopen($_SERVER['DOCUMENT_ROOT'] . $file, 'a+');
-
-        fwrite($cronTestFile, date('d.m.Y H:i:s') . " Worked succesfull! \r\n");
-        fwrite($cronTestFile, "Returned => $returned \r\n\r\n");
-        fclose($cronTestFile);
-    }
 }
 
 /**
@@ -245,6 +207,7 @@ function robokassa_payment_initMenu()
     add_submenu_page('main_settings_rb.php', 'Генерировать YML', 'Генерировать YML', 'edit_pages', 'robokassa_payment_YMLGenerator', 'robokassa_payment_yml_generator');
     add_submenu_page('main_settings_rb.php', 'Регистрация', 'Регистрация', 'edit_pages', 'robokassa_payment_registration', 'robokassa_payment_reg');
     add_submenu_page('main_settings_rb.php', 'Скачать оферту', 'Скачать оферту', 'edit_pages', 'robokassa_payment_offer', 'robokassa_payment_oferta');
+    add_submenu_page('main_settings_rb.php', 'Оплата по частям', 'Оплата по частям', 'edit_pages', 'robokassa_payment_credit', 'robokassa_payment_credit');
 }
 
 /**
@@ -710,6 +673,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 
     global $woocommerce;
     $cart = $woocommerce->cart->get_cart();
+    $taxes = $woocommerce->cart->get_cart_contents_tax();
 
     foreach ($cart as $item) {
 
@@ -718,7 +682,9 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $current['name'] = $product->get_title();
         $current['quantity'] = (float)$item['quantity'];
 
-        $current['cost'] = $item['line_total'] / $current['quantity'];
+        $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
+
+        $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
 
         if (get_option('robokassa_country_code') == 'KZ') {
         } else {
@@ -871,7 +837,17 @@ function robokassa_payment_reg()
 {
     $_GET['li'] = 'registration';
     include 'menu_rb.php';
-    include 'registration.php';
+    include 'main_settings_registration.php';
+}
+
+/**
+ * @return void
+ */
+function robokassa_payment_credit()
+{
+    $_GET['li'] = 'credit';
+    include 'menu_rb.php';
+    include 'main_settings_credit.php';
 }
 
 /**
@@ -881,7 +857,7 @@ function robokassa_payment_oferta()
 {
     $_GET['li'] = 'offer';
     include 'menu_rb.php';
-    include 'offer.php';
+    include 'main_settings_offer.php';
 }
 
 /**

@@ -5,7 +5,7 @@ function spoleer()
 	var sno = document.getElementById("sno_select");
 
 	if (e1.options[e1.selectedIndex].value === 'KZ') {
-		document.getElementById("podeli").style.display = 'none';
+		document.getElementById("robokassa_payment_credit").style.display = 'none';
 		document.getElementById("tax").style.display = 'table-row';
 		document.getElementById("sno").style.display = 'none';
 		document.getElementById("payment_method").style.display = 'none';
@@ -43,12 +43,12 @@ function updateDescription() {
 	var description = document.getElementById("description");
 
 	if (selectedValue === "0") {
-		description.innerText = "В виджете будет доступно:\n" +
-			"                - упрощенная версия виджета для карточки товара с графиком платежей, но без кнопки «Оплатить»;\n" +
-			"                - развернутая версия виджета для корзины";
+		description.innerText = "Доступны 2 варианта оформления виджета:\n" +
+			"                1. Упрощенная версия виджета для карточки товара с графиком платежей, но без кнопки «Оплатить»;\n" +
+			"                2. Развернутая версия виджета для корзины.";
 	} else if (selectedValue === "1") {
-		description.innerText = "В виджете будет доступно:\n" +
-			"                - развернутая версия виджета для карточки товара с графиком платежей и кнопкой «Оплатить»;\n" +
-			"                - развернутая версия виджета для корзины";
+		description.innerText = "Доступны 2 варианта оформления виджета:\n" +
+			"                1. Версия виджета для карточки товара с графиком платежей и кнопкой «Оплатить»;\n" +
+			"                2. Версия виджета для корзины.";
 	}
 }

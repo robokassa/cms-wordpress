@@ -8,8 +8,8 @@ function robokassa_payment_generateYML()
     $site_url = get_bloginfo('url');
     $cat_arr = array();
 
-	$robomarketYML = \plugin_dir_path(__FILE__) . 'data/robomarket_yml.php';
-	$robomarketYMLUrl = \plugin_dir_url(__FILE__) . 'data/robomarket_yml.php';
+    $robomarketYML = \plugin_dir_path(__FILE__) . 'data/robomarket_yml.php';
+    $robomarketYMLUrl = \plugin_dir_url(__FILE__) . 'data/robomarket_yml.php';
 
     //Получаем категории магазина для генерациии YML
     foreach (get_categories() as $value) {
@@ -22,11 +22,11 @@ function robokassa_payment_generateYML()
 
     //Получаем список продуктов для генерации YML
     $loop = new WP_Query(array(
-		'post_type' => 'product',
-		'posts_per_page' => 99999,
-		)
-	);
-    
+            'post_type' => 'product',
+            'posts_per_page' => 99999,
+        )
+    );
+
     $products = array();
 
     while ($loop->have_posts()) {

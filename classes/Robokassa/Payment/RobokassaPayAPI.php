@@ -255,7 +255,7 @@ class RobokassaPayAPI {
      */
     private function renderForm($formUrl, array $formData) {
 
-        if (get_option('robokassa_iframe') && $formData['IncCurrLabel'] != 'Podeli') {
+        if (get_option('robokassa_iframe') && $formData['IncCurrLabel'] != 'Podeli' && $formData['IncCurrLabel'] != 'AlwaysYes') {
 
             $kzIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.kz/Merchant/bundle/robokassa_iframe.js\"></script>";
             $ruIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
@@ -303,7 +303,27 @@ class RobokassaPayAPI {
             $form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/PaymentForm/DirectPayment.js\"></script>";
             $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robo.directPayment.startOp({" . $params . "})\" value=\"Оплатить\">";
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
-        } else {
+        }
+        elseif (get_option('robokassa_podeli') && $formData['IncCurrLabel'] == 'AlwaysYes' ) {
+
+            $params = '';
+            $lastParam = end($formData);
+
+            foreach ($formData as $inputName => $inputValue){
+                if($inputName != 'IsTest'){
+                    $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+
+                    if($lastParam == $inputValue){
+                        $params .= $inputName . ": '" . $value . "'";
+                    }else{
+                        $params .= $inputName . ": '" . $value . "', ";
+                    }
+                }
+            }
+            $form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/PaymentForm/DirectPayment.js\"></script>";
+            $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robo.directPayment.startOp({" . $params . "})\" value=\"Оплатить\">";
+            $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
+        }else {
             $form = '<div class="preloader">
 			  <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 				<path fill="currentColor"
@@ -452,38 +472,12 @@ class RobokassaPayAPI {
      *
      * @return array
      */
-    public function getCurrLabels() {
-        $parsed = $this->sendRequest('GetCurrencies', array(
+    public function getCurrLabels()
+    {
+        return $this->sendRequest('GetCurrencies', array(
             'MerchantLogin' => $this->mrh_login,
             'Language' => 'ru',
         ));
-
-        $outArr = array();
-        if(isset($parsed['Groups']))
-        {
-            foreach ($parsed['Groups']['Group'] as $value) {
-                foreach ($value['Items']['Currency'] as $value2) {
-                    if (isset($value2['@attributes'])) {
-                        $attr = $value2['@attributes'];
-
-                        if ($attr['Name']) {
-                            $valLabel = $attr['Label'];
-
-                            $outArr[$valLabel] = array(
-                                'Name' => $attr['Name'],
-                                'Label' => $valLabel,
-                                'Alias' => $attr['Alias'],
-                                'Commission' => $this->GetCommission($valLabel),
-                                'MinValue' => isset($attr['MinValue']) ? $attr['MinValue'] : 0,
-                                'MaxValue' => isset($attr['MaxValue']) ? $attr['MaxValue'] : 9999999,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        return $outArr;
     }
 
     /**

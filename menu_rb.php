@@ -19,6 +19,7 @@ if(!\current_user_can('activate_plugins'))
     'robokassa_payment_admin_style_menu',
     \plugin_dir_url(__FILE__) . 'assets/css/menu.css'
 );
+
 ?>
 
 <div class="menu_rb" align="center" style="margin-top: 50px;">
@@ -27,17 +28,23 @@ if(!\current_user_can('activate_plugins'))
     <br>
 
     <ul>
-        <li>
+        <li class="main_rb">
             <a href="?page=robokassa_payment_main_rb" <?php echo ($_GET['li'] == 'main') ? 'class="active"' : ''; ?>>Основные настройки</a>
         </li>
-        <li>
+        <li class="credit" id="robokassa_payment_credit">
+            <a href="?page=robokassa_payment_credit" <?php echo ($_GET['li'] == 'credit') ? 'class="active"' : ''; ?>>Оплата по частям и в кредит</a>
+        </li>
+        <li class="sms_rb" id="robokassa_payment_sms_rb">
             <a href="?page=robokassa_payment_sms_rb" <?php echo ($_GET['li'] == 'sms') ? 'class="active"' : ''; ?>>Настройки оповещений</a>
         </li>
-        <li>
+        <li class="robomarket_rb" id="robokassa_payment_robomarket_rb">
             <a href="?page=robokassa_payment_robomarket_rb" <?php echo ($_GET['li'] == 'robomarket') ? 'class="active"' : ''; ?>>Выгрузка XML с вашими товарами</a>
         </li>
-        <li>
+        <li class="registration" id="robokassa_payment_registratio">
             <a href="?page=robokassa_payment_registration" <?php echo ($_GET['li'] == 'registration') ? 'class="active"' : ''; ?>>Регистрация в сервисе Robokassa</a>
+        </li>
+        <li class="offer" id="robokassa_payment_offer">
+            <a href="?page=robokassa_payment_offer" <?php echo ($_GET['li'] == 'offer') ? 'class="active"' : ''; ?>>Скачать оферту</a>
         </li>
     </ul>
 </div>
