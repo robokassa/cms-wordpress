@@ -16,8 +16,8 @@ class RoboDataBase
     public function __construct(\mysqli $db)
     {
 
-    	$this->db = $db;
-    	\mysqli_set_charset($db, 'utf8');
+        $this->db = $db;
+        \mysqli_set_charset($db, 'utf8');
     }
 
     /**

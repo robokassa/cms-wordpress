@@ -7,18 +7,18 @@ namespace Robokassa\Payment;
  */
 
 if ( ! function_exists( 'is_plugin_active' ) ) {
-		require_once ABSPATH . '/wp-admin/includes/plugin.php';
-	}
-	if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
-		add_action(
-			'admin_notices',
-			function() {
-				echo '<div class="error"><p><strong>' . sprintf( esc_html__( 'Robokassa WooCommerce requires WooCommerce to be installed and active. You can download %s here.', 'woocommerce-payments' ), '<a href="https://wordpress.org/plugins/woocommerce/" target="_blank">WooCommerce</a>' ) . '</strong></p></div>';
-			}
-		);
+    require_once ABSPATH . '/wp-admin/includes/plugin.php';
+}
+if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
+    add_action(
+        'admin_notices',
+        function() {
+            echo '<div class="error"><p><strong>' . sprintf( esc_html__( 'Robokassa WooCommerce requires WooCommerce to be installed and active. You can download %s here.', 'woocommerce-payments' ), '<a href="https://wordpress.org/plugins/woocommerce/" target="_blank">WooCommerce</a>' ) . '</strong></p></div>';
+        }
+    );
 
-		return;
-	}
+    return;
+}
 
 /**
  * Класс выбора типа оплаты на стороне Робокассы
@@ -35,21 +35,21 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
      */
     public $commission;
 
-	/**
-	 * WC_WP_robokassa constructor.
-	 */
+    /**
+     * WC_WP_robokassa constructor.
+     */
     public function __construct() {
 
 
-	    $this->title = \mb_strlen(get_option('RobokassaOrderPageTitle_' . $this->id, null)) > 0
-		    ? get_option('RobokassaOrderPageTitle_' . $this->id, null)
-		    : $this->title
-	    ;
+        $this->title = \mb_strlen(get_option('RobokassaOrderPageTitle_' . $this->id, null)) > 0
+            ? get_option('RobokassaOrderPageTitle_' . $this->id, null)
+            : $this->title
+        ;
 
-	    $this->description = \mb_strlen(get_option('RobokassaOrderPageDescription_' . $this->id, null)) > 0
-		    ? get_option('RobokassaOrderPageDescription_' . $this->id, null)
-		    : $this->description
-	    ;
+        $this->description = \mb_strlen(get_option('RobokassaOrderPageDescription_' . $this->id, null)) > 0
+            ? get_option('RobokassaOrderPageDescription_' . $this->id, null)
+            : $this->description
+        ;
 
         $this->init_form_fields();
         $this->init_settings();
@@ -87,8 +87,8 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
     public function process_payment($order_id)
     {
 
-    	/** @var bool|WC_Order|WC_Refund $order */
-    	$order = \wc_get_order($order_id);
+        /** @var bool|WC_Order|WC_Refund $order */
+        $order = \wc_get_order($order_id);
 
         return array(
             'result' => 'success',
