@@ -31,14 +31,14 @@
 
 Настройка магазина на стороне [Робокассы](http://partner.robokassa.ru/):
 1. Алгоритм расчета хеша – MD5
-1. Result Url – http(s)://your-domain.ru/?robokassa=result
-1. Success Url – http(s)://your-domain.ru/?robokassa=success
-1. Fail Url – http(s)://your-domain.ru/?robokassa=fail
-1. Метод отсылки данных по Result Url, Success Url и fail Url  – POST
+2. Result Url – http(s)://your-domain.ru/?robokassa=result
+3. Success Url – http(s)://your-domain.ru/?robokassa=success
+4. Fail Url – http(s)://your-domain.ru/?robokassa=fail
+5. Метод отсылки данных по Result Url, Success Url и fail Url  – POST
 
 Настройка на стороне сайта:
 1. Указать платежные данные: Логин магазина, Пароль магазина #1, Пароль магазина #2
-1. Активировать тестовый режим при необходимости, так же необходимо будет внести: Пароль магазина для тестов #1, Пароль магазина для тестов #2
+2. Активировать тестовый режим при необходимости, так же необходимо будет внести: Пароль магазина для тестов #1, Пароль магазина для тестов #2
 
 ### Фискализация
 
@@ -50,6 +50,12 @@
 * Система налогообложения
 
 ### Changelog
+
+= 1.5.6 =
+* Добавлена поддержка плагина ["Woo Subscriptions"](https://woo.com/products/woocommerce-subscriptions/)
+* Исправлено определение валюты для клиентов из Казахстана
+* Добавлен параметр "sum" для формирования товарной номенклатуры
+* Устранены ошибки стилей
 
 = 1.5.5 =
 * В карточку товара и корзину добавлен новый виджет «Рассрочка и кредит» через сервис «Всегда Да»

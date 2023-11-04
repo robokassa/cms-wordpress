@@ -15,7 +15,7 @@ function payment_product_widget()
         if (get_option('robokassa_podeli_widget_style') == 0) {
             echo '
 <div class="wiget-block-v3">
-<button class="podeli-action-button" id="openModal">
+<button class="podeli-action-button">
                 <div class="podeli-action-button__icons podeli-action-button__icons_v2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="24" height="24" rx="12" fill="white"/>
@@ -33,13 +33,13 @@ function payment_product_widget()
                 </span>
             </button>
             <div class="podeli-wrapper">
-            <div class="modal">
-                <button id="closeModal" class="modal__close">
+            <div class="rb-modal">
+                <button id="closeModal" class="rb-modal__close">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" clip-rule="evenodd" d="M16.6472 8.70065C17.0342 8.30659 17.0284 7.67345 16.6344 7.2865C16.2403 6.89954 15.6072 6.90529 15.2202 7.29935L11.9897 10.5891L8.70065 7.35935C8.30659 6.97239 7.67345 6.97815 7.28649 7.37221C6.89954 7.76627 6.90529 8.3994 7.29935 8.78636L10.5884 12.0161L7.36015 15.3036C6.97319 15.6977 6.97894 16.3308 7.373 16.7178C7.76706 17.1047 8.4002 17.099 8.78716 16.7049L12.0154 13.4174L15.3036 16.6464C15.6977 17.0334 16.3308 17.0276 16.7178 16.6336C17.1047 16.2395 17.099 15.6064 16.7049 15.2194L13.4167 11.9904L16.6472 8.70065Z" fill="#8F95AE" />
                     </svg>
                 </button>
-                <div class="modal-logotypes">
+                <div class="rb-modal-logotypes">
                     <div class="robokassa-logo">
                         <svg viewBox="0 0 378.97 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <style type="text/css">
@@ -81,11 +81,11 @@ function payment_product_widget()
                         </svg>
                     </div>
                 </div>
-                <div class="modal-content">
-                    <p class="modal-content__title"> 25% сегодня, остальное – потом </p>
-                    <p class="modal-content__text"> Оплатите сегодня 25% стоимости покупки, а остальное — тремя платежами раз в две недели. </p>
-                    <div class="modal-content__info">
-                        <div class="modal-content__info-item">
+                <div class="rb-modal-content">
+                    <p class="rb-modal-content__title"> 25% сегодня, остальное – потом </p>
+                    <p class="rb-modal-content__text"> Оплатите сегодня 25% стоимости покупки, а остальное — тремя платежами раз в две недели. </p>
+                    <div class="rb-modal-content__info">
+                        <div class="rb-modal-content__info-item">
               <span class="info-item-icon">
                 <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2242 11.1112L21.2241 11.1112L21.2304 11.1207C21.4048 11.3822 21.5 11.6975 21.5 12.0221C21.5 12.3405 21.4063 12.6568 21.2315 12.9262L20.2871 14.3121L20.279 14.3241L20.271 14.3362C19.971 14.7905 19.771 15.2878 19.6643 15.7969L19.6627 15.8043L19.3136 17.5014L19.3136 17.5014L19.3119 17.5098C19.2477 17.8286 19.0926 18.1152 18.8702 18.3358C18.6306 18.5732 18.3389 18.728 18.0318 18.7898L18.0318 18.7898L18.0234 18.7915L16.3264 19.1407L16.3264 19.1406L16.319 19.1422C15.8099 19.2489 15.3125 19.4489 14.8583 19.7489L14.8581 19.749L13.4129 20.7036L13.4009 20.7116L13.3889 20.7197C13.1239 20.9003 12.816 20.9968 12.4939 21C12.1665 20.9988 11.8545 20.9035 11.596 20.7317L11.5941 20.7304L10.1758 19.779L10.1698 19.775L10.1638 19.771C9.7095 19.471 9.21213 19.271 8.7031 19.1643L8.69568 19.1628L6.99861 18.8136L6.99862 18.8136L6.9902 18.8119C6.6714 18.7478 6.38476 18.5927 6.16422 18.3702C5.92673 18.1306 5.77195 17.8389 5.71016 17.5319L5.71018 17.5319L5.70845 17.5235L5.36031 15.8313L5.35974 15.8285C5.24886 15.2846 5.02969 14.7708 4.72079 14.3173L3.77496 12.9073C3.59739 12.6372 3.50439 12.3249 3.50439 12C3.50439 11.6714 3.59938 11.3546 3.77172 11.0909L4.72096 9.67583L4.72499 9.66983L4.72897 9.66379C5.02896 9.20953 5.22894 8.71215 5.33567 8.20312L5.33569 8.20312L5.33721 8.19571L5.68635 6.49864L5.68867 6.48736L5.69086 6.47605C5.75221 6.1594 5.90628 5.8701 6.13155 5.64483C6.36492 5.41146 6.65979 5.2524 6.97851 5.18596L6.97993 5.18567L8.66869 4.83824L8.67146 4.83767C9.17928 4.73419 9.68526 4.53922 10.1494 4.23837L10.1567 4.23365L10.164 4.22886L11.6091 3.27426L11.6105 3.27333C11.8816 3.09396 12.1955 3 12.5221 3C12.8486 3 13.1636 3.09383 13.4263 3.26416L14.8121 4.20843L14.8241 4.21659L14.8362 4.22457C15.2904 4.52456 15.7878 4.72455 16.2969 4.83128L16.3004 4.83202L18.0019 5.18557L18.0019 5.18561L18.0142 5.18809C18.333 5.25225 18.6196 5.40733 18.8401 5.6298C19.0776 5.86937 19.2324 6.16111 19.2942 6.46813L19.2942 6.46813L19.2959 6.47654L19.6441 8.16871L19.6446 8.17137C19.7548 8.7121 19.972 9.22299 20.278 9.67451L21.2242 11.1112ZM21.9399 15.4383L22.8945 14.0374C23.2878 13.4407 23.5 12.738 23.5 12.0221C23.5 11.3106 23.2923 10.6079 22.8945 10.0112L21.9399 8.56167C21.7764 8.32302 21.6615 8.05344 21.604 7.77059L21.2549 6.07352C21.1135 5.37083 20.7643 4.73001 20.2605 4.22178C19.7567 3.71354 19.1115 3.36882 18.4088 3.2274L16.7073 2.87385C16.4333 2.81639 16.1725 2.71033 15.9383 2.55564L14.5373 1.60104C13.9407 1.20771 13.238 1 12.5221 1C11.8061 1 11.1079 1.20771 10.5068 1.60546L9.06165 2.56006C8.823 2.71474 8.55341 2.82081 8.27057 2.87826L6.5735 3.2274C5.87081 3.37324 5.22557 3.72238 4.71733 4.23061C4.2091 4.73885 3.86438 5.38851 3.72738 6.09562L3.37824 7.79269C3.32079 8.06669 3.21472 8.32744 3.06004 8.56167L2.10544 9.98473C1.71211 10.5814 1.50439 11.284 1.50439 12C1.50439 12.716 1.71211 13.4142 2.10986 14.0153L3.06446 15.4383C3.22798 15.677 3.34288 15.9466 3.40034 16.2294L3.74947 17.9265C3.8909 18.6292 4.24003 19.27 4.74385 19.7782C5.24767 20.2865 5.8929 20.6312 6.5956 20.7726L8.29266 21.1217C8.56667 21.1792 8.82742 21.2853 9.06165 21.4399L10.4847 22.3945C11.0813 22.7923 11.784 23 12.5 23C13.2203 22.9956 13.9186 22.779 14.5152 22.3724L15.9604 21.4178C16.1946 21.2632 16.4554 21.1571 16.7294 21.0996L18.4265 20.7505C19.1291 20.6091 19.77 20.2599 20.2782 19.7561C20.7864 19.2523 21.1312 18.6071 21.2726 17.9044L21.6217 16.2073C21.6792 15.9333 21.7852 15.6726 21.9399 15.4383ZM10.3023 9.79787C10.9097 9.79787 11.4021 9.30548 11.4021 8.69809C11.4021 8.0907 10.9097 7.59831 10.3023 7.59831C9.69489 7.59831 9.2025 8.0907 9.2025 8.69809C9.2025 9.30548 9.69489 9.79787 10.3023 9.79787ZM15.8012 15.2968C16.4086 15.2968 16.901 14.8044 16.901 14.197C16.901 13.5896 16.4086 13.0972 15.8012 13.0972C15.1938 13.0972 14.7014 13.5896 14.7014 14.197C14.7014 14.8044 15.1938 15.2968 15.8012 15.2968ZM14.0577 8.88689C14.4872 8.4574 15.1836 8.4574 15.6131 8.88689C16.0425 9.31638 16.0425 10.0127 15.6131 10.4422L10.9471 15.1082C10.5176 15.5377 9.82125 15.5377 9.39176 15.1082C8.96227 14.6787 8.96227 13.9823 9.39176 13.5529L14.0577 8.88689Z" fill="#455A64" />
@@ -93,7 +93,7 @@ function payment_product_widget()
               </span>
                             <span class="info-item-text"> Без процентов и комиссий </span>
                         </div>
-                        <div class="modal-content__info-item">
+                        <div class="rb-modal-content__info-item">
               <span class="info-item-icon">
                 <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path fill-rule="evenodd" clip-rule="evenodd" d="M2.5 7C2.5 5.34315 3.84315 4 5.5 4H19.5C21.1569 4 22.5 5.34315 22.5 7V17C22.5 18.6569 21.1569 20 19.5 20H5.5C3.84315 20 2.5 18.6569 2.5 17V7ZM5.5 6C4.94772 6 4.5 6.44772 4.5 7V9H17.5C18.0523 9 18.5 9.44772 18.5 10C18.5 10.5523 18.0523 11 17.5 11H4.5V17C4.5 17.5523 4.94772 18 5.5 18H19.5C20.0523 18 20.5 17.5523 20.5 17V7C20.5 6.44772 20.0523 6 19.5 6H5.5ZM15.5 14C14.9477 14 14.5 14.4477 14.5 15C14.5 15.5523 14.9477 16 15.5 16H17.5C18.0523 16 18.5 15.5523 18.5 15C18.5 14.4477 18.0523 14 17.5 14H15.5Z" fill="#455A64" />
@@ -121,7 +121,7 @@ function payment_product_widget()
                         </div>
                     </div>
                 </div>
-                <a href="/checkout/?add-to-cart=' . $product_id . '&source=podeli_widget" class="modal-link"> оформить покупку в 4 платежа </a>
+                <a href="/checkout/?add-to-cart=' . $product_id . '&source=podeli_widget" class="rb-modal-link"> оформить покупку в 4 платежа </a>
             </div>
         </div>
             </div>
@@ -129,8 +129,8 @@ function payment_product_widget()
         } else {
             echo '
 <div class="wiget-block-wrapper">
-  <div id="openModal" class="wiget-block-v2">
-  <button class="podeli-action-button2" id="openModal" style="all: initial;">
+  <div class="wiget-block-v2">
+  <button class="podeli-action-button2" style="all: initial;">
     <div class="wiget-head-v2">
       <div class="wiget-head-v2__text">
         <span class="text__payment"> ' . $price / 4 . ' ₽ </span>
@@ -158,13 +158,13 @@ function payment_product_widget()
     </div>
     </button>
     <div class="podeli-wrapper">
-      <div class="modal">
-        <button id="closeModal" class="modal__close">
+      <div class="rb-modal">
+        <button id="closeModal" class="rb-modal__close">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M16.6472 8.70065C17.0342 8.30659 17.0284 7.67345 16.6344 7.2865C16.2403 6.89954 15.6072 6.90529 15.2202 7.29935L11.9897 10.5891L8.70065 7.35935C8.30659 6.97239 7.67345 6.97815 7.28649 7.37221C6.89954 7.76627 6.90529 8.3994 7.29935 8.78636L10.5884 12.0161L7.36015 15.3036C6.97319 15.6977 6.97894 16.3308 7.373 16.7178C7.76706 17.1047 8.4002 17.099 8.78716 16.7049L12.0154 13.4174L15.3036 16.6464C15.6977 17.0334 16.3308 17.0276 16.7178 16.6336C17.1047 16.2395 17.099 15.6064 16.7049 15.2194L13.4167 11.9904L16.6472 8.70065Z" fill="#8F95AE" />
           </svg>
         </button>
-        <div class="modal-logotypes">
+        <div class="rb-modal-logotypes">
           <div class="robokassa-logo">
                         <svg viewBox="0 0 378.97 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <style type="text/css">
@@ -206,11 +206,11 @@ function payment_product_widget()
             </svg>
           </div>
         </div>
-        <div class="modal-content">
-          <p class="modal-content__title"> 25% сегодня, остальное – потом </p>
-          <p class="modal-content__text"> Оплатите сегодня 25% стоимости покупки, а остальное — тремя платежами раз в две недели. </p>
-          <div class="modal-content__info">
-            <div class="modal-content__info-item">
+        <div class="rb-modal-content">
+          <p class="rb-modal-content__title"> 25% сегодня, остальное – потом </p>
+          <p class="rb-modal-content__text"> Оплатите сегодня 25% стоимости покупки, а остальное — тремя платежами раз в две недели. </p>
+          <div class="rb-modal-content__info">
+            <div class="rb-modal-content__info-item">
               <span class="info-item-icon">
                 <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path fill-rule="evenodd" clip-rule="evenodd" d="M21.2242 11.1112L21.2241 11.1112L21.2304 11.1207C21.4048 11.3822 21.5 11.6975 21.5 12.0221C21.5 12.3405 21.4063 12.6568 21.2315 12.9262L20.2871 14.3121L20.279 14.3241L20.271 14.3362C19.971 14.7905 19.771 15.2878 19.6643 15.7969L19.6627 15.8043L19.3136 17.5014L19.3136 17.5014L19.3119 17.5098C19.2477 17.8286 19.0926 18.1152 18.8702 18.3358C18.6306 18.5732 18.3389 18.728 18.0318 18.7898L18.0318 18.7898L18.0234 18.7915L16.3264 19.1407L16.3264 19.1406L16.319 19.1422C15.8099 19.2489 15.3125 19.4489 14.8583 19.7489L14.8581 19.749L13.4129 20.7036L13.4009 20.7116L13.3889 20.7197C13.1239 20.9003 12.816 20.9968 12.4939 21C12.1665 20.9988 11.8545 20.9035 11.596 20.7317L11.5941 20.7304L10.1758 19.779L10.1698 19.775L10.1638 19.771C9.7095 19.471 9.21213 19.271 8.7031 19.1643L8.69568 19.1628L6.99861 18.8136L6.99862 18.8136L6.9902 18.8119C6.6714 18.7478 6.38476 18.5927 6.16422 18.3702C5.92673 18.1306 5.77195 17.8389 5.71016 17.5319L5.71018 17.5319L5.70845 17.5235L5.36031 15.8313L5.35974 15.8285C5.24886 15.2846 5.02969 14.7708 4.72079 14.3173L3.77496 12.9073C3.59739 12.6372 3.50439 12.3249 3.50439 12C3.50439 11.6714 3.59938 11.3546 3.77172 11.0909L4.72096 9.67583L4.72499 9.66983L4.72897 9.66379C5.02896 9.20953 5.22894 8.71215 5.33567 8.20312L5.33569 8.20312L5.33721 8.19571L5.68635 6.49864L5.68867 6.48736L5.69086 6.47605C5.75221 6.1594 5.90628 5.8701 6.13155 5.64483C6.36492 5.41146 6.65979 5.2524 6.97851 5.18596L6.97993 5.18567L8.66869 4.83824L8.67146 4.83767C9.17928 4.73419 9.68526 4.53922 10.1494 4.23837L10.1567 4.23365L10.164 4.22886L11.6091 3.27426L11.6105 3.27333C11.8816 3.09396 12.1955 3 12.5221 3C12.8486 3 13.1636 3.09383 13.4263 3.26416L14.8121 4.20843L14.8241 4.21659L14.8362 4.22457C15.2904 4.52456 15.7878 4.72455 16.2969 4.83128L16.3004 4.83202L18.0019 5.18557L18.0019 5.18561L18.0142 5.18809C18.333 5.25225 18.6196 5.40733 18.8401 5.6298C19.0776 5.86937 19.2324 6.16111 19.2942 6.46813L19.2942 6.46813L19.2959 6.47654L19.6441 8.16871L19.6446 8.17137C19.7548 8.7121 19.972 9.22299 20.278 9.67451L21.2242 11.1112ZM21.9399 15.4383L22.8945 14.0374C23.2878 13.4407 23.5 12.738 23.5 12.0221C23.5 11.3106 23.2923 10.6079 22.8945 10.0112L21.9399 8.56167C21.7764 8.32302 21.6615 8.05344 21.604 7.77059L21.2549 6.07352C21.1135 5.37083 20.7643 4.73001 20.2605 4.22178C19.7567 3.71354 19.1115 3.36882 18.4088 3.2274L16.7073 2.87385C16.4333 2.81639 16.1725 2.71033 15.9383 2.55564L14.5373 1.60104C13.9407 1.20771 13.238 1 12.5221 1C11.8061 1 11.1079 1.20771 10.5068 1.60546L9.06165 2.56006C8.823 2.71474 8.55341 2.82081 8.27057 2.87826L6.5735 3.2274C5.87081 3.37324 5.22557 3.72238 4.71733 4.23061C4.2091 4.73885 3.86438 5.38851 3.72738 6.09562L3.37824 7.79269C3.32079 8.06669 3.21472 8.32744 3.06004 8.56167L2.10544 9.98473C1.71211 10.5814 1.50439 11.284 1.50439 12C1.50439 12.716 1.71211 13.4142 2.10986 14.0153L3.06446 15.4383C3.22798 15.677 3.34288 15.9466 3.40034 16.2294L3.74947 17.9265C3.8909 18.6292 4.24003 19.27 4.74385 19.7782C5.24767 20.2865 5.8929 20.6312 6.5956 20.7726L8.29266 21.1217C8.56667 21.1792 8.82742 21.2853 9.06165 21.4399L10.4847 22.3945C11.0813 22.7923 11.784 23 12.5 23C13.2203 22.9956 13.9186 22.779 14.5152 22.3724L15.9604 21.4178C16.1946 21.2632 16.4554 21.1571 16.7294 21.0996L18.4265 20.7505C19.1291 20.6091 19.77 20.2599 20.2782 19.7561C20.7864 19.2523 21.1312 18.6071 21.2726 17.9044L21.6217 16.2073C21.6792 15.9333 21.7852 15.6726 21.9399 15.4383ZM10.3023 9.79787C10.9097 9.79787 11.4021 9.30548 11.4021 8.69809C11.4021 8.0907 10.9097 7.59831 10.3023 7.59831C9.69489 7.59831 9.2025 8.0907 9.2025 8.69809C9.2025 9.30548 9.69489 9.79787 10.3023 9.79787ZM15.8012 15.2968C16.4086 15.2968 16.901 14.8044 16.901 14.197C16.901 13.5896 16.4086 13.0972 15.8012 13.0972C15.1938 13.0972 14.7014 13.5896 14.7014 14.197C14.7014 14.8044 15.1938 15.2968 15.8012 15.2968ZM14.0577 8.88689C14.4872 8.4574 15.1836 8.4574 15.6131 8.88689C16.0425 9.31638 16.0425 10.0127 15.6131 10.4422L10.9471 15.1082C10.5176 15.5377 9.82125 15.5377 9.39176 15.1082C8.96227 14.6787 8.96227 13.9823 9.39176 13.5529L14.0577 8.88689Z" fill="#455A64" />
@@ -218,7 +218,7 @@ function payment_product_widget()
               </span>
               <span class="info-item-text"> Без процентов и комиссий </span>
             </div>
-            <div class="modal-content__info-item">
+            <div class="rb-modal-content__info-item">
               <span class="info-item-icon">
                 <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path fill-rule="evenodd" clip-rule="evenodd" d="M2.5 7C2.5 5.34315 3.84315 4 5.5 4H19.5C21.1569 4 22.5 5.34315 22.5 7V17C22.5 18.6569 21.1569 20 19.5 20H5.5C3.84315 20 2.5 18.6569 2.5 17V7ZM5.5 6C4.94772 6 4.5 6.44772 4.5 7V9H17.5C18.0523 9 18.5 9.44772 18.5 10C18.5 10.5523 18.0523 11 17.5 11H4.5V17C4.5 17.5523 4.94772 18 5.5 18H19.5C20.0523 18 20.5 17.5523 20.5 17V7C20.5 6.44772 20.0523 6 19.5 6H5.5ZM15.5 14C14.9477 14 14.5 14.4477 14.5 15C14.5 15.5523 14.9477 16 15.5 16H17.5C18.0523 16 18.5 15.5523 18.5 15C18.5 14.4477 18.0523 14 17.5 14H15.5Z" fill="#455A64" />
@@ -246,7 +246,7 @@ function payment_product_widget()
             </div>
           </div>
         </div>
-        <a href="/checkout/?add-to-cart=' . $product_id . '&source=podeli_widget" class="modal-link"> оформить покупку в 4 платежа </a>
+        <a href="/checkout/?add-to-cart=' . $product_id . '&source=podeli_widget" class="rb-modal-link"> оформить покупку в 4 платежа </a>
       </div>
     </div>
   </div>
@@ -264,7 +264,7 @@ function payment_product_widget()
         $monthlyPayment = round($monthlyPayment);
         echo '
 <div class="wiget-block-v3">
-    <button class="wiget-action-button" id="openModal">
+    <button class="wiget-action-button">
         <div class="wiget-action-button__icons">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="24" height="24" rx="12" fill="white"/>
@@ -277,14 +277,14 @@ function payment_product_widget()
                 </span>
     </button>
 
-    <div class="modal-wrapper">
-        <div class="modal modal-v2">
-            <button class="modal__close closeModal">
+    <div class="rb-modal-wrapper">
+        <div class="rb-modal modal-v2">
+            <button class="rb-modal__close closeModal">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16.6472 8.70065C17.0342 8.30659 17.0284 7.67345 16.6344 7.2865C16.2403 6.89954 15.6072 6.90529 15.2202 7.29935L11.9897 10.5891L8.70065 7.35935C8.30659 6.97239 7.67345 6.97815 7.28649 7.37221C6.89954 7.76627 6.90529 8.3994 7.29935 8.78636L10.5884 12.0161L7.36015 15.3036C6.97319 15.6977 6.97894 16.3308 7.373 16.7178C7.76706 17.1047 8.4002 17.099 8.78716 16.7049L12.0154 13.4174L15.3036 16.6464C15.6977 17.0334 16.3308 17.0276 16.7178 16.6336C17.1047 16.2395 17.099 15.6064 16.7049 15.2194L13.4167 11.9904L16.6472 8.70065Z" fill="#8F95AE"/>
                 </svg>
             </button>
-            <div class="modal-logotypes">
+            <div class="rb-modal-logotypes">
                 <div class="robokassa-logo">
                     <svg width="658" height="100" viewBox="0 0 658 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1635_185105)">
@@ -308,18 +308,18 @@ function payment_product_widget()
                     </svg>
                 </div>
             </div>
-            <div class="modal-content">
-            <h5 class="modal-content__title">
+            <div class="rb-modal-content">
+            <h5 class="rb-modal-content__title">
             ОТ ' . floor($monthlyPayment) . ' ₽ В МЕСЯЦ
             </h5>
-                <h5 class="modal-content__title">
+                <h5 class="rb-modal-content__title">
                     Индивидуальные условия для покупки<br>товаров в кредит, чтобы не откладывать<br>покупку
                 </h5>
-                <p class="modal-content__text">
+                <p class="rb-modal-content__text">
                     Всего 10 минут на оформление документов, без визита в банк.
                 </p>
-                <div class="modal-content__info">
-                    <div class="modal-content__info-item">
+                <div class="rb-modal-content__info">
+                    <div class="rb-modal-content__info-item">
                             <span class="info-item-icon">
                                 <!-- Иконка Кредита -->
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -334,7 +334,7 @@ function payment_product_widget()
                                 Кредит на выгодных условиях 
                             </span>
                     </div>
-                    <div class="modal-content__info-item">
+                    <div class="rb-modal-content__info-item">
                             <span class="info-item-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M14.9298 9C14.9298 10.6569 13.5867 12 11.9298 12C10.273 12 8.92982 10.6569 8.92982 9C8.92982 7.34315 10.273 6 11.9298 6C13.5867 6 14.9298 7.34315 14.9298 9ZM15.2641 12.726C16.2865 11.8105 16.9298 10.4804 16.9298 9C16.9298 6.23858 14.6912 4 11.9298 4C9.16839 4 6.92982 6.23858 6.92982 9C6.92982 10.4802 7.57301 11.8102 8.59516 12.7257C6.17226 13.838 4.40114 16.1253 4.0102 18.8584C3.932 19.4051 4.31181 19.9117 4.85853 19.9899C5.40525 20.0681 5.91185 19.6883 5.99005 19.1416C6.40583 16.2349 8.90741 14 11.9292 14C14.9511 14 17.4526 16.2349 17.8684 19.1416C17.9466 19.6883 18.4532 20.0681 18.9999 19.9899C19.5467 19.9117 19.9265 19.4051 19.8483 18.8584C19.4574 16.1256 17.6866 13.8385 15.2641 12.726Z" fill="#455A64"/>
@@ -345,7 +345,7 @@ function payment_product_widget()
                             </span>
                     </div>
                 </div>
-                <a href="/checkout/?add-to-cart=' . $product_id . '&source=credit_widget" class="modal-link"> Оформить заказ </a>
+                <a href="/checkout/?add-to-cart=' . $product_id . '&source=credit_widget" class="rb-modal-link"> Оформить заказ </a>
             </div>
         </div>
     </div>
@@ -357,7 +357,7 @@ function payment_product_widget()
     if (get_option('robokassa_payment_credit_selected_method') === 'installment' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 200000) {
         echo '
 <div class="wiget-block-v3">
-        <button class="wiget-action-button openModal">
+        <button class="wiget-action-button">
                 <div class="wiget-action-button__icons">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="24" height="24" rx="12" fill="white"/>
@@ -369,14 +369,14 @@ function payment_product_widget()
                     рассрочка  от ' . floor($price / 24) . ' ₽/Мес
                 </span>
             </button>
-            <div class="modal-wrapper">
-        <div class="modal modal-v2">
-            <button class="modal__close closeModal">
+            <div class="rb-modal-wrapper">
+        <div class=rb-"modal modal-v2">
+            <button class="rb-modal__close closeModal">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16.6472 8.70065C17.0342 8.30659 17.0284 7.67345 16.6344 7.2865C16.2403 6.89954 15.6072 6.90529 15.2202 7.29935L11.9897 10.5891L8.70065 7.35935C8.30659 6.97239 7.67345 6.97815 7.28649 7.37221C6.89954 7.76627 6.90529 8.3994 7.29935 8.78636L10.5884 12.0161L7.36015 15.3036C6.97319 15.6977 6.97894 16.3308 7.373 16.7178C7.76706 17.1047 8.4002 17.099 8.78716 16.7049L12.0154 13.4174L15.3036 16.6464C15.6977 17.0334 16.3308 17.0276 16.7178 16.6336C17.1047 16.2395 17.099 15.6064 16.7049 15.2194L13.4167 11.9904L16.6472 8.70065Z" fill="#8F95AE"/>
                 </svg>
             </button>
-            <div class="modal-logotypes">
+            <div class="rb-modal-logotypes">
                 <div class="robokassa-logo">
                     <svg width="658" height="100" viewBox="0 0 658 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1635_185105)">
@@ -400,18 +400,18 @@ function payment_product_widget()
                     </svg>
                 </div>
             </div>
-            <div class="modal-content">
-            <h5 class="modal-content__title">
+            <div class="rb-modal-content">
+            <h5 class="rb-modal-content__title">
             ОТ ' . floor($price / 24) . ' ₽ В МЕСЯЦ
             </h5>
-                <h5 class="modal-content__title">
+                <h5 class="rb-modal-content__title">
                     Индивидуальные условия для покупки<br>товаров в рассрочку, чтобы не откладывать<br>покупку
                 </h5>
-                <p class="modal-content__text">
+                <p class="rb-modal-content__text">
                     Всего 10 минут на оформление документов, без визита в банк.
                 </p>
-                <div class="modal-content__info">
-                    <div class="modal-content__info-item">
+                <div class="rb-modal-content__info">
+                    <div class="rb-modal-content__info-item">
                             <span class="info-item-icon">
                                 <!-- Иконка Кредита -->
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -426,7 +426,7 @@ function payment_product_widget()
                                 Кредит на выгодных условиях 
                             </span>
                     </div>
-                    <div class="modal-content__info-item">
+                    <div class="rb-modal-content__info-item">
                             <span class="info-item-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M14.9298 9C14.9298 10.6569 13.5867 12 11.9298 12C10.273 12 8.92982 10.6569 8.92982 9C8.92982 7.34315 10.273 6 11.9298 6C13.5867 6 14.9298 7.34315 14.9298 9ZM15.2641 12.726C16.2865 11.8105 16.9298 10.4804 16.9298 9C16.9298 6.23858 14.6912 4 11.9298 4C9.16839 4 6.92982 6.23858 6.92982 9C6.92982 10.4802 7.57301 11.8102 8.59516 12.7257C6.17226 13.838 4.40114 16.1253 4.0102 18.8584C3.932 19.4051 4.31181 19.9117 4.85853 19.9899C5.40525 20.0681 5.91185 19.6883 5.99005 19.1416C6.40583 16.2349 8.90741 14 11.9292 14C14.9511 14 17.4526 16.2349 17.8684 19.1416C17.9466 19.6883 18.4532 20.0681 18.9999 19.9899C19.5467 19.9117 19.9265 19.4051 19.8483 18.8584C19.4574 16.1256 17.6866 13.8385 15.2641 12.726Z" fill="#455A64"/>
@@ -437,7 +437,7 @@ function payment_product_widget()
                             </span>
                     </div>
                 </div>
-                <a href="/checkout/?add-to-cart=' . $product_id . '&source=credit_widget" class="modal-link"> Оформить заказ </a>
+                <a href="/checkout/?add-to-cart=' . $product_id . '&source=credit_widget" class="rb-modal-link"> Оформить заказ </a>
             </div>
         </div>
     </div>
@@ -455,7 +455,7 @@ function payment_product_widget()
         $monthlyPayment = round($monthlyPayment);
         echo '
 <div class="wiget-block-v3">
-    <button class="wiget-action-button" id="openModal">
+    <button class="wiget-action-button">
         <div class="wiget-action-button__icons">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="24" height="24" rx="12" fill="white"/>
@@ -468,14 +468,14 @@ function payment_product_widget()
                 </span>
     </button>
 
-    <div class="modal-wrapper">
-        <div class="modal modal-v2">
-            <button class="modal__close closeModal">
+    <div class="rb-modal-wrapper">
+        <div class="rb-modal modal-v2">
+            <button class="rb-modal__close closeModal">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16.6472 8.70065C17.0342 8.30659 17.0284 7.67345 16.6344 7.2865C16.2403 6.89954 15.6072 6.90529 15.2202 7.29935L11.9897 10.5891L8.70065 7.35935C8.30659 6.97239 7.67345 6.97815 7.28649 7.37221C6.89954 7.76627 6.90529 8.3994 7.29935 8.78636L10.5884 12.0161L7.36015 15.3036C6.97319 15.6977 6.97894 16.3308 7.373 16.7178C7.76706 17.1047 8.4002 17.099 8.78716 16.7049L12.0154 13.4174L15.3036 16.6464C15.6977 17.0334 16.3308 17.0276 16.7178 16.6336C17.1047 16.2395 17.099 15.6064 16.7049 15.2194L13.4167 11.9904L16.6472 8.70065Z" fill="#8F95AE"/>
                 </svg>
             </button>
-            <div class="modal-logotypes">
+            <div class="rb-modal-logotypes">
                 <div class="robokassa-logo">
                     <svg width="658" height="100" viewBox="0 0 658 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1635_185105)">
@@ -499,18 +499,18 @@ function payment_product_widget()
                     </svg>
                 </div>
             </div>
-            <div class="modal-content">
-            <h5 class="modal-content__title">
+            <div class="rb-modal-content">
+            <h5 class="rb-modal-content__title">
             ОТ ' . floor($monthlyPayment) . ' ₽ В МЕСЯЦ
             </h5>
-                <h5 class="modal-content__title">
+                <h5 class="rb-modal-content__title">
                     Индивидуальные условия для покупки<br>товаров в кредит или рассрочку, чтобы не откладывать<br>покупку
                 </h5>
-                <p class="modal-content__text">
+                <p class="rb-modal-content__text">
                     Всего 10 минут на оформление документов, без визита в банк.
                 </p>
-                <div class="modal-content__info">
-                    <div class="modal-content__info-item">
+                <div class="rb-modal-content__info">
+                    <div class="rb-modal-content__info-item">
                             <span class="info-item-icon">
                                 <!-- Иконка Кредита -->
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -525,7 +525,7 @@ function payment_product_widget()
                                 Кредит на выгодных условиях 
                             </span>
                     </div>
-                    <div class="modal-content__info-item">
+                    <div class="rb-modal-content__info-item">
                             <span class="info-item-icon">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd" d="M14.9298 9C14.9298 10.6569 13.5867 12 11.9298 12C10.273 12 8.92982 10.6569 8.92982 9C8.92982 7.34315 10.273 6 11.9298 6C13.5867 6 14.9298 7.34315 14.9298 9ZM15.2641 12.726C16.2865 11.8105 16.9298 10.4804 16.9298 9C16.9298 6.23858 14.6912 4 11.9298 4C9.16839 4 6.92982 6.23858 6.92982 9C6.92982 10.4802 7.57301 11.8102 8.59516 12.7257C6.17226 13.838 4.40114 16.1253 4.0102 18.8584C3.932 19.4051 4.31181 19.9117 4.85853 19.9899C5.40525 20.0681 5.91185 19.6883 5.99005 19.1416C6.40583 16.2349 8.90741 14 11.9292 14C14.9511 14 17.4526 16.2349 17.8684 19.1416C17.9466 19.6883 18.4532 20.0681 18.9999 19.9899C19.5467 19.9117 19.9265 19.4051 19.8483 18.8584C19.4574 16.1256 17.6866 13.8385 15.2641 12.726Z" fill="#455A64"/>
@@ -536,7 +536,7 @@ function payment_product_widget()
                             </span>
                     </div>
                 </div>
-                <a href="/checkout/?add-to-cart=' . $product_id . '&source=credit_widget" class="modal-link"> Оформить заказ </a>
+                <a href="/checkout/?add-to-cart=' . $product_id . '&source=credit_widget" class="rb-modal-link"> Оформить заказ </a>
             </div>
         </div>
     </div>

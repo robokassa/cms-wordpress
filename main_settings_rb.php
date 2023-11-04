@@ -59,6 +59,9 @@ if (!\current_user_can('activate_plugins')) {
         'robokassa_iframe',
         'robokassa_country_code',
         'robokassa_out_currency',
+        'robokassa_agreement_text',
+        'robokassa_agreement_pd_link',
+        'robokassa_agreement_oferta_link',
     ];
 
     require_once __DIR__ . '/labelsClasses.php';
@@ -164,7 +167,7 @@ if (!\current_user_can('activate_plugins')) {
                     <th scope="row">Валюта заказа</th>
                     <td>
                         <select id="robokassa_out_currency" name="robokassa_out_currency">
-                            <option value="" <?php echo((get_option('robokassa_out_currency') == '') ? ' selected' : ''); ?>>
+                            <option value="RUR" <?php echo((get_option('robokassa_out_currency') == 'RUR') ? ' selected' : ''); ?>>
                                 Рубли
                             </option>
                             <option value="USD" <?php echo((get_option('robokassa_out_currency') == 'USD') ? ' selected' : ''); ?>>
@@ -240,6 +243,35 @@ if (!\current_user_can('activate_plugins')) {
                     </td>
                 </tr>
             </table>
+
+            <? if (function_exists('wcs_order_contains_subscription')) { ?>
+                <p class="mid_title_rb">Настройки для Woocommerce Subscriptions</p>
+
+                <a class="spoiler_links button">Показать/скрыть</a>
+
+                <div class="spoiler_body">
+                    <table class="form-table">
+                        <tr valign="top">
+                            <th scope="row">Текст согласия с правилами на списания по подписке</th>
+                            <td>
+                                <input type="text" name="robokassa_agreement_text" value="<?php echo htmlspecialchars(get_option('robokassa_agreement_text') ?: 'Я даю согласие на регулярные списания, на <a href="%s">обработку персональных данных</a> и принимаю условия <a href="%s">публичной оферты</a>.'); ?>"/>
+                            </td>
+                        </tr>
+                        <tr valign="top">
+                            <th scope="row">Ссылка на согласие на обработку ПД</th>
+                            <td>
+                                <input type="text" name="robokassa_agreement_pd_link" value="<?php echo htmlspecialchars(get_option('robokassa_agreement_pd_link')); ?>"/>
+                            </td>
+                        </tr>
+                        <tr valign="top">
+                            <th scope="row">Ссылка на оферту</th>
+                            <td>
+                                <input type="text" name="robokassa_agreement_oferta_link" value="<?php echo htmlspecialchars(get_option('robokassa_agreement_oferta_link')); ?>"/>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            <? } ?>
 
             <p class="mid_title_rb">Настройки тестового соединения</p>
 

@@ -98,20 +98,11 @@ class RobokassaPayAPI {
      *
      * @return string
      */
-    private function getSignatureString($sum, $invId, $receiptJson)
+    private function getSignatureString($sum, $invId, $receiptJson, $recurring = false)
     {
 
-        /** @var null|string $outCurrency */
-        $outCurrency = null;
 
-        if(
-            mb_strlen(get_option('robokassa_out_currency')) > 0
-            && !(
-                get_option('robokassa_country_code') == 'KZ'
-                && get_option('robokassa_out_currency') == 'KZT'
-            )
-        )
-            $outCurrency = get_option('robokassa_out_currency');
+        $outCurrency = get_option('robokassa_out_currency');
 
         return \implode(
             ':',
@@ -174,7 +165,8 @@ class RobokassaPayAPI {
         $test = 'false',
         $incCurrLabel = 'all',
         $receipt = null,
-        $email = null
+        $email = null,
+        $recurring = false
     ) {
 
         $kzUrl = 'https://auth.robokassa.kz/Merchant/Index.aspx';
@@ -197,19 +189,11 @@ class RobokassaPayAPI {
             'InvId' => $invId,
             'Desc' => $invDesc,
             'shp_label' => 'official_wordpress',
+            'recurring'      => $recurring ? 'true' : '',
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
 
-        if(
-            mb_strlen(get_option('robokassa_out_currency')) > 0
-            && !(
-                get_option('robokassa_country_code') == 'KZ'
-                && get_option('robokassa_out_currency') == 'KZT'
-            )
-        )
-        {
-            $formData['OutSumCurrency'] = get_option('robokassa_out_currency');
-        }
+        $formData['OutSumCurrency'] = get_option('robokassa_out_currency');
 
         if($email !== null)
             $formData['Email'] = $email;
@@ -510,6 +494,25 @@ class RobokassaPayAPI {
         ));
 
         return ($result['Result']['Code'] == '0');
+    }
+
+    public function getRecurringPaymentData($invoiceId, $parentInvoiceId, $amount, $receipt, $description = '')
+    {
+        // $receipt = (get_option('robokassa_payment_type_commission') == 'false' && get_option('robokassa_country_code') != 'KZ') ? $receipt : [];
+        $receiptJson = (!empty($receipt) && \is_array($receipt)) ? \urlencode(\json_encode($receipt, 256)) : null;
+
+        $data = array_filter([
+            'MerchantLogin'     => $this->mrh_login,
+            'InvoiceID'         => $invoiceId,
+            'PreviousInvoiceID' => $parentInvoiceId,
+            'Description'       => '',
+            'SignatureValue'    => $this->getSignature($this->getSignatureString($amount, $invoiceId, $receiptJson, false)),
+            'OutSum'            => $amount,
+            'shp_label'         => 'official_wordpress',
+            'Receipt'           => $receiptJson
+        ], function($val) { return $val !== null; });
+
+        return $data;
     }
 
 }

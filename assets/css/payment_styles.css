@@ -12,7 +12,7 @@
     font-family: Inter, sans-serif;
 }
 
-.modal-wrapper * {
+.rb-modal-wrapper * {
     font-family: Inter, sans-serif;
 }
 
@@ -245,7 +245,7 @@
 
 /* POP-UP style */
 
-.modal-wrapper {
+.rb-modal-wrapper {
     position: fixed;
     width: 100%;
     height: 100%;
@@ -273,11 +273,11 @@
     backdrop-filter: blur(5px);
 }
 
-.show-modal {
+.rb-show-modal {
     display: flex;
 }
 
-.modal {
+.rb-modal {
     position: relative;
     display: grid;
     row-gap: 20px;
@@ -289,7 +289,7 @@
     padding: 34px 24px 28px 24px;
 }
 
-.modal__close {
+.rb-modal__close {
     position: absolute;
     display: inline-block;
     width: 24px;
@@ -301,7 +301,7 @@
     cursor: pointer;
 }
 
-.modal-logotypes {
+.rb-modal-logotypes {
     display: flex;
     align-items: center;
 }
@@ -329,12 +329,12 @@
     background-color: var(--grey300new);
 }
 
-.modal-content {
+.rb-modal-content {
     display: grid;
     row-gap: 12px;
 }
 
-.modal-content__title {
+.rb-modal-content__title {
     font-family: Inter, sans-serif;
     margin: 0;
     font-weight: 700;
@@ -343,29 +343,29 @@
     color: #000000;
 }
 
-.modal-content__text {
+.rb-modal-content__text {
     font-size: 12px;
     line-height: 18px;
     color: #263238;
 }
 
-.modal-content__info {
+.rb-modal-content__info {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 11px 9px;
 }
 
-.modal-content__info-item {
+.rb-modal-content__info-item {
     display: flex;
     align-items: center;
 }
 
-.modal-payments {
+.rb-modal-payments {
 
 }
 
-.modal-payments__title {
+.rb-modal-payments__title {
     font-weight: 500;
     font-size: 16px;
     line-height: 20px;
@@ -373,7 +373,7 @@
     margin-bottom: 12px;
 }
 
-.modal-payments__list {
+.rb-modal-payments__list {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -447,10 +447,10 @@
     font-weight: 400;
     font-size: 12px;
     line-height: 18px;
-    color: var(--modal-text);
+    color: black;
 }
 
-.modal-link {
+.rb-modal-link {
     text-decoration: none;
     display: flex;
     align-items: center;
@@ -467,11 +467,11 @@
     transition: all 0.2s;
 }
 
-.modal-link:hover {
+.rb-modal-link:hover {
     background-color: #222d41;
 }
 
-.modal-link:focus {
+.rb-modal-link:focus {
     outline: none;
     background-color: #222d41;
 }

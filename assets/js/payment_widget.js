@@ -6,14 +6,14 @@ window.addEventListener('DOMContentLoaded', () => {
     let podeliModalTriggers = document.querySelectorAll('.podeli-action-button');
     let podeliModalTriggers2 = document.querySelectorAll('.podeli-action-button2');
 
-    let modals = document.querySelectorAll('.modal-wrapper');
+    let modals = document.querySelectorAll('.rb-modal-wrapper');
     let podeliModals = document.querySelectorAll('.podeli-wrapper');
 
     let scroll = calcScroll();
 
     modalTriggers.forEach((modalTrigger, index) => {
         modalTrigger.addEventListener('click', () => {
-            modals[index].classList.add('show-modal');
+            modals[index].classList.add('rb-show-modal');
             // document.body.style.overflow = 'hidden';
             // document.body.style.paddingRight = `${scroll}px`;
         });
@@ -21,7 +21,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     podeliModalTriggers.forEach((modalTrigger, index) => {
         modalTrigger.addEventListener('click', () => {
-            podeliModals[index].classList.add('show-modal');
+            podeliModals[index].classList.add('rb-show-modal');
             // document.body.style.overflow = 'hidden';
             // document.body.style.paddingRight = `${scroll}px`;
         });
@@ -29,7 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     podeliModalTriggers2.forEach((modalTrigger, index) => {
         modalTrigger.addEventListener('click', () => {
-            podeliModals[index].classList.add('show-modal');
+            podeliModals[index].classList.add('rb-show-modal');
             // document.body.style.overflow = 'hidden';
             // document.body.style.paddingRight = `${scroll}px`;
         });
@@ -37,10 +37,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function closeModal() {
         modals.forEach((modal) => {
-            modal.classList.remove('show-modal');
+            modal.classList.remove('rb-show-modal');
         });
         podeliModals.forEach((modal) => {
-            modal.classList.remove('show-modal');
+            modal.classList.remove('rb-show-modal');
         });
         // document.body.style.overflow = '';
         // document.body.style.paddingRight = '0px';
