@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.5.5
+ * Version: 1.5.6
  */
 
 require_once('payment-widget.php');
@@ -99,6 +99,23 @@ add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
 
 
 register_activation_hook(__FILE__, 'robokassa_payment_wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
+
+add_filter('woocommerce_get_privacy_policy_text', 'robokassa_get_privacy_policy_text', 10, 2);
+
+function robokassa_get_privacy_policy_text($text, $type)
+{
+    if (function_exists('wcs_order_contains_subscription')) {
+        $textAlt = sprintf(
+            get_option('robokassa_agreement_text'),
+            get_option('robokassa_agreement_pd_link'),
+            get_option('robokassa_agreement_oferta_link')
+        );
+
+        $text = $textAlt ?: $text;
+    }
+
+    return $text;
+}
 
 /**
  * @param string $str
@@ -272,6 +289,17 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
                 global $woocommerce;
                 $woocommerce->cart->empty_cart();
+
+                //определяем есть ли в заказе подписка
+                if (function_exists('wcs_order_contains_subscription')) {
+                    $subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
+
+                    if ($subscriptions == true) {
+                        foreach ($subscriptions as $subscription) {
+                            $subscription->update_status('active');
+                        };
+                    }
+                }
 
                 $returner = 'OK' . $_REQUEST['InvId'];
 
@@ -685,6 +713,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
 
         $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
+        $current['sum'] = $current['cost'] * $current['quantity'];
 
         if (get_option('robokassa_country_code') == 'KZ') {
         } else {
@@ -712,6 +741,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
             $current['quantity'] = (float)$item->get_quantity();
 
             $current['cost'] = number_format($product->get_price(), 2, '.', '');
+            $current['sum'] = $current['cost'] * $current['quantity'];
 
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
@@ -735,6 +765,8 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
             "%01.2f",
             $order->get_shipping_total()
         );
+        $current['sum'] = $current['cost'] * $current['quantity'];
+
 
         if (get_option('robokassa_country_code') == 'KZ') {
         } else {
@@ -757,6 +789,16 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
 
     $invDesc = "Заказ номер $order_id";
 
+    $recurring = false;
+
+    if (class_exists('WC_Subscriptions_Order')) {
+        $order_subscription = wcs_order_contains_subscription($order_id);
+
+        if ($order_subscription) {
+            $recurring = true;
+        }
+    }
+
 
     echo $rb->createForm(
         $sum,
@@ -765,7 +807,8 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         get_option('robokassa_payment_test_onoff'),
         $label,
         $receipt,
-        $order->get_billing_email()
+        $order->get_billing_email(),
+        $recurring
     );
 }
 
@@ -969,6 +1012,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
                 'name' => 'Доставка',
                 'quantity' => 1,
                 'cost' => $shipping_total,
+                'sum' => $shipping_total * 1,
                 'tax' => $tax,
                 'payment_method' => 'full_payment',
                 'payment_object' => get_option('robokassa_payment_paymentObject'),
