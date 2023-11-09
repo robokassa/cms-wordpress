@@ -51,6 +51,9 @@
 
 ### Changelog
 
+= 1.5.7 =
+* Добавлена возможность установить валюту по умолчанию из настроек WooCommerce
+
 = 1.5.6 =
 * Добавлена поддержка плагина ["Woo Subscriptions"](https://woo.com/products/woocommerce-subscriptions/)
 * Исправлено определение валюты для клиентов из Казахстана

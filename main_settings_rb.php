@@ -166,19 +166,38 @@ if (!\current_user_can('activate_plugins')) {
                 <tr valign="top">
                     <th scope="row">Валюта заказа</th>
                     <td>
+
                         <select id="robokassa_out_currency" name="robokassa_out_currency">
-                            <option value="RUR" <?php echo((get_option('robokassa_out_currency') == 'RUR') ? ' selected' : ''); ?>>
-                                Рубли
-                            </option>
-                            <option value="USD" <?php echo((get_option('robokassa_out_currency') == 'USD') ? ' selected' : ''); ?>>
-                                Доллары
-                            </option>
-                            <option value="EUR" <?php echo((get_option('robokassa_out_currency') == 'EUR') ? ' selected' : ''); ?>>
-                                Евро
-                            </option>
-                            <option value="KZT" <?php echo((get_option('robokassa_out_currency') == 'KZT') ? ' selected' : ''); ?>>
-                                Тенге
-                            </option>
+                            <?php
+
+                            // Текущая валюта заказа из настроек WooCommerce
+                            $woocommerce_currency = get_option('woocommerce_currency');
+
+                            // Определение валют и их названия
+                            $currencies = array(
+                                'RUR' => 'Рубли',
+                                'USD' => 'Доллары',
+                                'EUR' => 'Евро',
+                                'KZT' => 'Тенге',
+                                $woocommerce_currency => 'Валюта по умолчанию из настроек WC',
+                            );
+
+                            // Допустимые валюты для Валюты WC
+                            $valid_wc_currencies = array('RUR', 'USD', 'EUR', 'KZT');
+
+                            // Если выбрана Валюта WC, передаются только допустимые значения
+                            if ($woocommerce_currency === $woocommerce_currency) {
+                                $currencies = array_intersect_key($currencies, array_flip($valid_wc_currencies));
+                            }
+
+                            // Перебор валюты и создание элемента списка
+                            foreach ($currencies as $currency_code => $currency_name) {
+                                $selected = (get_option('robokassa_out_currency') === $currency_code) ? 'selected' : '';
+                                echo '<option value="' . esc_attr($currency_code) . '" ' . $selected . '>';
+                                echo esc_html($currency_name);
+                                echo '</option>';
+                            }
+                            ?>
                         </select>
                     </td>
                 </tr>
