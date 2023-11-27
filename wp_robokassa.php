@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.5.6
+ * Version: 1.5.7
  */
 
 require_once('payment-widget.php');
@@ -731,7 +731,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $receipt['items'][] = $current;
     }
 
-    if (!count($receipt['items'])) {
+    if (empty($receipt)) {
 
         foreach ($order->get_items() as $item) {
 
