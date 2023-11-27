@@ -43,24 +43,22 @@
         $show_podeli = false;
         $show_credit = false;
 
-        if (isset($json_decoded['Groups']['Group'])) {
-            foreach ($json_decoded['Groups']['Group'] as $group) {
-                if (isset($group['Items']['Currency'])) {
-                    foreach ($group['Items']['Currency'] as $currency) {
-                        if (isset($currency['@attributes']['Label'])) {
-                            $label = $currency['@attributes']['Label'];
-                            $alias = $currency['@attributes']['Alias'];
-                            if ($alias === 'Podeli') {
-                                $show_podeli = true;
-                            } elseif ($alias === 'AlwaysYes') {
-                                $show_credit = true;
-                            }
-                        }
+
+        function searchAlias($data, &$show_podeli, &$show_credit) {
+            foreach ($data as $key => $value) {
+                if ($key === 'Alias') {
+                    if ($value === 'Podeli') {
+                        $show_podeli = true;
+                    } elseif ($value === 'AlwaysYes') {
+                        $show_credit = true;
                     }
+                } elseif (is_array($value) || is_object($value)) {
+                    searchAlias($value, $show_podeli, $show_credit);
                 }
             }
         }
 
+        searchAlias($json_decoded, $show_podeli, $show_credit);
 
         if ($show_podeli || $show_credit) {
             if ($show_podeli) {
