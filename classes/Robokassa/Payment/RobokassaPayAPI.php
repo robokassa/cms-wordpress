@@ -100,9 +100,8 @@ class RobokassaPayAPI {
      */
     private function getSignatureString($sum, $invId, $receiptJson, $recurring = false)
     {
-
-
         $outCurrency = get_option('robokassa_out_currency');
+        $holdPaymentParam = (get_option('robokassa_payment_hold_onoff') == 'true') ? 'true' : '';
 
         return \implode(
             ':',
@@ -113,6 +112,8 @@ class RobokassaPayAPI {
                     $invId,
                     $outCurrency,
                     $receiptJson,
+                    $holdPaymentParam,
+                    urlencode((site_url('/?robokassa=result'))),
                     $this->mrh_pass1,
                     'shp_label=official_wordpress',
                 ),
@@ -187,11 +188,16 @@ class RobokassaPayAPI {
             'MrchLogin' => $this->mrh_login,
             'OutSum' => $sum,
             'InvId' => $invId,
+            'ResultUrl2' => urlencode(site_url('/?robokassa=result')),
             'Desc' => $invDesc,
             'shp_label' => 'official_wordpress',
             'recurring'      => $recurring ? 'true' : '',
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
+
+        if (get_option('robokassa_payment_hold_onoff') == 'true') {
+            $formData['StepByStep'] = 'true';
+        }
 
         $formData['OutSumCurrency'] = get_option('robokassa_out_currency');
 

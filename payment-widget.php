@@ -11,7 +11,7 @@ function payment_product_widget()
     $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
     $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
 
-    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 30000) {
+    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         if (get_option('robokassa_podeli_widget_style') == 0) {
             echo '
 <div class="wiget-block-v3">
@@ -627,7 +627,7 @@ function payment_cart_widget()
     $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
     $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
 
-    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 30000) {
+    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '
 <div class="wiget-block-wrapper">
   <div class="wiget-block">
@@ -731,7 +731,7 @@ function podeli_checkout_widget()
     $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
     $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
 
-    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 30000) {
+    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '
 <div class="wiget-block__prompt">
   <div class="wiget-block__content">
@@ -797,7 +797,7 @@ function credit_checkout_widget()
     $monthlyPayment = ceil($monthlyPayment * 100) / 100;
     $monthlyPayment = round($monthlyPayment);
 
-    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 30000) {
+    if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '
 <div class="wiget-block" style="margin-bottom: 0px">
                 <div class="wiget-block__content">

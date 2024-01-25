@@ -186,6 +186,8 @@ if (!\current_user_can('activate_plugins')) {
                                 $currencies = array_intersect_key($currencies, array_flip($valid_wc_currencies));
                             }
 
+                            $currencies = ['' => 'Не передавать значение валюты'] + $currencies;
+
                             foreach ($currencies as $currency_code => $currency_name) {
                                 $selected = (get_option('robokassa_out_currency') === $currency_code) ? 'selected' : '';
                                 echo '<option value="' . esc_attr($currency_code) . '" ' . $selected . '>';
@@ -438,6 +440,22 @@ if (!\current_user_can('activate_plugins')) {
                                 : ''; */ ?>><label for="shoppaytype">В магазине</label>
                         </td>
                     </tr>-->
+
+                    <tr valign="top">
+                        <th scope="row">Отложенные платежи</th>
+                        <td>
+                            <input type="radio" id="hold_on" name="robokassa_payment_hold_onoff" value="true"
+                                <?php echo get_option('robokassa_payment_hold_onoff') == 'true' ? 'checked="checked"' : ''; ?>>
+                            <label for="hold_on">Включить</label>
+
+                            <input type="radio" id="hold_off" name="robokassa_payment_hold_onoff" value="false"
+                                <?php echo get_option('robokassa_payment_hold_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
+                            <label for="hold_off">Отключить</label><br />
+                            <span class="text-description">Данная <a href="https://docs.robokassa.ru/holding/">услуга</a> доступна только по предварительному согласованию.<span><br />
+                            <span class="text-description">Функционал доступен только при использовании банковских карт.<span><br />
+                            <span class="text-description"><a href="ссылка_на_инструкцию_по_настройке">Инструкция по настройке</a></span>
+                        </td>
+                    </tr>
 
                     <tr valign="top">
                         <th scope="row">Страница успеха платежа</th>

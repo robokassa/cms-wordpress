@@ -52,7 +52,7 @@ class payment_robokassa_pay_method_request_Credit extends \Robokassa\Payment\WC_
  */
 function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
     $methods[] = 'payment_robokassa_pay_method_request_all';
-    if (get_option('robokassa_podeli') == '1' && WC()->cart !== null && isset(WC()->cart->total) && WC()->cart->total >= 300 && WC()->cart->total <= 30000) {
+    if (get_option('robokassa_podeli') == '1' && WC()->cart !== null && isset(WC()->cart->total) && WC()->cart->total >= 300 && WC()->cart->total <= 35000) {
         $methods[] = 'payment_robokassa_pay_method_request_Podeli';
     }
     if (get_option('robokassa_credit') == '1' && WC()->cart !== null && isset(WC()->cart->total) && WC()->cart->total >= 1500 && WC()->cart->total <= 200000) {

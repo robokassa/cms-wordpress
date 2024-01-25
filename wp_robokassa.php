@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.5.7
+ * Version: 1.5.8
  */
 
 require_once('payment-widget.php');
@@ -96,6 +96,9 @@ add_action('parse_request', 'robokassa_payment_robomarketRequest'); // Хук п
 add_action('woocommerce_order_status_completed', 'robokassa_payment_smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
 
 add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
+add_action('woocommerce_order_status_changed', 'robokassa_hold_confirm', 10, 4);
+add_action('woocommerce_order_status_changed', 'robokassa_hold_cancel', 10, 4);
+add_action('robokassa_cancel_payment_event', 'robokassa_hold_cancel_after5', 10, 1);
 
 
 register_activation_hook(__FILE__, 'robokassa_payment_wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
@@ -324,8 +327,42 @@ function robokassa_payment_wp_robokassa_checkPayment()
                     } catch (Exception $e) {
                     }
                 }
-            } else {
+            } elseif ((get_option('robokassa_payment_hold_onoff') == 'true') &&
+                strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
 
+                $input_data = file_get_contents('php://input');
+
+                // Разбиваем JWT на три части
+                $token_parts = explode('.', $input_data);
+
+                // Проверяем, что есть три части
+                if (count($token_parts) === 3) {
+                    // Декодируем вторую часть (полезные данные)
+                    $json_data = json_decode(base64_decode($token_parts[1]), true);
+
+                    // Проверяем наличие ключевого поля "state" со значением "HOLD"
+                    if (isset($json_data['data']['state']) && $json_data['data']['state'] === 'HOLD') {
+                        // Изменяем статус заказа
+                        $order = new WC_Order($json_data['data']['invId']);
+                        $date_in_five_days = date('Y-m-d H:i:s', strtotime('+5 days'));
+                        $order->add_order_note("Robokassa: Платеж успешно подтвержден. Он ожидает подтверждения до {$date_in_five_days}, после чего автоматически отменится");
+                        $order->update_status('on-hold');
+
+                        // Добавляем событие, которое делает unhold через 5 дней
+                        wp_schedule_single_event(strtotime('+5 days'), 'robokassa_cancel_payment_event', array($order->get_id()));
+                    }
+                    if (isset($json_data['data']['state']) && $json_data['data']['state'] === 'OK') {
+                        // Изменяем статус заказа
+                        $order = new WC_Order($json_data['data']['invId']);
+                        $order->add_order_note("Robokassa: Платеж успешно подтвержден");
+                        $order->update_status('processing');
+
+                    }
+                    http_response_code(200);
+                } else {
+                    http_response_code(400);
+                }
+            } else {
                 $order = new WC_Order($_REQUEST['InvId']);
                 $order->add_order_note('Bad CRC');
                 $order->update_status('failed');
@@ -1119,3 +1156,129 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 
     }
 }
+
+function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
+    // Проверяем, что статус был изменен с "on-hold" на "processing" (обработка)
+    if ((get_option('robokassa_payment_hold_onoff') == 'true')
+        && $old_status === 'on-hold' && $new_status === 'processing') {
+
+        $order = wc_get_order($order_id);
+        $order_items = $order->get_items();
+        $shipping_total = $order->get_shipping_total();
+
+        $receipt_items = array();
+        foreach ($order_items as $item) {
+            $item_name = $item->get_name();
+            $item_quantity = $item->get_quantity();
+            $item_sum = $item->get_total();
+            $receipt_items[] = array(
+                'name' => $item_name,
+                'quantity' => $item_quantity,
+                'sum' => $item_sum,
+                'tax' => get_option('robokassa_payment_tax'),
+                'payment_method' => \get_option('robokassa_payment_paymentMethod'),
+                'payment_object' => \get_option('robokassa_payment_paymentObject'),
+                'tax' => get_option('robokassa_payment_tax'),
+            );
+        }
+
+        if ($shipping_total > 0) {
+            $receipt_items[] = array(
+                'name' => 'Доставка',
+                'quantity' => 1,
+                'cost' => $shipping_total,
+                'sum' => $shipping_total * 1,
+                'tax' => get_option('robokassa_payment_tax'),
+                'payment_method' => 'full_payment',
+                'payment_object' => get_option('robokassa_payment_paymentObject'),
+            );
+        }
+
+        $request_data = array(
+            'MerchantLogin' => get_option('robokassa_payment_MerchantLogin'),
+            'InvoiceID' => $order_id,
+            'OutSum' => $order->get_total(),
+            'Receipt' => json_encode(array('items' => $receipt_items)),
+        );
+
+        $merchant_login = get_option('robokassa_payment_MerchantLogin');
+        $password1 = get_option('robokassa_payment_shoppass1');
+
+        $signature_value = md5("{$merchant_login}:{$request_data['OutSum']}:{$request_data['InvoiceID']}:{$request_data['Receipt']}:{$password1}");
+        $request_data['SignatureValue'] = $signature_value;
+
+        $response = wp_remote_post('https://auth.robokassa.ru/Merchant/Payment/Confirm', array(
+            'body' => $request_data,
+        ));
+
+        /*        if (is_wp_error($response)) {
+                    error_log('Error sending payment request: ' . $response->get_error_message());
+                    $order->add_order_note('Error sending payment request: ' . $response->get_error_message());
+                } else {
+                    $body = wp_remote_retrieve_body($response);
+                    $order->add_order_note('Robokassa: ошибка проведения платежа' . json_encode($request_data) . $body);
+                }*/
+    }
+}
+
+function robokassa_hold_cancel($order_id, $old_status, $new_status, $order) {
+    // Проверяем, что статус был изменен с "on-hold" на "Canceled"
+    if ((get_option('robokassa_payment_hold_onoff') == 'true') &&
+        $old_status === 'on-hold' && $new_status === 'cancelled') {
+
+        $request_data = array(
+            'MerchantLogin' => get_option('robokassa_payment_MerchantLogin'),
+            'InvoiceID' => $order_id,
+            'OutSum' => $order->get_total(),
+        );
+
+        $merchant_login = get_option('robokassa_payment_MerchantLogin');
+        $password1 = get_option('robokassa_payment_shoppass1');
+
+        $signature_value = md5("{$merchant_login}::{$request_data['InvoiceID']}:{$password1}");
+        $request_data['SignatureValue'] = $signature_value;
+
+        $response = wp_remote_post('https://auth.robokassa.ru/Merchant/Payment/Cancel', array(
+            'body' => $request_data,
+        ));
+
+        if (is_wp_error($response)) {
+            $order->add_order_note('Error sending payment request: ' . $response->get_error_message());
+        } else {
+            $order->add_order_note('Robokassa: холдирование было отменено вами, либо автоматически после 5 дней ожидания');
+        }
+    }
+}
+
+function robokassa_hold_cancel_after5($order_id) {
+    // Проверяем, что заказ существует
+    $order = wc_get_order($order_id);
+    if ($order) {
+        // Проверяем текущий статус заказа
+        if ($order->get_status() === 'on-hold') {
+            // Отменяем заказ и добавляем соответствующее уведомление
+            $request_data = array(
+                'MerchantLogin' => get_option('robokassa_payment_MerchantLogin'),
+                'InvoiceID' => $order_id,
+                'OutSum' => $order->get_total(),
+            );
+
+            $merchant_login = get_option('robokassa_payment_MerchantLogin');
+            $password1 = get_option('robokassa_payment_shoppass1');
+
+            $signature_value = md5("{$merchant_login}::{$request_data['InvoiceID']}:{$password1}");
+            $request_data['SignatureValue'] = $signature_value;
+
+            $response = wp_remote_post('https://auth.robokassa.ru/Merchant/Payment/Cancel', array(
+                'body' => $request_data,
+            ));
+
+            if (is_wp_error($response)) {
+                $order->add_order_note('Error sending payment request: ' . $response->get_error_message());
+            }
+
+            $order->update_status('cancelled');
+        }
+    }
+}
+
