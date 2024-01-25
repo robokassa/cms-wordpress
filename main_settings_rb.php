@@ -453,7 +453,7 @@ if (!\current_user_can('activate_plugins')) {
                             <label for="hold_off">Отключить</label><br />
                             <span class="text-description">Данная <a href="https://docs.robokassa.ru/holding/">услуга</a> доступна только по предварительному согласованию.<span><br />
                             <span class="text-description">Функционал доступен только при использовании банковских карт.<span><br />
-                            <span class="text-description"><a href="ссылка_на_инструкцию_по_настройке">Инструкция по настройке</a></span>
+                            <span class="text-description"><a href="https://docs.robokassa.ru/media/guides/hold_woocommerce.pdf">Инструкция по настройке</a></span>
                         </td>
                     </tr>
 
