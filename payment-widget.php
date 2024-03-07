@@ -272,7 +272,7 @@ function payment_product_widget()
         }
     }
 
-    if (get_option('robokassa_payment_credit_selected_method') === 'credit' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 200000) {
+    if (get_option('robokassa_payment_credit_selected_method') === 'credit' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 500000) {
         $monthlyInterestRate = 0.02333; // Месячная процентная ставка (2,333% в десятичной форме)
         $months = 23; // Количество месяцев
 
@@ -387,7 +387,7 @@ function payment_product_widget()
 
     }
 
-    if (get_option('robokassa_payment_credit_selected_method') === 'installment' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 200000) {
+    if (get_option('robokassa_payment_credit_selected_method') === 'installment' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 500000) {
         echo '
 <div class="wiget-block-v3">
         <button class="wiget-action-button">
@@ -495,7 +495,7 @@ function payment_product_widget()
 
     }
 
-    if (get_option('robokassa_payment_credit_selected_method') === 'all_methods' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 200000) {
+    if (get_option('robokassa_payment_credit_selected_method') === 'all_methods' && get_option('robokassa_payment_credit_widget_onoff') === 'true' && $price > 1500 && $price < 500000) {
         $monthlyInterestRate = 0.02333; // Месячная процентная ставка (2,333% в десятичной форме)
         $months = 23; // Количество месяцев
 
