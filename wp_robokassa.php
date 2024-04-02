@@ -363,11 +363,13 @@ function robokassa_payment_wp_robokassa_checkPayment()
                     http_response_code(400);
                 }
             } else {
-                $order = new WC_Order($_REQUEST['InvId']);
-                $order->add_order_note('Bad CRC');
-                $order->update_status('failed');
+	            $returner = 'BAD SIGN';
 
-                $returner = 'BAD SIGN';
+	            try {
+		            $order = new WC_Order($_REQUEST['InvId']);
+		            $order->add_order_note('Bad CRC');
+		            $order->update_status('failed');
+	            } catch (Exception $e) {}
             }
         }
 
