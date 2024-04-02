@@ -62,6 +62,7 @@ if (!\current_user_can('activate_plugins')) {
         'robokassa_agreement_text',
         'robokassa_agreement_pd_link',
         'robokassa_agreement_oferta_link',
+        'robokassa_payment_hold_onoff',
     ];
 
     require_once __DIR__ . '/labelsClasses.php';
