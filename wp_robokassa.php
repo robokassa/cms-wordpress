@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.5.9
+ * Version: 1.6.0
  */
 
 require_once('payment-widget.php');
@@ -40,7 +40,7 @@ define('ROBOKASSA_PAYMENT_DEBUG_STATUS', false);
 
 \spl_autoload_register(
     function ($className) {
-        $file = __DIR__ . '/classes/' . \str_replace('\\', '/', $className) . '.php';
+        $file =__DIR__. '/classes/' . \str_replace('\\', '/', $className) . '.php';
 
         if (file_exists($file))
             require_once $file;
@@ -741,31 +741,80 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
     $taxes = $woocommerce->cart->get_cart_contents_tax();
 
     foreach ($cart as $item) {
-
         $product = wc_get_product($item['product_id']);
+        $quantity = (float)$item['quantity'];
 
-        $current['name'] = $product->get_title();
-        $current['quantity'] = (float)$item['quantity'];
+        // Проверяем, если функция включена, то разбиваем на дополнительные объекты
+        if (get_option('robokassa_marking') == 1) {
+            for ($i = 1; $i <= $quantity; $i++) {
+                $current = [];
+                $current['name'] = $product->get_title();
+                $current['quantity'] = 1;
 
-        $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
+                $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count());
 
-        $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
-        $current['sum'] = $current['cost'] * $current['quantity'];
+                $current['cost'] = ($item['line_total'] + $tax_per_item);
+                $current['sum'] = $current['cost'];
 
-        if (get_option('robokassa_country_code') == 'KZ') {
+                if (get_option('robokassa_country_code') == 'RU') {
+                    $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+                    $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+                }
+
+                if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
+                    $current['tax'] = $tax;
+                } else {
+                    $current['tax'] = 'none';
+                }
+
+                $receipt['items'][] = $current;
+            }
         } else {
-            $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
-            $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+            $current['name'] = $product->get_title();
+            $current['quantity'] = (float)$item['quantity'];
+
+            $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
+
+            $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
+            $current['sum'] = $current['cost'] * $current['quantity'];
+
+            if (get_option('robokassa_country_code') == 'RU') {
+                $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+                $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+            }
+
+            if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
+                $current['tax'] = $tax;
+            } else {
+                $current['tax'] = 'none';
+            }
+
+
+            $receipt['items'][] = $current;
         }
+    }
 
-        if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
-            $current['tax'] = $tax;
-        } else {
-            $current['tax'] = 'none';
+
+    // Проверяем, активен ли плагин WooCommerce Checkout Add-Ons
+    if (is_plugin_active('woocommerce-checkout-add-ons/woocommerce-checkout-add-ons.php')) {
+        $fees = $order->get_items('fee');
+        foreach ($fees as $fee) {
+
+            $fee_name = $fee->get_name();
+            $fee_total = floatval($fee->get_total());
+
+            $fee_data = array(
+                'name' => $fee_name,
+                'quantity' => 1,
+                'cost' => $fee_total,
+                'sum' => $fee_total,
+                'payment_object' => \get_option('robokassa_payment_paymentObject'),
+                'payment_method' => \get_option('robokassa_payment_paymentMethod'),
+                'tax' => \get_option('robokassa_payment_tax'),
+            );
+
+            $receipt['items'][] = $fee_data;
         }
-
-
-        $receipt['items'][] = $current;
     }
 
     if (empty($receipt)) {
@@ -805,8 +854,7 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
         $current['sum'] = $current['cost'] * $current['quantity'];
 
 
-        if (get_option('robokassa_country_code') == 'KZ') {
-        } else {
+        if (get_option('robokassa_country_code') == 'RU') {
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
         }
@@ -1143,10 +1191,10 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
         );
 
         $curl = curl_init('https://ws.roboxchange.com/RoboFiscal/Receipt/Attach');
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $startupHash . '.' . $sign);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+        curl_setopt($curl,CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curl,CURLOPT_POSTFIELDS, $startupHash . '.' . $sign);
+        curl_setopt($curl,CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl,CURLOPT_HTTPHEADER, array(
                 'Content-Type: application/json',
                 'Content-Length: ' . strlen($startupHash . '.' . $sign))
         );

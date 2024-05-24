@@ -57,6 +57,7 @@ if (!\current_user_can('activate_plugins')) {
         'robokassa_patyment_markup',
         'robokassa_culture',
         'robokassa_iframe',
+        'robokassa_marking',
         'robokassa_country_code',
         'robokassa_out_currency',
         'robokassa_agreement_text',
@@ -430,6 +431,22 @@ if (!\current_user_can('activate_plugins')) {
                         </td>
                     </tr>
 
+                    <tr valign="top">
+                        <th scope="row">Включить для попозиционной маркировки</th>
+                        <td>
+                            <select name="robokassa_marking">
+                                <?php if (get_option('robokassa_marking') == 1) { ?>
+                                    <option selected="selected" value="1">Включено</option>
+                                    <option value="0">Отключено</option>
+                                <?php } else { ?>
+                                    <option value="1">Включено</option>
+                                    <option selected="selected" value="0">Отключено</option>
+                                <?php } ?>
+                            </select><br/>
+                            <span class="text-description">При активированной функции, товары, количество которых больше одного в корзине, автоматически будут разбиты на отдельные позиции для чека<span>
+                        </td>
+                    </tr>
+
                     <!--                    <tr valign="top" id="payment-method-rk">
                         <th scope="row">Выбор способа оплаты</th>
                         <td>
@@ -517,4 +534,3 @@ if (!\current_user_can('activate_plugins')) {
         </form>
     </div>
 </div>
-
