@@ -751,17 +751,22 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
                 $current['name'] = $product->get_title();
                 $current['quantity'] = 1;
 
+                // Получаем цену каждого товара
+                $item_price = $product->get_price();
+
+                // Рассчитываем налог на единицу товара
                 $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count());
 
-                $current['cost'] = ($item['line_total'] + $tax_per_item);
+                // Устанавливаем цену и сумму для текущего товара
+                $current['cost'] = $item_price + $tax_per_item;
                 $current['sum'] = $current['cost'];
 
                 if (get_option('robokassa_country_code') == 'RU') {
-                    $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
-                    $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+                    $current['payment_object'] = get_option('robokassa_payment_paymentObject');
+                    $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
                 }
 
-                if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
+                if (isset($receipt['sno']) && $receipt['sno'] == 'osn' || get_option('robokassa_country_code') == 'KZ') {
                     $current['tax'] = $tax;
                 } else {
                     $current['tax'] = 'none';
@@ -770,25 +775,30 @@ function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
                 $receipt['items'][] = $current;
             }
         } else {
+            $current = [];
             $current['name'] = $product->get_title();
             $current['quantity'] = (float)$item['quantity'];
 
+            // Получаем цену каждого товара
+            $item_price = $product->get_price();
+
+            // Рассчитываем налог на все количество текущего товара
             $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
 
-            $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
+            // Устанавливаем цену и сумму для текущего товара
+            $current['cost'] = $item_price + ($tax_per_item / $current['quantity']);
             $current['sum'] = $current['cost'] * $current['quantity'];
 
             if (get_option('robokassa_country_code') == 'RU') {
-                $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
-                $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
+                $current['payment_object'] = get_option('robokassa_payment_paymentObject');
+                $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
             }
 
-            if (isset($receipt['sno']) && ($receipt['sno'] == 'osn') || (get_option('robokassa_country_code') == 'KZ')) {
+            if (isset($receipt['sno']) && $receipt['sno'] == 'osn' || get_option('robokassa_country_code') == 'KZ') {
                 $current['tax'] = $tax;
             } else {
                 $current['tax'] = 'none';
             }
-
 
             $receipt['items'][] = $current;
         }
@@ -1329,4 +1339,3 @@ function robokassa_hold_cancel_after5($order_id) {
         }
     }
 }
-
