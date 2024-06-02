@@ -172,13 +172,13 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
             $current['quantity'] = 1;
             $current['cost'] = (double)\sprintf(
                 "%01.2f",
-                $renewal_order->get_shipping_total()
+	            ( $renewal_order->get_shipping_total() + $renewal_order->get_shipping_tax() )
             );
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
             if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
-                $current['tax'] = $tax;
+                $current['tax'] = $renewal_order->get_shipping_tax();
             } else {
                 $current['tax'] = 'none';
             }
