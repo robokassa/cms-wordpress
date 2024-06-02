@@ -115,10 +115,8 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
      * @param object $previous_error
      */
     public function process_subscription_payment( $amount, $renewal_order, $retry = true, $previous_error = false ) {
-        global $woocommerce;
-        $cart = $woocommerce->cart->get_cart();
-        $taxes = $woocommerce->cart->get_cart_contents_tax();
 
+        $taxes = $renewal_order->get_cart_tax();
         $order_id  = $renewal_order->get_id();
         $subscribe = reset(wcs_get_subscriptions_for_renewal_order($renewal_order));
         $parent    = $subscribe->get_parent();
@@ -151,7 +149,7 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
             $current['name'] = $product->get_title();
             $current['quantity'] = (float)$item['quantity'];
 
-            $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
+            $tax_per_item = ($taxes / $renewal_order->get_item_count()) * $current['quantity'];
 
             $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
 
