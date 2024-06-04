@@ -612,8 +612,7 @@ function payment_product_widget()
 
 }
 
-function payment_cart_widget()
-{
+function payment_cart_widget() {
     global $woocommerce;
 
     $cart = $woocommerce->cart;
@@ -622,10 +621,16 @@ function payment_cart_widget()
     $price = preg_replace('/[^\d.,]/', '', $price);
     $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
 
-    setlocale(LC_TIME, 'ru_RU.UTF-8');
-    $podeli_2w_date = strftime('%d %b', strtotime('+2 weeks'));
-    $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
-    $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
+    $locale = 'ru_RU';
+    setlocale(LC_TIME, $locale);
+    $fmt = new IntlDateFormatter($locale, IntlDateFormatter::LONG, IntlDateFormatter::NONE, 'UTC', IntlDateFormatter::GREGORIAN, 'dd MMM');
+
+    $current_date = new DateTime();
+    $podeli_2w_date = $fmt->format($current_date->modify('+2 weeks'));
+    $current_date = new DateTime(); // Reset the date
+    $podeli_4w_date = $fmt->format($current_date->modify('+4 weeks'));
+    $current_date = new DateTime(); // Reset the date
+    $podeli_6w_date = $fmt->format($current_date->modify('+6 weeks'));
 
     if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '
@@ -716,8 +721,7 @@ function select_payment_method($available_gateways)
     return $available_gateways;
 }
 
-function podeli_checkout_widget()
-{
+function podeli_checkout_widget() {
     global $woocommerce;
 
     $cart = $woocommerce->cart;
@@ -726,10 +730,16 @@ function podeli_checkout_widget()
     $price = preg_replace('/[^\d.,]/', '', $price);
     $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
 
-    setlocale(LC_TIME, 'ru_RU.UTF-8');
-    $podeli_2w_date = strftime('%d %b', strtotime('+2 weeks'));
-    $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
-    $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
+    $locale = 'ru_RU';
+    setlocale(LC_TIME, $locale);
+    $fmt = new IntlDateFormatter($locale, IntlDateFormatter::LONG, IntlDateFormatter::NONE, 'UTC', IntlDateFormatter::GREGORIAN, 'dd MMM');
+
+    $current_date = new DateTime();
+    $podeli_2w_date = $fmt->format($current_date->modify('+2 weeks'));
+    $current_date = new DateTime(); // Reset the date
+    $podeli_4w_date = $fmt->format($current_date->modify('+4 weeks'));
+    $current_date = new DateTime(); // Reset the date
+    $podeli_6w_date = $fmt->format($current_date->modify('+6 weeks'));
 
     if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '

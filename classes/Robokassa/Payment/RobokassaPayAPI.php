@@ -5,56 +5,56 @@ namespace Robokassa\Payment;
 class RobokassaPayAPI {
 
     /**
-     * @var string
+     *@varstring
      */
     private $mrh_login;
 
     /**
-     * @var string
+     *@varstring
      */
     private $mrh_pass1;
 
     /**
-     * @var string
+     *@varstring
      */
     private $mrh_pass2;
 
     /**
-     * @var string
+     *@varstring
      */
     private $method;
 
     /**
-     * @var string
+     *@varstring
      */
     private $apiUrl;
 
     /**
-     * @var string
+     *@varstring
      */
     private $reply = '';
 
     /**
-     * @var string
+     *@varstring
      */
     private $request = '';
 
     /**
-     * @return string
+     *@returnstring
      */
     public function getReply() {
         return $this->reply;
     }
 
     /**
-     * @return string
+     *@returnstring
      */
     public function getRequest() {
         return $this->request;
     }
 
     /**
-     * @return string
+     *@returnstring
      */
     public function getSendResult() {
         return json_encode(array(
@@ -64,10 +64,10 @@ class RobokassaPayAPI {
     }
 
     /**
-     * @param string $login
-     * @param string $pass1
-     * @param string $pass2
-     * @param string $method
+     *@paramstring$login
+     *@paramstring$pass1
+     *@paramstring$pass2
+     *@paramstring$method
      */
     public function __construct($login, $pass1, $pass2, $method = 'md5') {
         $this->mrh_login = $login;
@@ -79,10 +79,10 @@ class RobokassaPayAPI {
     }
 
     /**
-     * @param string $mthd
-     * @param array  $data
+     *@paramstring$mthd
+     *@paramarray$data
      *
-     * @return array
+     *@returnarray
      */
     private function sendRequest($mthd, $data) {
         return json_decode($this->parseXmlAndConvertToJson($this->apiUrl.$mthd.'?'.http_build_query($data)), true);
@@ -92,11 +92,11 @@ class RobokassaPayAPI {
      * Если $receiptJson пустой (то есть имеет значение "[]") - то в формировании сигнатуры
      * он не использоваться, а если не пустой - используем его json-представление
      *
-     * @param string $sum
-     * @param string $invId
-     * @param string $receiptJson
+     *@paramstring$sum
+     *@paramstring$invId
+     *@paramstring$receiptJson
      *
-     * @return string
+     *@returnstring
      */
     private function getSignatureString($sum, $invId, $receiptJson, $recurring = false)
     {
@@ -129,12 +129,12 @@ class RobokassaPayAPI {
     /**
      * Генерирует хеш для строки $string с помощью метода $method
      *
-     * @param string $string
-     * @param string $method
+     *@paramstring$string
+     *@paramstring$method
      *
-     * @return string
+     *@returnstring
      *
-     * @throws \Exception
+     *@throws\Exception
      */
     public function getSignature($string, $method = 'md5') {
         if (in_array($method, array('md5', 'ripemd160', 'sha1', 'sha256', 'sha384', 'sha512'))) {
@@ -147,17 +147,17 @@ class RobokassaPayAPI {
     /**
      * Генерирует форму, в Opencart модуле НЕ ИСПОЛЬЗУЕТСЯ!
      *
-     * @param float $sum
-     * @param int $invId
-     * @param string $invDesc
-     * @param string $test
-     * @param string $incCurrLabel
-     * @param array $receipt
+     *@paramfloat$sum
+     *@paramint$invId
+     *@paramstring$invDesc
+     *@paramstring$test
+     *@paramstring$incCurrLabel
+     *@paramarray$receipt
      *
-     * @param null $email
-     * @return string
+     *@paramnull$email
+     *@returnstring
      *
-     * @throws \Exception
+     *@throws\Exception
      */
     public function createForm(
         $sum,
@@ -238,10 +238,10 @@ class RobokassaPayAPI {
     }
 
     /**
-     * @param string $formUrl
-     * @param array  $formData
+     *@paramstring$formUrl
+     *@paramarray$formData
      *
-     * @return string
+     *@returnstring
      */
     private function renderForm($formUrl, array $formData) {
 
@@ -260,7 +260,7 @@ class RobokassaPayAPI {
 
             foreach ($formData as $inputName => $inputValue){
                 if($inputName != 'IsTest'){
-                    $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+                    $value = htmlspecialchars($inputValue,ENT_COMPAT, 'UTF-8');
 
                     if($lastParam == $inputValue){
                         $params .= $inputName . ": '" . $value . "'";
@@ -281,7 +281,7 @@ class RobokassaPayAPI {
 
             foreach ($formData as $inputName => $inputValue){
                 if($inputName != 'IsTest'){
-                    $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+                    $value = htmlspecialchars($inputValue,ENT_COMPAT, 'UTF-8');
 
                     if($lastParam == $inputValue){
                         $params .= $inputName . ": '" . $value . "'";
@@ -301,7 +301,7 @@ class RobokassaPayAPI {
 
             foreach ($formData as $inputName => $inputValue){
                 if($inputName != 'IsTest'){
-                    $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+                    $value = htmlspecialchars($inputValue,ENT_COMPAT, 'UTF-8');
 
                     if($lastParam == $inputValue){
                         $params .= $inputName . ": '" . $value . "'";
@@ -315,65 +315,65 @@ class RobokassaPayAPI {
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
         }else {
             $form = '<div class="preloader">
-			  <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-				<path fill="currentColor"
-				  d="M304 48c0 26.51-21.49 48-48 48s-48-21.49-48-48 21.49-48 48-48 48 21.49 48 48zm-48 368c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm208-208c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zM96 256c0-26.51-21.49-48-48-48S0 229.49 0 256s21.49 48 48 48 48-21.49 48-48zm12.922 99.078c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.491-48-48-48zm294.156 0c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.49-48-48-48zM108.922 60.922c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.491-48-48-48z">
-				</path>
-			  </svg>
-			</div>
-			<style>
-			.preloader {
-			  position: fixed;
-			  left: 0;
-			  top: 0;
-			  right: 0;
-			  bottom: 0;
-			  overflow: hidden;
-			  /* фоновый цвет */
-			  background: #e0e0e0;
-			  z-index: 1001;
-			}
+           <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <path fill="currentColor"
+              d="M304 48c0 26.51-21.49 48-48 48s-48-21.49-48-48 21.49-48 48-48 48 21.49 48 48zm-48 368c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm208-208c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zM96 256c0-26.51-21.49-48-48-48S0 229.49 0 256s21.49 48 48 48 48-21.49 48-48zm12.922 99.078c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.491-48-48-48zm294.156 0c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.49-48-48-48zM108.922 60.922c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.491-48-48-48z">
+            </path>
+           </svg>
+         </div>
+         <style>
+         .preloader {
+           position: fixed;
+           left: 0;
+           top: 0;
+           right: 0;
+           bottom: 0;
+           overflow: hidden;
+           /* фоновый цвет */
+           background: #e0e0e0;
+           z-index: 1001;
+         }
 
-			.preloader__image {
-			  position: relative;
-			  top: 50%;
-			  left: 50%;
-			  width: 70px;
-			  height: 70px;
-			  margin-top: -35px;
-			  margin-left: -35px;
-			  text-align: center;
-			  animation: preloader-rotate 2s infinite linear;
-			}
+         .preloader__image {
+           position: relative;
+           top: 50%;
+           left: 50%;
+           width: 70px;
+           height: 70px;
+           margin-top: -35px;
+           margin-left: -35px;
+           text-align: center;
+           animation: preloader-rotate 2s infinite linear;
+         }
 
-			@keyframes preloader-rotate {
-			  100% {
-				transform: rotate(360deg);
-			  }
-			}
+         @keyframes preloader-rotate {
+           100% {
+            transform: rotate(360deg);
+           }
+         }
 
-			.loaded_hiding .preloader {
-			  transition: 0.3s opacity;
-			  opacity: 0;
-			}
+         .loaded_hiding .preloader {
+           transition: 0.3s opacity;
+           opacity: 0;
+         }
 
-			.loaded .preloader {
-			  display: none;
-			}
-			</style>
-			<script>
-			  window.onload = function () {
-				document.body.classList.add("loaded_hiding");
-				window.setTimeout(function () {
-				  document.body.classList.add("loaded");
-				  document.body.classList.remove("loaded_hiding");
-				}, 1000);
-			  }
-			</script>';
+         .loaded .preloader {
+           display: none;
+         }
+         </style>
+         <script>
+           window.onload = function () {
+            document.body.classList.add("loaded_hiding");
+            window.setTimeout(function () {
+              document.body.classList.add("loaded");
+              document.body.classList.remove("loaded_hiding");
+            }, 1000);
+           }
+         </script>';
             $form .= "<form action=\"$formUrl\" method=\"POST\">";
 
             foreach ($formData as $inputName => $inputValue) {
-                $value = htmlspecialchars($inputValue, ENT_COMPAT, 'UTF-8');
+                $value = htmlspecialchars($inputValue,ENT_COMPAT, 'UTF-8');
 
                 $form .= "<input type=\"hidden\" name=\"$inputName\" value=\"$value\">";
             }
@@ -388,11 +388,11 @@ class RobokassaPayAPI {
     /**
      * Отправляет СМС с помощью GET-запроса на робокассу
      *
-     * @param string $phone
-     * @param string $message
+     *@paramstring$phone
+     *@paramstring$message
      *
-     * @return bool
-     * @throws \Exception
+     *@returnbool
+     *@throws\Exception
      */
     public function sendSms($phone, $message) {
         $data = array(
@@ -416,10 +416,10 @@ class RobokassaPayAPI {
     /**
      * Запрашиват размер комиссии в процентах для конкретного способа оплаты
      *
-     * @param string $incCurrLabel Кодовое имя метода оплаты
-     * @param int    $sum          Стоимость товара
+     *@paramstring$incCurrLabelКодовое имя метода оплаты
+     *@paramint$sumСтоимость товара
      *
-     * @return float Комиссия метода в %
+     *@returnfloat Комиссия метода в %
      */
     public function getCommission($incCurrLabel, $sum = 10000) {
         if ($incCurrLabel == 'all') {
@@ -442,10 +442,10 @@ class RobokassaPayAPI {
     /**
      * Возвращает сумму к оплате с учетом комиссий.
      *
-     * @param string $incCurrLabel Кодовое имя метода оплаты
-     * @param int    $sum          Стоимость товара
+     *@paramstring$incCurrLabelКодовое имя метода оплаты
+     *@paramint$sumСтоимость товара
      *
-     * @return float Стоимость, которую необходимо передавать в Робокассу.
+     *@returnfloat Стоимость, которую необходимо передавать в Робокассу.
      */
     public function getCommissionSum($incCurrLabel, $sum) {
         $parsed = $this->sendRequest('CalcOutSumm', array(
@@ -460,7 +460,7 @@ class RobokassaPayAPI {
     /**
      * Запрашивает и парсит в массив все возможные способы оплаты для данного магазина
      *
-     * @return array
+     *@returnarray
      */
     public function getCurrLabels()
     {
@@ -473,9 +473,9 @@ class RobokassaPayAPI {
     /**
      * Парсит XML в JSON
      *
-     * @param string $url
+     *@paramstring$url
      *
-     * @return string
+     *@returnstring
      */
     public function parseXmlAndConvertToJson($url) {
         return json_encode(simplexml_load_string(trim(str_replace('"', "'", str_replace(array(
@@ -488,9 +488,9 @@ class RobokassaPayAPI {
     /**
      * Запрашивает у робокассы подтверждение платежа
      *
-     * @param int $invId
+     *@paramint$invId
      *
-     * @return bool
+     *@returnbool
      */
     public function reCheck($invId) {
         $result = $this->sendRequest('OpState', array(
@@ -512,7 +512,7 @@ class RobokassaPayAPI {
             'InvoiceID'         => $invoiceId,
             'PreviousInvoiceID' => $parentInvoiceId,
             'Description'       => '',
-            'SignatureValue'    => $this->getSignature($this->getSignatureString($amount, $invoiceId, $receiptJson, false)),
+            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress"),
             'OutSum'            => $amount,
             'shp_label'         => 'official_wordpress',
             'Receipt'           => $receiptJson

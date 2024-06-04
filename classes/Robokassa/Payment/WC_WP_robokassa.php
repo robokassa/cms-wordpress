@@ -41,15 +41,13 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
     public function __construct() {
 
 
-        $this->title = \mb_strlen(get_option('RobokassaOrderPageTitle_' . $this->id, null)) > 0
+        $this->title = !empty(get_option('RobokassaOrderPageTitle_' . $this->id, null))
             ? get_option('RobokassaOrderPageTitle_' . $this->id, null)
-            : $this->title
-        ;
+            : $this->title;
 
-        $this->description = \mb_strlen(get_option('RobokassaOrderPageDescription_' . $this->id, null)) > 0
+        $this->description = !empty(get_option('RobokassaOrderPageDescription_' . $this->id, null))
             ? get_option('RobokassaOrderPageDescription_' . $this->id, null)
-            : $this->description
-        ;
+            : $this->description;
 
         $this->supports = [
             'products',
@@ -115,13 +113,15 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
      * @param object $previous_error
      */
     public function process_subscription_payment( $amount, $renewal_order, $retry = true, $previous_error = false ) {
-        global $woocommerce;
-        $cart = $woocommerce->cart->get_cart();
-        $taxes = $woocommerce->cart->get_cart_contents_tax();
 
-        $order_id  = $renewal_order->get_id();
-        $subscribe = reset(wcs_get_subscriptions_for_renewal_order($renewal_order));
-        $parent    = $subscribe->get_parent();
+        $taxes = $renewal_order->get_cart_tax();
+        $order_id = $renewal_order->get_id();
+
+
+        $subscriptions = wcs_get_subscriptions_for_renewal_order($renewal_order);
+        $subscribe = reset($subscriptions);
+
+        $parent = $subscribe->get_parent();
 
         $mrhLogin  = get_option('robokassa_payment_MerchantLogin');
         $testMode  = false;
@@ -151,7 +151,7 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
             $current['name'] = $product->get_title();
             $current['quantity'] = (float)$item['quantity'];
 
-            $tax_per_item = ($taxes / $woocommerce->cart->get_cart_contents_count()) * $current['quantity'];
+            $tax_per_item = ($taxes / $renewal_order->get_item_count()) * $current['quantity'];
 
             $current['cost'] = ($item['line_total'] + $tax_per_item) / $current['quantity'];
 
@@ -174,13 +174,13 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
             $current['quantity'] = 1;
             $current['cost'] = (double)\sprintf(
                 "%01.2f",
-                $renewal_order->get_shipping_total()
+                ( $renewal_order->get_shipping_total() + $renewal_order->get_shipping_tax() )
             );
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
             if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
-                $current['tax'] = $tax;
+                $current['tax'] = $renewal_order->get_shipping_tax();
             } else {
                 $current['tax'] = 'none';
             }
