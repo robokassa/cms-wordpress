@@ -512,7 +512,7 @@ class RobokassaPayAPI {
             'InvoiceID'         => $invoiceId,
             'PreviousInvoiceID' => $parentInvoiceId,
             'Description'       => '',
-            'SignatureValue'    => $this->getSignature($this->getSignatureString($amount, $invoiceId, $receiptJson, false)),
+            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress"),
             'OutSum'            => $amount,
             'shp_label'         => 'official_wordpress',
             'Receipt'           => $receiptJson

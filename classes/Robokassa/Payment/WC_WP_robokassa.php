@@ -199,6 +199,7 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
             'method' => 'POST',
             'body' => http_build_query($data)
         ));
+        
     }
 
     /**
