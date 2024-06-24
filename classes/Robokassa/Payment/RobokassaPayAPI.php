@@ -274,7 +274,7 @@ class RobokassaPayAPI {
             $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
         }
-        elseif (get_option('robokassa_podeli') && $formData['IncCurrLabel'] == 'Podeli' ) {
+        if (get_option('robokassa_podeli') && isset($formData['IncCurrLabel']) && $formData['IncCurrLabel'] == 'Podeli') {
 
             $params = '';
             $lastParam = end($formData);
@@ -294,7 +294,7 @@ class RobokassaPayAPI {
             $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robo.directPayment.startOp({" . $params . "})\" value=\"Оплатить\">";
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
         }
-        elseif (get_option('robokassa_podeli') && $formData['IncCurrLabel'] == 'AlwaysYes' ) {
+        if (get_option('robokassa_podeli') && isset($formData['IncCurrLabel']) && $formData['IncCurrLabel'] == 'AlwaysYes') {
 
             $params = '';
             $lastParam = end($formData);
@@ -512,7 +512,7 @@ class RobokassaPayAPI {
             'InvoiceID'         => $invoiceId,
             'PreviousInvoiceID' => $parentInvoiceId,
             'Description'       => '',
-            'SignatureValue'    => $this->getSignature($this->getSignatureString($amount, $invoiceId, $receiptJson, false)),
+            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress"),
             'OutSum'            => $amount,
             'shp_label'         => 'official_wordpress',
             'Receipt'           => $receiptJson
