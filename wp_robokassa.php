@@ -1160,6 +1160,45 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 
         }
 
+        if (is_plugin_active('woocommerce-checkout-add-ons/woocommerce-checkout-add-ons.php')) {
+            $additional_items = $order->get_items('fee');
+
+            foreach ($additional_items as $additional_item) {
+                $additional_item_name = $additional_item->get_name();
+                $additional_item_total = floatval($additional_item->get_total());
+
+                $products_items = array(
+                    'name' => $additional_item_name,
+                    'quantity' => 1,
+                    'cost' => $additional_item_total,
+                    'sum' => $additional_item_total,
+                    'payment_object' => \get_option('robokassa_payment_paymentObject'),
+                    'payment_method' => 'full_payment',
+                    'tax' => $tax,
+                );
+
+                $fields['items'][] = $products_items;
+
+                switch ($tax) {
+                    case "vat0":
+                        $fields['vats'][] = ['type' => $tax, 'sum' => 0];
+                        break;
+                    case "none":
+                        $fields['vats'][] = ['type' => $tax, 'sum' => 0];
+                        break;
+                    case "vat10":
+                        $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 10];
+                        break;
+                    case "vat20":
+                        $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 20];
+                        break;
+                    default:
+                        $fields['vats'][] = ['type' => 'novat', 'sum' => 0];
+                        break;
+                }
+            }
+        }
+
         foreach ($items as $item) {
             $products_items = [
                 'name' => $item['name'],
