@@ -851,10 +851,8 @@ function createRobokassaReceipt($order_id)
 
         $current['name'] = 'Доставка';
         $current['quantity'] = 1;
-        $current['cost'] = (double)\sprintf(
-            "%01.2f",
-            $order->get_shipping_total()
-        );
+        $current['cost'] = (double)sprintf("%01.2f", $order->get_shipping_total());
+        $current['sum'] = (double)sprintf("%01.2f", $order->get_shipping_total());
 
         if (get_option('robokassa_country_code') == 'RU') {
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
