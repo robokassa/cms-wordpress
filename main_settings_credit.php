@@ -49,7 +49,7 @@
                 if ($key === 'Alias') {
                     if ($value === 'Podeli') {
                         $show_podeli = true;
-                    } elseif ($value === 'AlwaysYes') {
+                    } elseif ($value === 'OTP') {
                         $show_credit = true;
                     }
                 } elseif (is_array($value) || is_object($value)) {

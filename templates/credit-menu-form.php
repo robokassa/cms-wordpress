@@ -7,22 +7,26 @@ $show_credit = false;
 $show_installment = false;
 $show_all_methods = false;
 
-$installmentLabels = ['AlwaysYes10PSR', 'AlwaysYes12PSR', 'AlwaysYes18PSR', 'AlwaysYes24PSR', 'AlwaysYes3PSR', 'AlwaysYes4PSR', 'AlwaysYes6PSR', 'AlwaysYes8PSR'];
+$installmentLabels = ['OTP3_300PSR', 'OTP4_300PSR', 'OTP6_300PSR'];
 
-foreach ($json_decoded['Groups']['Group'] as $group) {
-    if (isset($group['Items']['Currency'])) {
-        foreach ($group['Items']['Currency'] as $currency) {
-            if (isset($currency['@attributes']['Label'])) {
-                $label = $currency['@attributes']['Label'];
-                if ($label === 'AlwaysYes36PSR') {
+function checkLabels($array, &$show_credit, &$show_installment, $installmentLabels)
+{
+    foreach ($array as $key => $value) {
+        if (is_array($value)) {
+            if (isset($value['@attributes']['Label'])) {
+                $label = $value['@attributes']['Label'];
+                if ($label === 'OTPCredit_300PSR') {
                     $show_credit = true;
                 } elseif (in_array($label, $installmentLabels)) {
                     $show_installment = true;
                 }
             }
+            checkLabels($value, $show_credit, $show_installment, $installmentLabels);
         }
     }
 }
+
+checkLabels($json_decoded, $show_credit, $show_installment, $installmentLabels);
 
 if ($show_credit && $show_installment) {
     $show_credit = false;
@@ -30,8 +34,7 @@ if ($show_credit && $show_installment) {
     $show_all_methods = true;
 }
 
-$selected_method = '';
-
+$selected_method = 'false';
 if ($show_credit) {
     $selected_method = 'credit';
 } elseif ($show_installment) {
@@ -44,10 +47,9 @@ update_option('robokassa_payment_credit_selected_method', $selected_method);
 
 ?>
 
-
 <div class="credit" id="credit">
     <p class="mid_title_rb">Настройка оплаты в <a
-            href="https://robokassa.com/content/rassrochka-i-kredit-na-platyezhnoy-stranitse-robokassa.html">Рассрочку и кредит</a></p>
+                href="https://robokassa.com/content/rassrochka-i-kredit-na-platyezhnoy-stranitse-robokassa.html">Рассрочку и кредит</a></p>
 
     <table class="form-table">
         <tr valign="top">

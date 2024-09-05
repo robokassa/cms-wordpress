@@ -116,6 +116,9 @@ class RobokassaPayAPI {
                     urlencode((site_url('/?robokassa=result'))),
                     $this->mrh_pass1,
                     'shp_label=official_wordpress',
+                    'Shp_merchant_id=' . $this->mrh_login,
+                    'Shp_order_id=' . $invId,
+                    'Shp_result_url=' . (site_url('/?robokassa=result')),
                 ),
                 array(
                     false,
@@ -191,6 +194,9 @@ class RobokassaPayAPI {
             'ResultUrl2' => urlencode(site_url('/?robokassa=result')),
             'Desc' => $invDesc,
             'shp_label' => 'official_wordpress',
+            'Shp_merchant_id' => $this->mrh_login,
+            'Shp_order_id' => $invId,
+            'Shp_result_url' => site_url('/?robokassa=result'),
             'recurring'      => $recurring ? 'true' : '',
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
@@ -224,9 +230,6 @@ class RobokassaPayAPI {
         $robokassaEnabled = get_option('robokassa_payment_wc_robokassa_enabled');
 
         switch ($robokassaEnabled) {
-            case 'torobomarket':
-                $formUrl = 'http://robo.market/cart/insert';
-                break;
             case 'yes':
                 $formUrl = $paymentUrl;
                 break;
@@ -245,7 +248,7 @@ class RobokassaPayAPI {
      */
     private function renderForm($formUrl, array $formData) {
 
-        if (get_option('robokassa_iframe') && $formData['IncCurrLabel'] != 'Podeli' && $formData['IncCurrLabel'] != 'AlwaysYes') {
+        if (get_option('robokassa_iframe') && $formData['IncCurrLabel'] != 'Podeli' && $formData['IncCurrLabel'] != 'OTP') {
 
             $kzIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.kz/Merchant/bundle/robokassa_iframe.js\"></script>";
             $ruIframe = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js\"></script>";
@@ -273,8 +276,8 @@ class RobokassaPayAPI {
             $form = $iframeUrl;
             $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robokassa.StartPayment({" . $params . "})\" value=\"Оплатить\">";
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
-        }
-        if (get_option('robokassa_podeli') && isset($formData['IncCurrLabel']) && $formData['IncCurrLabel'] == 'Podeli') {
+
+        } elseif (get_option('robokassa_podeli') && isset($formData['IncCurrLabel']) && $formData['IncCurrLabel'] == 'Podeli') {
 
             $params = '';
             $lastParam = end($formData);
@@ -293,8 +296,8 @@ class RobokassaPayAPI {
             $form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/PaymentForm/DirectPayment.js\"></script>";
             $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robo.directPayment.startOp({" . $params . "})\" value=\"Оплатить\">";
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
-        }
-        if (get_option('robokassa_podeli') && isset($formData['IncCurrLabel']) && $formData['IncCurrLabel'] == 'AlwaysYes') {
+
+        } elseif (get_option('robokassa_podeli') && isset($formData['IncCurrLabel']) && $formData['IncCurrLabel'] == 'OTP') {
 
             $params = '';
             $lastParam = end($formData);
@@ -313,7 +316,8 @@ class RobokassaPayAPI {
             $form = "<script type=\"text/javascript\" src=\"https://auth.robokassa.ru/Merchant/PaymentForm/DirectPayment.js\"></script>";
             $form .= "<input id=\"robokassa\" type=\"submit\" onclick=\"Robo.directPayment.startOp({" . $params . "})\" value=\"Оплатить\">";
             $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
-        }else {
+        } else {
+
             $form = '<div class="preloader">
 			  <svg class="preloader__image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 				<path fill="currentColor"
@@ -379,7 +383,7 @@ class RobokassaPayAPI {
             }
 
             $form .= "<input id=\"robokassa\"  type=\"submit\" value=\"Оплатить\"></form>";
-            $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
+            //$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
         }
 
         return $form;

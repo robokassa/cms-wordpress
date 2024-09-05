@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.6.1
+ * Version: 1.6.2
  */
 
 require_once('payment-widget.php');
@@ -92,7 +92,6 @@ function refresh_payment_methods()
 add_action('admin_menu', 'robokassa_payment_initMenu'); // Хук для добавления страниц плагина в админку
 add_action('plugins_loaded', 'robokassa_payment_initWC'); // Хук инициализации плагина робокассы
 add_action('parse_request', 'robokassa_payment_wp_robokassa_checkPayment'); // Хук парсера запросов
-add_action('parse_request', 'robokassa_payment_robomarketRequest'); // Хук парсера запросов RoboMarket
 add_action('woocommerce_order_status_completed', 'robokassa_payment_smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
 
 add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
@@ -145,7 +144,6 @@ function robokassa_payment_smsWhenCompleted($order_id, $debug = '')
 {
     //Отправка СМС-2 если необходимо
     $mrhLogin = get_option('robokassa_payment_MerchantLogin');
-    robokassa_payment_DEBUG("mrh_login = $mrhLogin \r\n");
 
     if (get_option('robokassa_payment_test_onoff') == 'true') {
         $pass1 = get_option('robokassa_payment_testshoppass1');
@@ -188,15 +186,6 @@ function robokassa_payment_smsWhenCompleted($order_id, $debug = '')
  */
 function robokassa_payment_wp_robokassa_activate($debug)
 {
-    $time = time();
-
-    $dbPrefix = \robokassa_payment_getDbPrefix();
-
-    /*    $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
-
-        $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}sms_stats` (`sms_id` int(10) unsigned NOT NULL AUTO_INCREMENT, `order_id` int(11) NOT NULL, `type` int(1) NOT NULL, `status` int(11) NOT NULL DEFAULT '0', `number` varchar(11) NOT NULL, `text` text NOT NULL, `send_time` datetime DEFAULT NULL, `response` text, `reply` text, PRIMARY KEY (`sms_id`), KEY `order_id` (`order_id`), KEY `status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
-        $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}robomarket_orders` (`post_id` int(11) NOT NULL COMMENT 'Id поста, он же id заказа', `other_id` int(11) NOT NULL COMMENT 'Id на стороне робомаркета', PRIMARY KEY (`post_id`,`other_id`), UNIQUE KEY `other_id` (`other_id`), UNIQUE KEY `post_id` (`post_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");*/
-
     add_option('robokassa_payment_wc_robokassa_enabled', 'no');
     add_option('robokassa_payment_test_onoff', 'false');
     add_option('robokassa_payment_type_commission', 'true');
@@ -211,22 +200,13 @@ function robokassa_payment_wp_robokassa_activate($debug)
 /**
  * @return void
  */
-function robokassa_payment_getCurrLabels()
-{
-}
-
-/**
- * @return void
- */
 function robokassa_payment_initMenu()
 {
     add_submenu_page('woocommerce', 'Настройки Робокассы', 'Настройки Робокассы', 'edit_pages', 'robokassa_payment_main_settings_rb', 'robokassa_payment_main_settings');
     add_submenu_page('main_settings_rb.php', 'Основные настройки', 'Основные настройки', 'edit_pages', 'robokassa_payment_main_rb', 'robokassa_payment_main_settings');
     add_submenu_page('main_settings_rb.php', 'Настройки СМС', 'Настройки СМС', 'edit_pages', 'robokassa_payment_sms_rb', 'robokassa_payment_sms_settings');
-    add_submenu_page('main_settings_rb.php', 'РобоМаркет', 'РобоМаркет', 'edit_pages', 'robokassa_payment_robomarket_rb', 'robokassa_payment_robomarket_settings');
     add_submenu_page('main_settings_rb.php', 'Генерировать YML', 'Генерировать YML', 'edit_pages', 'robokassa_payment_YMLGenerator', 'robokassa_payment_yml_generator');
     add_submenu_page('main_settings_rb.php', 'Регистрация', 'Регистрация', 'edit_pages', 'robokassa_payment_registration', 'robokassa_payment_reg');
-    add_submenu_page('main_settings_rb.php', 'Скачать оферту', 'Скачать оферту', 'edit_pages', 'robokassa_payment_offer', 'robokassa_payment_oferta');
     add_submenu_page('main_settings_rb.php', 'Оплата по частям', 'Оплата по частям', 'edit_pages', 'robokassa_payment_credit', 'robokassa_payment_credit');
 }
 
@@ -278,7 +258,10 @@ function robokassa_payment_wp_robokassa_checkPayment()
                                 ? get_option('robokassa_payment_testshoppass2')
                                 : get_option('robokassa_payment_shoppass2')
                             ),
-                            'shp_label=official_wordpress'
+                            'shp_label=official_wordpress',
+                            'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin'),
+                            'Shp_order_id=' . $_REQUEST['InvId'],
+                            'Shp_result_url=' . (site_url('/?robokassa=result'))
                         ]
                     )
                 )
@@ -364,7 +347,7 @@ function robokassa_payment_wp_robokassa_checkPayment()
                 }
             } else {
                 $order = new WC_Order($_REQUEST['InvId']);
-                $order->add_order_note('Bad CRC');
+                $order->add_order_note('Bad CRC '. $crc_confirm .' . '. $_REQUEST['SignatureValue']);
                 $order->update_status('failed');
 
                 $returner = 'BAD SIGN';
@@ -380,19 +363,6 @@ function robokassa_payment_wp_robokassa_checkPayment()
             header('Location:' . robokassa_payment_get_success_fail_url(get_option('robokassa_payment_FailURL'), $_REQUEST['InvId']));
             die;
         }
-
-        if ($_REQUEST['robokassa'] == 'registration') {
-
-            $postData = file_get_contents('php://input');
-            $data = json_decode($postData, true);
-
-            $filename = 'registration_data.json';
-            $save = json_encode($data);
-            file_put_contents($_SERVER['DOCUMENT_ROOT'] . "/wp-content/plugins/robokassa/data/{$filename}", $save);
-
-            echo json_encode($data);
-        }
-
         echo $returner;
         die;
     }
@@ -414,287 +384,6 @@ function formatSignReplace($string)
 function formatSignFinish($string)
 {
     return \preg_replace('/^(.*?)(=*)$/', '$1', $string);
-}
-
-/**
- * Хеширование пароля
- *
- * @param string $document
- * @param string $secret
- *
- * @return string
- */
-function robokassa_payment_getRobomarketHeaderHash($document, $secret)
-{
-    return strtoupper(md5($document . $secret));
-}
-
-/**
- * Обработка запросов, приходящих из робомаркета
- *
- * @return void
- */
-function robokassa_payment_robomarketRequest()
-{
-    if (isset($_REQUEST['robomarket'])) {
-        $requestBody = file_get_contents('php://input');
-
-        $robomarketSecret = get_option('robokassa_payment_robomarket_secret');
-        $headerRequest = robokassa_payment_getRobomarketHeaderHash($requestBody, $robomarketSecret);
-
-        $headers = getallheaders();
-
-        $roboSignature = isset($headers['Robosignature']) ? $headers['Robosignature'] : null;
-
-        if ($roboSignature !== $headerRequest) {
-            robokassa_payment_DEBUG($requestBody);
-            robokassa_payment_DEBUG($robomarketSecret);
-            robokassa_payment_DEBUG("Header hash wrong!!! Calc Hash: $headerRequest Got Hash: $roboSignature");
-
-            die('Header hash wrong!!!');
-        }
-
-        header('Content-type: application/json');
-
-        // Запрос на резервацию товара в Робомаркете, сбор всех данных, поступивших из запроса,
-        // создание заказа, добавление в него всех выбранных продуктов, отправка запроса в Робокассу,
-        // в конце - ответ от Робокассы.
-
-        $mainResponse = '';
-
-        $request = json_decode($requestBody, true);
-
-        if (isset($request['Robomarket']['ReservationRequest'])) {
-            $reservationRequest = $request['Robomarket']['ReservationRequest'];
-
-            $totalCost = $reservationRequest['TotalCost'];
-
-            if ($totalCost !== 0) {
-                $items = $reservationRequest['Items'];
-
-                if (!empty($items) && is_array($items)) {
-                    $customer = $reservationRequest['Customer'];
-
-                    $lastItem = end($items);
-
-                    $delivery = $lastItem['Delivery'];
-
-                    $deliveryCity = 'Не указано';
-                    $deliveryAddress = 'Не указано';
-                    $deliveryAddress1 = 'Не указано';
-
-                    if (isset($delivery['City'])) {
-                        $deliveryCity = $delivery['City'];
-                    }
-
-                    if (isset($delivery['Address'])) {
-                        $deliveryAddress = $delivery['Address'];
-                    }
-
-                    if (isset($delivery['City']) && isset($delivery['Address'])) {
-                        $deliveryAddress1 = $delivery['City'] . ' ' . $delivery['Address'];
-                    }
-
-                    $orderId = $reservationRequest['OrderId'];
-
-                    $order = wc_create_order();
-
-                    if ($order instanceof WC_Order) {
-                        foreach ($items as $item) {
-                            $invId = $item['OfferId'];
-
-                            $product = wc_get_product($invId);
-
-                            $quantity = $item['Quantity'];
-
-                            if ($product->get_stock_quantity() > $quantity || $product->get_stock_status() == 'instock') {
-                                $order->add_product($product, $quantity);
-                            } else {
-                                $mainResponse = json_encode(array(
-                                    'Robomarket' => array(
-                                        'ReservationFailure' => array(
-                                            'OrderId' => $reservationRequest['product_id'],
-                                            'Error' => array(
-                                                'ErrorCode' => 'NotEnoughGoodsInStock',
-                                            ),
-                                        ),
-                                    ),
-                                ));
-                                $order->add_order_note('[RoboMarket]Резервация не удалось');
-                                $order->update_status('failed');
-                            }
-                        }
-
-                        list($customerFirstName, $customerLastName) = explode(' ', $customer['Name']);
-
-                        $order->set_address(array(
-                            'first_name' => $customerFirstName,
-                            'last_name' => $customerLastName,
-                            'email' => $customer['Email'],
-                            'phone' => $customer['Phone'],
-                            'address_1' => $deliveryAddress1,
-                            'address_2' => $deliveryAddress,
-                            'city' => $deliveryCity,
-                        ), 'billing');
-
-                        $order->calculate_totals();
-
-                        $reservationTime = strtotime($reservationRequest['MinPaymentDue'] . ' +1 hour');
-
-                        if ($mainResponse == '') {
-                            $order->add_order_note('[RoboMarket]Заказ зарезервирован');
-                            $order->save();
-
-                            robokassa_payment_saveRobomarketOrder($order, $orderId);
-
-                            $mainResponse = json_encode(array(
-                                'Robomarket' => array(
-                                    'ReservationSuccess' => array(
-                                        'PaymentDue' => date('c', $reservationTime),
-                                        'OrderId' => $orderId,
-                                        'InvoiceId' => $order->get_id(),
-                                    ),
-                                ),
-                            ));
-                        }
-                    }
-                }
-            }
-        }
-
-        // Поиск заказа по id, запрос на оплату заказа и изменение его статуса,
-        // в конце - ответ от Робокассы, подтверждающий оплату.
-
-        if (isset($request['Robomarket']['PurchaseRequest'])) {
-            $purchaseRequest = $request['Robomarket']['PurchaseRequest'];
-
-            $orderId = $purchaseRequest['OrderId'];
-
-            $order = robokassa_payment_loadRobomarketOrder($orderId);
-
-            if (!empty($order)) {
-                if ('completed' !== $order->get_status()) {
-                    /** @var WC_Order_Item_Product $item */
-                    foreach ($order->get_items() as $item) {
-                        $product = $item->get_product();
-                        $product->set_stock_quantity($product->get_stock_quantity() - $item->get_quantity());
-                        $product->save();
-                    }
-
-                    $order->add_order_note('[RoboMarket]Заказ оплачен');
-                    $order->update_status('completed');
-                    $order->payment_complete();
-
-                    $mainResponse = json_encode(array(
-                        'Robomarket' => array(
-                            'PurchaseResponse' => array(
-                                'OrderId' => $orderId,
-                                'Error' => array(
-                                    'ErrorCode' => 'Ok',
-                                ),
-                            ),
-                        ),
-                    ));
-                }
-            }
-        }
-
-        // Запрос на отмену уже имеющегося заказа и изменение его статуса,
-        // в конце - Робокасса присылает ответ о том, что заказ отменен.
-
-        if (isset($request['Robomarket']['CancellationRequest'])) {
-            $cancellationRequest = $request['Robomarket']['CancellationRequest'];
-
-            $invId = $cancellationRequest['InvoiceId'];
-            $orderId = $cancellationRequest['OrderId'];
-
-            $order = new WC_Order($invId);
-            $order->add_order_note('[RoboMarket]Заказ отменен');
-            $order->update_status('failed');
-
-            $mainResponse = json_encode(array(
-                'Robomarket' => array(
-                    'CancellationResponse' => array(
-                        'OrderId' => $orderId,
-                        'Error' => array(
-                            'ErrorCode' => 'Ok',
-                        ),
-                    ),
-                ),
-            ));
-        }
-
-        // Запрос, посылаемый при просроченной оплате, если по итогом запроса
-        // приходит подтверждение, происходит переход на запрос об оплате.
-
-        if (isset($request['Robomarket']['YaReservationRequest'])) {
-            $yaReservationRequest = $request['Robomarket']['YaReservationRequest'];
-
-            $items = $yaReservationRequest['Items'];
-
-            $order = wc_get_order();
-
-            foreach ($items as $item) {
-                $product = wc_get_product($item['OfferId']);
-
-                $quantity = $item['Quantity'];
-
-                if ($product->get_stock_quantity() > $quantity || $product->get_stock_status() == 'instock') {
-                    $order->add_product($product, $quantity);
-                } else {
-                    $mainResponse = json_encode(array(
-                        'Robomarket' => array(
-                            'ReservationFailure' => array(
-                                'OrderId' => $yaReservationRequest['product_id'],
-                                'Error' => array(
-                                    'ErrorCode' => 'NotEnoughGoodsInStock',
-                                ),
-                            ),
-                        ),
-                    ));
-                    $order->add_order_note('[RoboMarket]Резервация не удалось');
-                    $order->update_status('failed');
-                }
-            }
-
-            $order->set_address(array(), 'billing');
-
-            $order->calculate_totals();
-
-            if ($mainResponse == '') {
-                $order->add_order_note('[RoboMarket]Заказ зарезервирован');
-                $mainResponse = json_encode(array(
-                    'Robomarket' => array(
-                        'ReservationSuccess' => array(
-                            'OrderId' => $request['OrderId'],
-                        ),
-                    ),
-                ));
-            }
-        }
-
-        $headerResponse = robokassa_payment_getRobomarketHeaderHash($mainResponse, $robomarketSecret);
-
-        header('RoboSignature: ' . $headerResponse);
-
-        robokassa_payment_DEBUG('RoboMarket request: ' . $requestBody);
-        robokassa_payment_DEBUG('RoboMarket request hash: ' . $headerRequest);
-        robokassa_payment_DEBUG('Main hash: ' . $roboSignature);
-        robokassa_payment_DEBUG('RoboMarket response: ' . $mainResponse);
-        robokassa_payment_DEBUG('Robomarket secret: ' . $robomarketSecret);
-        robokassa_payment_DEBUG('RoboMarket response hash: ' . $headerResponse);
-        robokassa_payment_DEBUG('Request Headers = {');
-
-        foreach (getallheaders() as $key => $value) {
-            robokassa_payment_DEBUG("\t$key => $value");
-        }
-
-        robokassa_payment_DEBUG('}');
-
-        echo $mainResponse;
-
-        die();
-    }
 }
 
 /**
@@ -749,52 +438,26 @@ function createRobokassaReceipt($order_id)
         $product = wc_get_product($item['product_id']);
         $quantity = (float)$item['quantity'];
 
-        // Проверяем, если функция включена, то разбиваем на дополнительные объекты
-        if (get_option('robokassa_marking') == 1) {
-            for ($i = 1; $i <= $quantity; $i++) {
-                $current = [];
-                $current['name'] = $product->get_title();
-                $current['quantity'] = 1;
-                $current['sum'] = $item['line_total'];
-                $current['cost'] = $item['line_total'] / $quantity;
+        $current = [];
+        $current['name'] = $product->get_title();
+        $current['quantity'] = $quantity;
+        $current['sum'] = $item['line_total'];
+        $current['cost'] = $item['line_total'] / $quantity;
 
-                $total_receipt += $current['cost'];
+        $total_receipt += $current['sum'];
 
-                if (get_option('robokassa_country_code') == 'RU') {
-                    $current['payment_object'] = get_option('robokassa_payment_paymentObject');
-                    $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
-                }
-
-                if (isset($receipt['sno']) && $receipt['sno'] == 'osn' || get_option('robokassa_country_code') == 'KZ') {
-                    $current['tax'] = $tax;
-                } else {
-                    $current['tax'] = 'none';
-                }
-
-                $receipt['items'][] = $current;
-            }
-        } else {
-            $current = [];
-            $current['name'] = $product->get_title();
-            $current['quantity'] = $quantity;
-            $current['sum'] = $item['line_total'];
-            $current['cost'] = $item['line_total'] / $quantity;
-
-            $total_receipt += $current['sum'];
-
-            if (get_option('robokassa_country_code') == 'RU') {
-                $current['payment_object'] = get_option('robokassa_payment_paymentObject');
-                $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
-            }
-
-            if (isset($receipt['sno']) && $receipt['sno'] == 'osn' || get_option('robokassa_country_code') == 'KZ') {
-                $current['tax'] = $tax;
-            } else {
-                $current['tax'] = 'none';
-            }
-
-            $receipt['items'][] = $current;
+        if (get_option('robokassa_country_code') == 'RU') {
+            $current['payment_object'] = get_option('robokassa_payment_paymentObject');
+            $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
         }
+
+        if (isset($receipt['sno']) && $receipt['sno'] == 'osn' || get_option('robokassa_country_code') == 'KZ') {
+            $current['tax'] = $tax;
+        } else {
+            $current['tax'] = 'none';
+        }
+
+        $receipt['items'][] = $current;
     }
 
     // Активность плагина WooCommerce Checkout Add-Ons
@@ -870,7 +533,7 @@ function createRobokassaReceipt($order_id)
     }
 
     if ($total_receipt != $total_order) {
-        error_log('Robokassa: общая сумма чека (' . $total_receipt . ') НЕ совпадает с общей суммой заказа (' . $total_order . ')');
+        robokassa_payment_DEBUG('Robokassa: общая сумма чека (' . $total_receipt . ') НЕ совпадает с общей суммой заказа (' . $total_order . ')');
     }
 
     return $receipt;
@@ -970,27 +633,6 @@ function robokassa_payment_sms_settings()
 /**
  * @return void
  */
-function robokassa_payment_robomarket_settings()
-{
-    $_GET['li'] = 'robomarket';
-    include 'menu_rb.php';
-    include 'robomarket_settings.php';
-}
-
-/**
- * @return void
- */
-function robokassa_payment_yml_generator()
-{
-    $_GET['li'] = 'robomarket';
-    include 'menu_rb.php';
-    include 'YMLGenerator.php';
-    robokassa_payment_generateYML();
-}
-
-/**
- * @return void
- */
 function robokassa_payment_reg()
 {
     $_GET['li'] = 'registration';
@@ -1076,26 +718,26 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 
     if ($payment_method == 'advance' || $payment_method == 'full_prepayment' || $payment_method == 'prepayment') {
         if ($sno == 'fckoff') {
-            error_log("Robokassa: SNO is 'fckoff', exiting function");
+            robokassa_payment_DEBUG("Robokassa: SNO is 'fckoff', exiting function");
             return;
         }
 
         $trigger_status = 'completed'; //get_option('robokassa_2check_status');
 
         if ($new_status != $trigger_status) {
-            error_log("Robokassa: New status ($new_status) does not match trigger status ($trigger_status), exiting function");
+            robokassa_payment_DEBUG("Robokassa: New status ($new_status) does not match trigger status ($trigger_status), exiting function");
             return;
         }
 
         $order = new WC_Order($order_id);
 
         if (!$order) {
-            error_log("Robokassa: Order not found for order_id: $order_id, exiting function");
+            robokassa_payment_DEBUG("Robokassa: Order not found for order_id: $order_id, exiting function");
             return;
         }
 
         /*        if ($order->get_payment_method_title() != get_option('RobokassaOrderPageTitle_all')) {
-                    error_log("Payment method title does not match: " . $order->get_payment_method_title() . get_option('RobokassaOrderPageTitle_all') . ", exiting function");
+                    robokassa_payment_DEBUG("Payment method title does not match: " . $order->get_payment_method_title() . get_option('RobokassaOrderPageTitle_all') . ", exiting function");
                     return;
                 }*/
 
@@ -1277,14 +919,14 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
         $result = curl_exec($curl);
 
         if ($result === false) {
-            error_log("Robokassa: cURL error: " . curl_error($curl));
+            robokassa_payment_DEBUG("Robokassa: cURL error: " . curl_error($curl));
         } else {
-            error_log("Robokassa: cURL result: " . $result);
+            robokassa_payment_DEBUG("Robokassa: cURL result: " . $result);
         }
 
         curl_close($curl);
     } else {
-        error_log("Robokassa: Payment method is not advance, full_prepayment, or prepayment, no action taken");
+        robokassa_payment_DEBUG("Robokassa: Payment method is not advance, full_prepayment, or prepayment, no action taken");
     }
 }
 
@@ -1344,7 +986,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order)
         ));
 
         /*        if (is_wp_error($response)) {
-                    error_log('Error sending payment request: ' . $response->get_error_message());
+                    robokassa_payment_DEBUG('Error sending payment request: ' . $response->get_error_message());
                     $order->add_order_note('Error sending payment request: ' . $response->get_error_message());
                 } else {
                     $body = wp_remote_retrieve_body($response);
@@ -1385,7 +1027,6 @@ function robokassa_hold_cancel($order_id, $old_status, $new_status, $order)
 
 function robokassa_hold_cancel_after5($order_id)
 {
-    // Проверяем, что заказ существует
     $order = wc_get_order($order_id);
     if ($order) {
         // Проверяем текущий статус заказа

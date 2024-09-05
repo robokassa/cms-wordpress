@@ -1,8 +1,5 @@
 <?php
 
-$json = file_get_contents($_SERVER['DOCUMENT_ROOT'] . "/wp-content/plugins/robokassa/data/registration_data.json");
-$data = json_decode($json, TRUE);
-
 if (!\current_user_can('activate_plugins')) {
 
     echo '<br /><br />
@@ -57,7 +54,6 @@ if (!\current_user_can('activate_plugins')) {
         'robokassa_patyment_markup',
         'robokassa_culture',
         'robokassa_iframe',
-        'robokassa_marking',
         'robokassa_country_code',
         'robokassa_out_currency',
         'robokassa_agreement_text',
@@ -124,15 +120,15 @@ if (!\current_user_can('activate_plugins')) {
 
             <table class="form-table">
                 <tr valign="top">
-                    <th scope="row">Включить оплату через Робокассу</th>
+                    <th scope="row">Оплата через Робокассу</th>
                     <td>
                         <input type="radio" id="enabled_on" name="robokassa_payment_wc_robokassa_enabled" value="yes"
                             <?php echo get_option('robokassa_payment_wc_robokassa_enabled') == 'yes' ? 'checked="checked"' : ''; ?>>
-                        <label for="enabled_on">Стандартная схема</label>
+                        <label for="enabled_on">Включить</label>
 
                         <input type="radio" id="enabled_off" name="robokassa_payment_wc_robokassa_enabled" value="no"
                             <?php echo get_option('robokassa_payment_wc_robokassa_enabled') == 'no' ? 'checked="checked"' : ''; ?>>
-                        <label for="enabled_off">Отключена</label>
+                        <label for="enabled_off">Отключить</label>
                     </td>
                 </tr>
 
@@ -207,34 +203,19 @@ if (!\current_user_can('activate_plugins')) {
                 <tr valign="top">
                     <th scope="row">Идентификатор магазина</th>
                     <td><input type="text" name="robokassa_payment_MerchantLogin" value="<?php
-                        if (empty($data['shopId'])) {
-                            echo get_option('robokassa_payment_MerchantLogin');
-                        } else {
-                            echo $data['shopId'];
-                        }
-                        ?>"/></td>
+                        echo get_option('robokassa_payment_MerchantLogin'); ?>"/></td>
                 </tr>
 
                 <tr valign="top">
                     <th scope="row">Пароль магазина #1</th>
                     <td><input type="password" name="robokassa_payment_shoppass1" value="<?php
-                        if (empty($data['key_1'])) {
-                            echo get_option('robokassa_payment_shoppass1');
-                        } else {
-                            echo $data['key_1'];
-                        }
-                        ?>"/></td>
+                        echo get_option('robokassa_payment_shoppass1'); ?>"/></td>
                 </tr>
 
                 <tr valign="top">
                     <th scope="row">Пароль магазина #2</th>
                     <td><input type="password" name="robokassa_payment_shoppass2" value="<?php
-                        if (empty($data['key_2'])) {
-                            echo get_option('robokassa_payment_shoppass2');
-                        } else {
-                            echo $data['key_2'];
-                        }
-                        ?>"/></td>
+                        echo get_option('robokassa_payment_shoppass2'); ?>"/></td>
                 </tr>
 
                 <tr valign="top">
@@ -301,27 +282,27 @@ if (!\current_user_can('activate_plugins')) {
             <div class="spoiler_body">
                 <table class="form-table">
                     <tr valign="top">
-                        <th scope="row">Включить тестовый режим</th>
+                        <th scope="row">Тестовый режим</th>
                         <td>
                             <input type="radio" id="test_on" name="robokassa_payment_test_onoff" value="true"
                                 <?php echo get_option('robokassa_payment_test_onoff') == 'true' ? 'checked="checked"' : ''; ?>>
-                            <label for="test_on">Включен</label>
+                            <label for="test_on">Включить</label>
 
                             <input type="radio" id="test_off" name="robokassa_payment_test_onoff" value="false"
                                 <?php echo get_option('robokassa_payment_test_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
-                            <label for="test_off">Выключен</label>
+                            <label for="test_off">Отключить</label>
                         </td>
                     </tr>
 
                     <tr valign="top">
-                        <th scope="row">Пароль магазина для тестов #1</th>
+                        <th scope="row">Тестовый пароль магазина #1</th>
                         <td><input type="password" name="robokassa_payment_testshoppass1"
                                    value="<?php echo get_option('robokassa_payment_testshoppass1'); ?>"/>
                         </td>
                     </tr>
 
                     <tr valign="top">
-                        <th scope="row">Пароль магазина для тестов #2</th>
+                        <th scope="row">Тестовый пароль магазина #2</th>
                         <td><input type="password" name="robokassa_payment_testshoppass2"
                                    value="<?php echo get_option('robokassa_payment_testshoppass2'); ?>"/>
                         </td>
@@ -431,22 +412,6 @@ if (!\current_user_can('activate_plugins')) {
                         </td>
                     </tr>
 
-                    <tr valign="top">
-                        <th scope="row">Включить для попозиционной маркировки</th>
-                        <td>
-                            <select name="robokassa_marking">
-                                <?php if (get_option('robokassa_marking') == 1) { ?>
-                                    <option selected="selected" value="1">Включено</option>
-                                    <option value="0">Отключено</option>
-                                <?php } else { ?>
-                                    <option value="1">Включено</option>
-                                    <option selected="selected" value="0">Отключено</option>
-                                <?php } ?>
-                            </select><br/>
-                            <span class="text-description">При активированной функции, товары, количество которых больше одного в корзине, автоматически будут разбиты на отдельные позиции для чека<span>
-                        </td>
-                    </tr>
-
                     <!--                    <tr valign="top" id="payment-method-rk">
                         <th scope="row">Выбор способа оплаты</th>
                         <td>
@@ -462,13 +427,15 @@ if (!\current_user_can('activate_plugins')) {
                     <tr valign="top">
                         <th scope="row">Отложенные платежи</th>
                         <td>
-                            <input type="radio" id="hold_on" name="robokassa_payment_hold_onoff" value="true"
-                                <?php echo get_option('robokassa_payment_hold_onoff') == 'true' ? 'checked="checked"' : ''; ?>>
-                            <label for="hold_on">Включить</label>
-
-                            <input type="radio" id="hold_off" name="robokassa_payment_hold_onoff" value="false"
-                                <?php echo get_option('robokassa_payment_hold_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
-                            <label for="hold_off">Отключить</label><br />
+                            <select name="robokassa_payment_hold_onoff">
+                                <?php if (get_option('robokassa_payment_hold_onoff') == 1) { ?>
+                                    <option selected="selected" value="1">Включено</option>
+                                    <option value="0">Отключено</option>
+                                <?php } else { ?>
+                                    <option value="1">Включено</option>
+                                    <option selected="selected" value="0">Отключено</option>
+                                <?php } ?>
+                            </select><br/>
                             <span class="text-description">Данная <a href="https://docs.robokassa.ru/holding/">услуга</a> доступна только по предварительному согласованию.<span><br />
                             <span class="text-description">Функционал доступен только при использовании банковских карт.<span><br />
                             <span class="text-description"><a href="https://docs.robokassa.ru/media/guides/hold_woocommerce.pdf">Инструкция по настройке</a></span>

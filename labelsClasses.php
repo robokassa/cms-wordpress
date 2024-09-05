@@ -30,7 +30,7 @@ class payment_robokassa_pay_method_request_Podeli extends \Robokassa\Payment\WC_
 
 class payment_robokassa_pay_method_request_Credit extends \Robokassa\Payment\WC_WP_robokassa {
     public function __construct() {
-        $this->id = 'AlwaysYes';
+        $this->id = 'Credit';
         $this->method_title = 'Robokassa';
         $this->long_name='Оплата через Robokassa';
         $this->title = 'Рассрочка или кредит';
@@ -52,10 +52,10 @@ class payment_robokassa_pay_method_request_Credit extends \Robokassa\Payment\WC_
  */
 function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
     $methods[] = 'payment_robokassa_pay_method_request_all';
-    if (get_option('robokassa_podeli') == '1' && WC()->cart !== null && isset(WC()->cart->total) && WC()->cart->total >= 300 && WC()->cart->total <= 35000) {
+    if (get_option('robokassa_podeli') == '1') {
         $methods[] = 'payment_robokassa_pay_method_request_Podeli';
     }
-    if (get_option('robokassa_credit') == '1' && WC()->cart !== null && isset(WC()->cart->total) && WC()->cart->total >= 1500 && WC()->cart->total <= 500000) {
+    if (get_option('robokassa_credit') == '1') {
         $methods[] = 'payment_robokassa_pay_method_request_Credit';
     }
 

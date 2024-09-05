@@ -37,14 +37,8 @@ if(!\current_user_can('activate_plugins'))
         <li class="sms_rb" id="robokassa_payment_sms_rb">
             <a href="?page=robokassa_payment_sms_rb" <?php echo ($_GET['li'] == 'sms') ? 'class="active"' : ''; ?>>Настройки оповещений</a>
         </li>
-        <li class="robomarket_rb" id="robokassa_payment_robomarket_rb">
-            <a href="?page=robokassa_payment_robomarket_rb" <?php echo ($_GET['li'] == 'robomarket') ? 'class="active"' : ''; ?>>Выгрузка XML с вашими товарами</a>
-        </li>
-        <li class="registration" id="robokassa_payment_registratio">
+        <li class="registration" id="robokassa_payment_registration">
             <a href="?page=robokassa_payment_registration" <?php echo ($_GET['li'] == 'registration') ? 'class="active"' : ''; ?>>Регистрация в сервисе Robokassa</a>
-        </li>
-        <li class="offer" id="robokassa_payment_offer">
-            <a href="?page=robokassa_payment_offer" <?php echo ($_GET['li'] == 'offer') ? 'class="active"' : ''; ?>>Скачать оферту</a>
         </li>
     </ul>
 </div>
