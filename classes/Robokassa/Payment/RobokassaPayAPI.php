@@ -383,7 +383,7 @@ class RobokassaPayAPI {
             }
 
             $form .= "<input id=\"robokassa\"  type=\"submit\" value=\"Оплатить\"></form>";
-            //$form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
+            $form .= "<script type=\"text/javascript\"> document.getElementById('robokassa').click(); </script>";
         }
 
         return $form;
