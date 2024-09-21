@@ -412,7 +412,7 @@ function getRobokassaPasses()
  */
 function createRobokassaReceipt($order_id)
 {
-    global $woocommerce;
+
     $order = new WC_Order($order_id);
 
     $sno = get_option('robokassa_payment_sno');
@@ -423,14 +423,15 @@ function createRobokassaReceipt($order_id)
     $tax = get_option('robokassa_payment_tax');
     if ($tax == "vat118") $tax = "vat120";
 
-    $cart = $woocommerce->cart->get_cart();
+    $cart = WC()->cart;
+    $cart->calculate_totals();
 
     $receipt = array();
 
     $total_order = $order->get_total(); // Сумма OutSum
     $total_receipt = 0; // Сумма всех $current['sum']
 
-    foreach ($cart as $item) {
+    foreach ($cart->get_cart_contents() as $item) {
         $product = wc_get_product($item['product_id']);
         $quantity = (float)$item['quantity'];
 
@@ -480,7 +481,6 @@ function createRobokassaReceipt($order_id)
     }
 
     if (empty($receipt)) {
-
         foreach ($order->get_items() as $item) {
 
             $product = $item->get_product();
@@ -503,7 +503,6 @@ function createRobokassaReceipt($order_id)
             $receipt['items'][] = $current;
             $total_receipt += $current['sum'];
         }
-
     }
 
     if ((double)$order->get_shipping_total() > 0) {
