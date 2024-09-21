@@ -412,7 +412,7 @@ function getRobokassaPasses()
  *
  * @param mixed $order_id
  *
- * @return void
+ * @return array
  */
 function createRobokassaReceipt($order_id)
 {
@@ -441,8 +441,8 @@ function createRobokassaReceipt($order_id)
         $current = [];
         $current['name'] = $product->get_title();
         $current['quantity'] = $quantity;
-        $current['sum'] = $item['line_total'];
-        $current['cost'] = $item['line_total'] / $quantity;
+        $current['sum'] = $item['data']->get_price();
+        $current['cost'] = $item['data']->get_price() / $quantity;
 
         $total_receipt += $current['sum'];
 
@@ -492,8 +492,8 @@ function createRobokassaReceipt($order_id)
             $current['name'] = $product->get_title();
             $current['quantity'] = (float)$item->get_quantity();
 
-            $current['sum'] = $item['line_total'];
-            $current['cost'] = $item['line_total'] / $quantity;
+            $current['sum'] = $product->get_price();
+            $current['cost'] = $product->get_price() / $current['quantity'];
 
             $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
@@ -536,7 +536,7 @@ function createRobokassaReceipt($order_id)
         robokassa_payment_DEBUG('Robokassa: общая сумма чека (' . $total_receipt . ') НЕ совпадает с общей суммой заказа (' . $total_order . ')');
     }
 
-    return $receipt;
+    return apply_filters('wc_robokassa_receipt', $receipt);
 }
 
 /**
@@ -952,7 +952,6 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order)
                 'tax' => get_option('robokassa_payment_tax'),
                 'payment_method' => \get_option('robokassa_payment_paymentMethod'),
                 'payment_object' => \get_option('robokassa_payment_paymentObject'),
-                'tax' => get_option('robokassa_payment_tax'),
             );
         }
 
