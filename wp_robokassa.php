@@ -438,9 +438,8 @@ function createRobokassaReceipt($order_id)
         $current = [];
         $current['name'] = $product->get_title();
         $current['quantity'] = $quantity;
-        $current['sum'] = $item['data']->get_price();
-        $current['cost'] = $item['data']->get_price() / $quantity;
-
+        $current['cost'] = $item['data']->get_price();
+        $current['sum'] = $item['data']->get_price() * $quantity;
         $total_receipt += $current['sum'];
 
         if (get_option('robokassa_country_code') == 'RU') {
@@ -486,10 +485,9 @@ function createRobokassaReceipt($order_id)
             $product = $item->get_product();
 
             $current['name'] = $product->get_title();
-            $current['quantity'] = (float)$item->get_quantity();
-
-            $current['sum'] = $product->get_price();
-            $current['cost'] = $product->get_price() / $current['quantity'];
+            $current['quantity'] = $item->get_quantity();
+            $current['cost'] = $item['data']->get_price();
+            $current['sum'] = $item['data']->get_price() * $item->get_quantity();
 
             $current['payment_object'] = get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
