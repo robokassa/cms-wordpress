@@ -135,15 +135,15 @@ if (!\current_user_can('activate_plugins')) {
                 <tr valign="top">
                     <th scope="row">Заголовок на странице оформления заказа</th>
                     <td>
-                        <input type="text" name="RobokassaOrderPageTitle_all"
-                               value="<?php echo get_option('RobokassaOrderPageTitle_all'); ?>"/>
+                        <input type="text" name="RobokassaOrderPageTitle_robokassa"
+                               value="<?php echo get_option('RobokassaOrderPageTitle_robokassa'); ?>"/>
                     </td>
                 </tr>
                 <tr valign="top">
                     <th scope="row">Описание на странице оформления заказа</th>
                     <td>
-                        <input type="text" name="RobokassaOrderPageDescription_all"
-                               value="<?php echo get_option('RobokassaOrderPageDescription_all'); ?>"/>
+                        <input type="text" name="RobokassaOrderPageDescription_robokassa"
+                               value="<?php echo get_option('RobokassaOrderPageDescription_robokassa'); ?>"/>
                     </td>
                 </tr>
 

@@ -101,7 +101,7 @@ class RobokassaPayAPI {
     private function getSignatureString($sum, $invId, $receiptJson, $recurring = false)
     {
         $outCurrency = get_option('robokassa_out_currency');
-        $holdPaymentParam = (get_option('robokassa_payment_hold_onoff') == 'true') ? 'true' : '';
+        $holdPaymentParam = (get_option('robokassa_payment_hold_onoff') == '1') ? 'true' : '';
 
         return \implode(
             ':',
@@ -148,7 +148,7 @@ class RobokassaPayAPI {
     }
 
     /**
-     * Генерирует форму, в Opencart модуле НЕ ИСПОЛЬЗУЕТСЯ!
+     *
      *
      * @param float $sum
      * @param int $invId
@@ -201,7 +201,7 @@ class RobokassaPayAPI {
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
 
-        if (get_option('robokassa_payment_hold_onoff') == 'true') {
+        if (get_option('robokassa_payment_hold_onoff') == 1) {
             $formData['StepByStep'] = 'true';
         }
 
@@ -418,50 +418,6 @@ class RobokassaPayAPI {
     }
 
     /**
-     * Запрашиват размер комиссии в процентах для конкретного способа оплаты
-     *
-     * @param string $incCurrLabel Кодовое имя метода оплаты
-     * @param int    $sum          Стоимость товара
-     *
-     * @return float Комиссия метода в %
-     */
-    public function getCommission($incCurrLabel, $sum = 10000) {
-        if ($incCurrLabel == 'all') {
-            $incCurrLabel = '';
-        }
-
-        $parsed = $this->sendRequest('CalcOutSumm', array(
-            'MerchantLogin' => $this->mrh_login,
-            'IncCurrLabel' => $incCurrLabel,
-            'IncSum' => (int) $sum,
-        ));
-
-        if($parsed['OutSum'] != 0){
-            return abs(round(($sum - $parsed['OutSum']) / $parsed['OutSum'] * 100));
-        }else{
-            return $sum;
-        }
-    }
-
-    /**
-     * Возвращает сумму к оплате с учетом комиссий.
-     *
-     * @param string $incCurrLabel Кодовое имя метода оплаты
-     * @param int    $sum          Стоимость товара
-     *
-     * @return float Стоимость, которую необходимо передавать в Робокассу.
-     */
-    public function getCommissionSum($incCurrLabel, $sum) {
-        $parsed = $this->sendRequest('CalcOutSumm', array(
-            'MerchantLogin' => $this->mrh_login,
-            'IncCurrLabel' => $incCurrLabel,
-            'IncSum' => $sum,
-        ));
-
-        return $parsed['OutSum'];
-    }
-
-    /**
      * Запрашивает и парсит в массив все возможные способы оплаты для данного магазина
      *
      * @return array
@@ -516,13 +472,17 @@ class RobokassaPayAPI {
             'InvoiceID'         => $invoiceId,
             'PreviousInvoiceID' => $parentInvoiceId,
             'Description'       => '',
-            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress"),
+            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress:Shp_merchant_id=" . get_option('robokassa_payment_MerchantLogin') . ":Shp_order_id={$invoiceId}:Shp_result_url=" . site_url('/?robokassa=result')),
             'OutSum'            => $amount,
             'shp_label'         => 'official_wordpress',
+            'Shp_merchant_id'   => get_option('robokassa_payment_MerchantLogin'),
+            'Shp_order_id'      => $invoiceId,
+            'Shp_result_url'    => site_url('/?robokassa=result'),
             'Receipt'           => $receiptJson
-        ], function($val) { return $val !== null; });
+        ], function($val) {
+            return $val !== null;
+        });
 
         return $data;
     }
-
 }

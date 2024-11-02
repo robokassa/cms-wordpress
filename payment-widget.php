@@ -1,15 +1,18 @@
 <?php
 
+add_filter('woocommerce_available_payment_gateways', 'select_payment_method');
+add_action('woocommerce_single_product_summary', 'payment_product_widget', 25);
+add_action('woocommerce_proceed_to_checkout', 'payment_cart_widget');
+
 function payment_product_widget()
 {
     global $product;
     $price = $product->get_price();
     $product_id = $product->get_id();
 
-    setlocale(LC_TIME, 'ru_RU.UTF-8');
-    $podeli_2w_date = strftime('%d %b', strtotime('+2 weeks'));
-    $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
-    $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
+    $podeli_2w_date = wp_date('%d %b', strtotime('+2 weeks'));
+    $podeli_4w_date = wp_date('%d %b', strtotime('+4 weeks'));
+    $podeli_6w_date = wp_date('%d %b', strtotime('+6 weeks'));
 
     if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         if (get_option('robokassa_podeli_widget_style') == 0) {
@@ -673,24 +676,14 @@ function payment_cart_widget()
         return;
     }
 
-    global $woocommerce;
-
-    if (!isset($woocommerce->cart)) {
+    $cart = WC()->cart;
+    if (empty($cart) || $cart->get_total() <= 0) {
         return;
     }
 
-    $cart = $woocommerce->cart;
-
-    if ($cart) {
-        $price = $cart->get_total();
-        $price = preg_replace('/[^\d.,]/', '', $price);
-        $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
-    }
-
-    setlocale(LC_TIME, 'ru_RU.UTF-8');
-    $podeli_2w_date = strftime('%d %b', strtotime('+2 weeks'));
-    $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
-    $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
+    $price = $cart->get_total();
+    $price = preg_replace('/[^\d.,]/', '', $price);
+    $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
 
     if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '
@@ -787,24 +780,19 @@ function podeli_checkout_widget()
         return;
     }
 
-    global $woocommerce;
-
-    if (!isset($woocommerce->cart)) {
+    $cart = WC()->cart;
+    if (empty($cart) || $cart->get_total() <= 0) {
         return;
     }
 
-    $cart = $woocommerce->cart;
+    $price = $cart->get_total();
+    $price = preg_replace('/[^\d.,]/', '', $price);
+    $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
 
-    if ($cart) {
-        $price = $cart->get_total();
-        $price = preg_replace('/[^\d.,]/', '', $price);
-        $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
-    }
 
-    setlocale(LC_TIME, 'ru_RU.UTF-8');
-    $podeli_2w_date = strftime('%d %b', strtotime('+2 weeks'));
-    $podeli_4w_date = strftime('%d %b', strtotime('+4 weeks'));
-    $podeli_6w_date = strftime('%d %b', strtotime('+6 weeks'));
+    $podeli_2w_date = wp_date('%d %b', strtotime('+2 weeks'));
+    $podeli_4w_date = wp_date('%d %b', strtotime('+4 weeks'));
+    $podeli_6w_date = wp_date('%d %b', strtotime('+6 weeks'));
 
     if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
         echo '
@@ -862,19 +850,15 @@ function credit_checkout_widget()
         return;
     }
 
-    global $woocommerce;
-
-    if (!isset($woocommerce->cart)) {
+    $cart = WC()->cart;
+    if (empty($cart) || $cart->get_total() <= 0) {
         return;
     }
 
-    $cart = $woocommerce->cart;
+    $price = $cart->get_total();
+    $price = preg_replace('/[^\d.,]/', '', $price);
+    $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
 
-    if ($cart) {
-        $price = $cart->get_total();
-        $price = preg_replace('/[^\d.,]/', '', $price);
-        $price = number_format(floatval(str_replace(',', '.', $price)), 2, '.', '');
-    }
     $monthlyInterestRate = 0.02333; // Месячная процентная ставка (2,333% в десятичной форме)
     $months = 23; // Количество месяцев
 
@@ -883,37 +867,40 @@ function credit_checkout_widget()
     $monthlyPayment = round($monthlyPayment);
 
     if (get_option('robokassa_payment_podeli_widget_onoff') === 'true' && $price > 300 && $price < 35000) {
-        echo '
-<div class="wiget-block" style="margin-bottom: 0px">
-                <div class="wiget-block__content">
-                    <div class="wiget-action-button__icons podeli-action-button__icons_v2">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="12" fill="white"></rect>
-                <path d="M4.5 5V19H18.5L4.5 5Z" fill="#FF5722"></path>
-                <path d="M18.5 5H4.5V19L18.5 5Z" fill="#023D5E"></path>
-            </svg>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="12" fill="#CDFC68"></rect>
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M4 12C4 7.61042 7.55556 4.09876 12 4.09876V6.9276C9.1358 6.9276 6.8642 9.17116 6.8642 12C6.8642 14.8288 9.1358 17.0724 12 17.0724C14.7654 17.0724 17.1358 14.8288 17.1358 12H20C20 16.3896 16.4444 19.9012 12 19.9012C7.55556 19.9012 4 16.3896 4 12Z" fill="#222222"></path>
-                <path d="M8.44446 12C8.44446 10.049 10.0247 8.4883 12 8.4883C13.9753 8.4883 15.5556 10.049 15.5556 12C15.5556 13.9509 13.9753 15.5116 12 15.5116C10.0247 15.5116 8.44446 13.9509 8.44446 12Z" fill="#222222"></path>
-                <path d="M14.4692 7.51297C14.4692 6.43996 15.3581 5.4645 16.5433 5.4645C17.6297 5.4645 18.6173 6.34242 18.6173 7.51297C18.6173 8.58598 17.7284 9.56144 16.5433 9.56144C15.3581 9.56144 14.4692 8.68352 14.4692 7.51297Z" fill="#222222"></path>
-            </svg>
+        ?>
+        <div class="wiget-block" style="margin-bottom: 0px">
+            <div class="wiget-block__content">
+                <div class="wiget-action-button__icons podeli-action-button__icons_v2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="24" height="24" rx="12" fill="white"></rect>
+                        <path d="M4.5 5V19H18.5L4.5 5Z" fill="#FF5722"></path>
+                        <path d="M18.5 5H4.5V19L18.5 5Z" fill="#023D5E"></path>
+                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="24" height="24" rx="12" fill="#CDFC68"></rect>
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                              d="M4 12C4 7.61042 7.55556 4.09876 12 4.09876V6.9276C9.1358 6.9276 6.8642 9.17116 6.8642 12C6.8642 14.8288 9.1358 17.0724 12 17.0724C14.7654 17.0724 17.1358 14.8288 17.1358 12H20C20 16.3896 16.4444 19.9012 12 19.9012C7.55556 19.9012 4 16.3896 4 12Z"
+                              fill="#222222"></path>
+                        <path
+                            d="M8.44446 12C8.44446 10.049 10.0247 8.4883 12 8.4883C13.9753 8.4883 15.5556 10.049 15.5556 12C15.5556 13.9509 13.9753 15.5116 12 15.5116C10.0247 15.5116 8.44446 13.9509 8.44446 12Z"
+                            fill="#222222"></path>
+                        <path
+                            d="M14.4692 7.51297C14.4692 6.43996 15.3581 5.4645 16.5433 5.4645C17.6297 5.4645 18.6173 6.34242 18.6173 7.51297C18.6173 8.58598 17.7284 9.56144 16.5433 9.56144C15.3581 9.56144 14.4692 8.68352 14.4692 7.51297Z"
+                            fill="#222222"></path>
+                    </svg>
 
-        </div>
-                    <div class="wiget-block__title-subtitle">
-                        <h5 class="wiget-block__title">
-                            <span class="wiget-block__months">Кредит или рассрочка от&nbsp;</span><span class="wiget-block__payment">' . $monthlyPayment . '</span> ₽/мес
-                        </h5>
-                        <p class="wiget-block__subtitle">
-                            Индивидуальные условия по кредиту<br>или рассрочке для вас
-                        </p>
-                    </div>
+                </div>
+                <div class="wiget-block__title-subtitle">
+                    <h5 class="wiget-block__title">
+                        <span class="wiget-block__months">Кредит или рассрочка от&nbsp;</span><span
+                            class="wiget-block__payment">' . $monthlyPayment . '</span> ₽/мес
+                    </h5>
+                    <p class="wiget-block__subtitle">
+                        Индивидуальные условия по кредиту<br>или рассрочке для вас
+                    </p>
                 </div>
             </div>
-                ';
+        </div>
+        <?php
     }
 }
-
-add_filter('woocommerce_available_payment_gateways', 'select_payment_method');
-add_action('woocommerce_single_product_summary', 'payment_product_widget', 25);
-add_action('woocommerce_proceed_to_checkout', 'payment_cart_widget');
