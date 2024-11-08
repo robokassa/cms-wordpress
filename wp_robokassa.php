@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.6.3
+ * Version: 1.6.4
  */
 
 require_once('payment-widget.php');
@@ -418,6 +418,7 @@ function getRobokassaPasses()
  */
 function createRobokassaReceipt($order_id)
 {
+    global $woocommerce;
     $order = new WC_Order($order_id);
 
     $sno = get_option('robokassa_payment_sno');
@@ -429,23 +430,21 @@ function createRobokassaReceipt($order_id)
     $tax = get_option('robokassa_payment_tax');
     if ($tax == "vat118") $tax = "vat120";
 
-    $cart = WC()->cart;
-    $cart->calculate_totals();
+    $cart = $woocommerce->cart->get_cart();
 
     $receipt = array();
 
     $total_order = $order->get_total();
     $total_receipt = 0;
 
-    foreach ($cart->get_cart_contents() as $item) {
+    foreach ($cart as $item) {
         $product = wc_get_product($item['product_id']);
-        $quantity = (float)$item['quantity'];
 
         $current = [];
         $current['name'] = $product->get_title();
-        $current['quantity'] = $quantity;
-        $current['cost'] = $item['data']->get_price();
-        $current['sum'] = $item['data']->get_price() * $quantity;
+        $current['quantity'] = $item['quantity'];
+        $current['sum'] = $item['line_total'];
+        $current['cost'] = $item['line_total'] / $item['quantity'];
 
         $total_receipt += $current['sum'];
 
@@ -493,8 +492,8 @@ function createRobokassaReceipt($order_id)
 
             $current['name'] = $product->get_title();
             $current['quantity'] = $item->get_quantity();
-            $current['cost'] = $item['data']->get_price();
-            $current['sum'] = $item['data']->get_price() * $item->get_quantity();
+            $current['sum'] = $item['line_total'];
+            $current['cost'] = $item['line_total'] / $item->get_quantity();;
 
             $current['payment_object'] = get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
