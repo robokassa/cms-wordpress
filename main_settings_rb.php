@@ -402,6 +402,18 @@ if (!\current_user_can('activate_plugins')) {
                                 <option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat120') ? ' selected' : ''); ?>>
                                     НДС чека по расчетной ставке 20/120
                                 </option>
+                                <option value="vat5" <?php echo((get_option('robokassa_payment_tax') == 'vat5') ? ' selected' : ''); ?>>
+                                    НДС по ставке 5%
+                                </option>
+                                <option value="vat7" <?php echo((get_option('robokassa_payment_tax') == 'vat7') ? ' selected' : ''); ?>>
+                                    НДС по ставке 7%
+                                </option>
+                                <option value="vat105" <?php echo((get_option('robokassa_payment_tax') == 'vat105') ? ' selected' : ''); ?>>
+                                    НДС чека по расчетной ставке 5/105
+                                </option>
+                                <option value="vat107" <?php echo((get_option('robokassa_payment_tax') == 'vat107') ? ' selected' : ''); ?>>
+                                    НДС чека по расчетной ставке 7/107
+                                </option>
                                 <option value="vat8" <?php echo((get_option('robokassa_payment_tax') == 'vat8') ? ' selected' : ''); ?>>
                                     НДС чека по ставке 8% (Казахстан)
                                 </option>
