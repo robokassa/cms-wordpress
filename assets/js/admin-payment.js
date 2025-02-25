@@ -12,7 +12,11 @@ function spoleer()
 		document.getElementById("payment_object").style.display = 'none';
 	}
 
-	if (sno.options[sno.selectedIndex].value === 'osn') {
+	if (
+		sno.options[sno.selectedIndex].value === 'osn' ||
+		sno.options[sno.selectedIndex].value === 'usn_income' ||
+		sno.options[sno.selectedIndex].value === 'usn_income_outcome'
+	) {
 		document.getElementById("tax").style.display = 'table-row';
 	} else {
 		document.getElementById("tax").style.display = 'none';
