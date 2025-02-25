@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.6.5
+ * Version: 1.6.6
  */
 
 require_once('payment-widget.php');
@@ -787,8 +787,26 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
                 case "vat20":
                     $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 20];
                     break;
+                case "vat110":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 110) * 10];
+                    break;
+                case "vat120":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 120) * 20];
+                    break;
+                case "vat5":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 5];
+                    break;
+                case "vat7":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 100) * 7];
+                    break;
+                case "vat105":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 105) * 5];
+                    break;
+                case "vat107":
+                    $fields['vats'][] = ['type' => $tax, 'sum' => ($shipping_total / 107) * 7];
+                    break;
                 default:
-                    $fields['vats'][] = ['type' => 'novat', 'sum' => 0];
+                    $fields['vats'][] = ['type' => $tax, 'sum' => 0];
                     break;
             }
 
