@@ -50,6 +50,10 @@
 * Налоговая ставка
 
 ### Changelog
+= 1.6.8 =
+* Добавлена поддержка плагина Smart Coupons For WooCommerce
+* Добавлена поддержка плагина Advanced Dynamic Pricing
+* Добавлена поддержка плагина Checkout Field Editor for WooCommerce (Pro)
 
 = 1.6.7 =
 * Исправлены незначительные ошибки
