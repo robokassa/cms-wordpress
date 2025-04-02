@@ -255,7 +255,10 @@ function robokassa_payment_get_success_fail_url($name, $order_id)
  */
 function robokassa_payment_wp_robokassa_checkPayment()
 {
+
     if (isset($_REQUEST['robokassa'])) {
+
+        /** @var string $returner */
         $returner = '';
 
         if ($_REQUEST['robokassa'] === 'result') {
@@ -380,6 +383,7 @@ function robokassa_payment_wp_robokassa_checkPayment()
         }
     }
 }
+
 // Подготовка строки перед кодированием в base64
 function formatSignReplace($string)
 {
