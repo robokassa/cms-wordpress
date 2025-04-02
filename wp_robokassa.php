@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.6.8
+ * Version: 1.6.9
  */
 
 require_once('payment-widget.php');
@@ -255,123 +255,118 @@ function robokassa_payment_get_success_fail_url($name, $order_id)
  */
 function robokassa_payment_wp_robokassa_checkPayment()
 {
-
     if (isset($_REQUEST['robokassa'])) {
-
-        /** @var string $returner */
         $returner = '';
 
         if ($_REQUEST['robokassa'] === 'result') {
-
-            /** @var string $crc_confirm */
-            $crc_confirm = strtoupper(
-                md5(
-                    implode(
-                        ':',
-                        [
-                            $_REQUEST['OutSum'],
-                            $_REQUEST['InvId'],
-                            (
-                            (get_option('robokassa_payment_test_onoff') == 'true')
-                                ? get_option('robokassa_payment_testshoppass2')
-                                : get_option('robokassa_payment_shoppass2')
-                            ),
-                            'shp_label=official_wordpress',
-                            'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin'),
-                            'Shp_order_id=' . $_REQUEST['InvId'],
-                            'Shp_result_url=' . (site_url('/?robokassa=result'))
-                        ]
-                    )
-                )
-            );
-
-            if ($crc_confirm == $_REQUEST['SignatureValue']) {
-
-                $order = new WC_Order($_REQUEST['InvId']);
-                $order->add_order_note('Заказ успешно оплачен!');
-                $order->payment_complete();
-
-                global $woocommerce;
-                $woocommerce->cart->empty_cart();
-
-                //определяем есть ли в заказе подписка
-                if (function_exists('wcs_order_contains_subscription')) {
-                    $subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
-
-                    if ($subscriptions == true) {
-                        foreach ($subscriptions as $subscription) {
-                            $subscription->update_status('active');
-                        }
-                    }
-                }
-
-                $returner = 'OK' . $_REQUEST['InvId'];
-
-                if (get_option('robokassa_payment_sms1_enabled') == 'on') {
-
-                    try {
-
-                        (new RobokassaSms(
-                            (new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME))),
-                            (new RobokassaPayAPI(
-                                get_option('robokassa_payment_MerchantLogin'),
-                                get_option('robokassa_payment_shoppass1'),
-                                get_option('robokassa_payment_shoppass2')
-                            )
-                            ),
-                            $order->billing_phone,
-                            get_option('robokassa_payment_sms1_text'),
-                            (get_option('robokassa_payment_sms_translit') == 'on'),
-                            $_REQUEST['InvId'],
-                            1
-                        ))->send();
-                    } catch (Exception $e) {
-                    }
-                }
-            } elseif ((get_option('robokassa_payment_hold_onoff') == 'true') &&
-                strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
-
+            if (strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
                 $input_data = file_get_contents('php://input');
-
-                // Разбиваем JWT на три части
                 $token_parts = explode('.', $input_data);
 
-                // Проверяем, что есть три части
                 if (count($token_parts) === 3) {
-                    // Декодируем вторую часть (полезные данные)
                     $json_data = json_decode(base64_decode($token_parts[1]), true);
 
-                    // Проверяем наличие ключевого поля "state" со значением "HOLD"
-                    if (isset($json_data['data']['state']) && $json_data['data']['state'] === 'HOLD') {
-                        // Изменяем статус заказа
+                    if (isset($json_data['data']['invId']) && isset($json_data['data']['state'])) {
                         $order = new WC_Order($json_data['data']['invId']);
-                        $date_in_five_days = date('Y-m-d H:i:s', strtotime('+5 days'));
-                        $order->add_order_note("Robokassa: Платеж успешно подтвержден. Он ожидает подтверждения до {$date_in_five_days}, после чего автоматически отменится");
-                        $order->update_status('on-hold');
 
-                        // Добавляем событие, которое делает unhold через 5 дней
-                        wp_schedule_single_event(strtotime('+5 days'), 'robokassa_cancel_payment_event', array($order->get_id()));
-                    }
-                    if (isset($json_data['data']['state']) && $json_data['data']['state'] === 'OK') {
-                        // Изменяем статус заказа
-                        $order = new WC_Order($json_data['data']['invId']);
-                        $order->add_order_note("Robokassa: Платеж успешно подтвержден");
-                        $order->update_status('processing');
+                        if ($json_data['data']['state'] === 'HOLD') {
+                            $date_in_five_days = date('Y-m-d H:i:s', strtotime('+5 days'));
+                            $order->add_order_note("Robokassa: Платеж успешно подтвержден. Он ожидает подтверждения до {$date_in_five_days}, после чего автоматически отменится");
+                            $order->update_status('on-hold');
+                            wp_schedule_single_event(strtotime('+5 days'), 'robokassa_cancel_payment_event', array($order->get_id()));
+                        } elseif ($json_data['data']['state'] === 'OK') {
+                            $order->add_order_note("Robokassa: Платеж успешно подтвержден");
+                            $order->update_status('processing');
 
+                            if (function_exists('wcs_order_contains_subscription')) {
+                                $subscriptions = wcs_get_subscriptions_for_order($json_data['data']['invId']) ?: wcs_get_subscriptions_for_renewal_order($json_data['data']['invId']);
+
+                                if ($subscriptions) {
+                                    foreach ($subscriptions as $subscription) {
+                                        $subscription->update_status('active');
+                                    }
+                                }
+                            }
+                        }
+
+                        http_response_code(200);
+                        echo "OK" . $json_data['data']['invId'];
+                    } else {
+                        http_response_code(400);
                     }
-                    http_response_code(200);
                 } else {
                     http_response_code(400);
                 }
             } else {
-                $returner = 'BAD SIGN';
+                $crc_confirm = strtoupper(
+                    md5(
+                        implode(
+                            ':',
+                            [
+                                $_REQUEST['OutSum'],
+                                $_REQUEST['InvId'],
+                                (
+                                (get_option('robokassa_payment_test_onoff') == 'true')
+                                    ? get_option('robokassa_payment_testshoppass2')
+                                    : get_option('robokassa_payment_shoppass2')
+                                ),
+                                'shp_label=official_wordpress',
+                                'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin'),
+                                'Shp_order_id=' . $_REQUEST['InvId'],
+                                'Shp_result_url=' . (site_url('/?robokassa=result'))
+                            ]
+                        )
+                    )
+                );
 
-                try {
+                if ($crc_confirm == $_REQUEST['SignatureValue']) {
                     $order = new WC_Order($_REQUEST['InvId']);
-                    $order->add_order_note('Bad CRC '. $crc_confirm .' . '. $_REQUEST['SignatureValue']);
-                    $order->update_status('failed');
-                } catch (Exception $e) {}
+                    $order->add_order_note('Заказ успешно оплачен!');
+                    $order->payment_complete();
+
+                    global $woocommerce;
+                    $woocommerce->cart->empty_cart();
+
+                    if (function_exists('wcs_order_contains_subscription')) {
+                        $subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
+
+                        if ($subscriptions) {
+                            foreach ($subscriptions as $subscription) {
+                                $subscription->update_status('active');
+                            }
+                        }
+                    }
+
+                    if (get_option('robokassa_payment_sms1_enabled') == 'on') {
+                        try {
+                            (new RobokassaSms(
+                                (new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME))),
+                                (new RobokassaPayAPI(
+                                    get_option('robokassa_payment_MerchantLogin'),
+                                    get_option('robokassa_payment_shoppass1'),
+                                    get_option('robokassa_payment_shoppass2')
+                                )),
+                                $order->billing_phone,
+                                get_option('robokassa_payment_sms1_text'),
+                                (get_option('robokassa_payment_sms_translit') == 'on'),
+                                $_REQUEST['InvId'],
+                                1
+                            ))->send();
+                        } catch (Exception $e) {}
+                    }
+
+                    echo "OK" . $_REQUEST['InvId'];
+                } else {
+                    $returner = 'BAD SIGN';
+                    try {
+                        $order = new WC_Order($_REQUEST['InvId']);
+                        $order->add_order_note('Bad CRC '. $crc_confirm .' . '. $_REQUEST['SignatureValue']);
+                        $order->update_status('failed');
+                    } catch (Exception $e) {}
+                    echo $returner;
+                }
             }
+            die;
         }
 
         if ($_REQUEST['robokassa'] == 'success') {
@@ -383,11 +378,8 @@ function robokassa_payment_wp_robokassa_checkPayment()
             header('Location:' . robokassa_payment_get_success_fail_url(get_option('robokassa_payment_FailURL'), $_REQUEST['InvId']));
             die;
         }
-        echo $returner;
-        die;
     }
 }
-
 // Подготовка строки перед кодированием в base64
 function formatSignReplace($string)
 {
@@ -887,24 +879,19 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
     }
 }
 
-function robokassa_hold_confirm($order_id, $old_status, $new_status, $order)
-{
-    // Проверяем, что статус был изменен с "on-hold" на "processing" (обработка)
-    if ((get_option('robokassa_payment_hold_onoff') == 'true')
-        && $old_status === 'on-hold' && $new_status === 'processing') {
 
+function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
+    $option_value = get_option('robokassa_payment_hold_onoff');
+    if (($option_value == 1 )
+        && $old_status === 'on-hold' && $new_status === 'processing') {
         $order = wc_get_order($order_id);
         $shipping_total = $order->get_shipping_total();
 
         $receipt_items = array();
         $tax = get_option('robokassa_payment_tax');
+        $total_receipt = 0;
 
-        /**
-         * @var \WC_Order_Item_Product $item
-         */
-        foreach ($order->get_items() as $item)
-        {
-
+        foreach ($order->get_items() as $item) {
             $product = $item->get_product();
 
             $current = [];
@@ -929,8 +916,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order)
             $receipt_items[] = $current;
         }
 
-        foreach($order->get_items('fee') as $feeItem)
-        {
+        foreach ($order->get_items('fee') as $feeItem) {
             $additional_item_name = $feeItem->get_name();
             $additional_item_total = (float) $feeItem->get_total();
 
@@ -979,11 +965,13 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order)
     }
 }
 
+
+
 function robokassa_hold_cancel($order_id, $old_status, $new_status, $order)
 {
-    // Проверяем, что статус был изменен с "on-hold" на "Canceled"
-    if ((get_option('robokassa_payment_hold_onoff') == 'true') &&
-        $old_status === 'on-hold' && $new_status === 'cancelled') {
+    $option_value = get_option('robokassa_payment_hold_onoff');
+    if (($option_value == 1)
+        && $old_status === 'on-hold' && $new_status === 'cancelled') {
 
         $request_data = array(
             'MerchantLogin' => get_option('robokassa_payment_MerchantLogin'),
@@ -1004,18 +992,19 @@ function robokassa_hold_cancel($order_id, $old_status, $new_status, $order)
         if (is_wp_error($response)) {
             $order->add_order_note('Error sending payment request: ' . $response->get_error_message());
         } else {
+
+            // Добавляем заметку в заказ
             $order->add_order_note('Robokassa: холдирование было отменено вами, либо автоматически после 5 дней ожидания');
         }
     }
 }
 
+
 function robokassa_hold_cancel_after5($order_id)
 {
     $order = wc_get_order($order_id);
     if ($order) {
-        // Проверяем текущий статус заказа
         if ($order->get_status() === 'on-hold') {
-            // Отменяем заказ и добавляем соответствующее уведомление
             $request_data = array(
                 'MerchantLogin' => get_option('robokassa_payment_MerchantLogin'),
                 'InvoiceID' => $order_id,
