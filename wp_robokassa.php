@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.7.0
+ * Version: 1.7.1
  */
 
 require_once('payment-widget.php');
@@ -13,6 +13,7 @@ require_once('payment-widget.php');
 use Robokassa\Payment\RoboDataBase;
 use Robokassa\Payment\RobokassaPayAPI;
 use Robokassa\Payment\RobokassaSms;
+use Robokassa\Payment\Util;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
 
@@ -261,6 +262,8 @@ function robokassa_payment_wp_robokassa_checkPayment()
         /** @var string $returner */
         $returner = '';
 
+        $order_status = get_option('robokassa_payment_order_status_after_payment');
+
         if ($_REQUEST['robokassa'] === 'result') {
 
             /** @var string $crc_confirm */
@@ -279,7 +282,7 @@ function robokassa_payment_wp_robokassa_checkPayment()
                             'shp_label=official_wordpress',
                             'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin'),
                             'Shp_order_id=' . $_REQUEST['InvId'],
-                            'Shp_result_url=' . (site_url('/?robokassa=result'))
+                            'Shp_result_url=' . (Util::siteUrl('/?robokassa=result'))
                         ]
                     )
                 )
@@ -289,11 +292,14 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
                 $order = new WC_Order($_REQUEST['InvId']);
                 $order->add_order_note('Заказ успешно оплачен!');
-                $order->payment_complete();
+                if (!empty($order_status)) {
+                    $order->update_status(str_replace('wc-', '', $order_status));
+                } else {
+                    $order->payment_complete();
+                }
 
                 global $woocommerce;
                 $woocommerce->cart->empty_cart();
-
 
                 if (function_exists('wcs_order_contains_subscription')) {
                     $subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
@@ -715,7 +721,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
             return;
         }
 
-        $trigger_status = 'completed'; //get_option('robokassa_2check_status');
+        $trigger_status = str_replace('wc-', '', get_option('robokassa_payment_order_status_for_second_check', 'completed'));
 
         if ($new_status != $trigger_status) {
             robokassa_payment_DEBUG("Robokassa: New status ($new_status) does not match trigger status ($trigger_status), exiting function");

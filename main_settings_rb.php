@@ -1,5 +1,7 @@
 <?php
 
+use Robokassa\Payment\Util;
+
 if (!\current_user_can('activate_plugins')) {
 
     echo '<br /><br />
@@ -60,6 +62,8 @@ if (!\current_user_can('activate_plugins')) {
         'robokassa_agreement_pd_link',
         'robokassa_agreement_oferta_link',
         'robokassa_payment_hold_onoff',
+        'robokassa_payment_order_status_after_payment',
+        'robokassa_payment_order_status_for_second_check',
     ];
 
     require_once __DIR__ . '/labelsClasses.php';
@@ -78,7 +82,7 @@ if (!\current_user_can('activate_plugins')) {
         <table>
             <tr>
                 <td>ResultURL:</td>
-                <td><code id="ResultURL"><?php echo site_url('/?robokassa=result'); ?></code></td>
+                <td><code id="ResultURL"><?php echo Util::siteUrl('/?robokassa=result'); ?></code></td>
                 <td>
                     <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#ResultURL"
                             onclick="event.preventDefault();">
@@ -88,7 +92,7 @@ if (!\current_user_can('activate_plugins')) {
             </tr>
             <tr>
                 <td>SuccessURL:</td>
-                <td><code id="SuccessURL"><?php echo site_url('/?robokassa=success'); ?></td>
+                <td><code id="SuccessURL"><?php echo Util::siteUrl('/?robokassa=success'); ?></td>
                 <td>
                     <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#SuccessURL"
                             onclick="event.preventDefault();">
@@ -98,7 +102,7 @@ if (!\current_user_can('activate_plugins')) {
             </tr>
             <tr>
                 <td>FailURL:</td>
-                <td><code id="FailURL"><?php echo site_url('/?robokassa=fail'); ?></code></td>
+                <td><code id="FailURL"><?php echo Util::siteUrl('/?robokassa=fail'); ?></code></td>
                 <td>
                     <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#FailURL"
                             onclick="event.preventDefault();">
@@ -161,13 +165,12 @@ if (!\current_user_can('activate_plugins')) {
                     </td>
                 </tr>
 
-                <tr valign="top">
+                <!--<tr valign="top">
                     <th scope="row">Валюта заказа</th>
                     <td>
-
                         <select id="robokassa_out_currency" name="robokassa_out_currency">
                             <?php
-
+/*
                             $woocommerce_currency = get_option('woocommerce_currency');
 
                             $currencies = array(
@@ -192,13 +195,10 @@ if (!\current_user_can('activate_plugins')) {
                                 echo esc_html($currency_name);
                                 echo '</option>';
                             }
-                            ?>
+                            */?>
                         </select>
                     </td>
-                </tr>
-
-
-
+                </tr>-->
 
                 <tr valign="top">
                     <th scope="row">Идентификатор магазина</th>
@@ -321,12 +321,10 @@ if (!\current_user_can('activate_plugins')) {
                         <td>
                             <select id="sno_select" name="robokassa_payment_sno" onchange="spoleer();">
                                 <option value="fckoff" <?php echo((get_option('robokassa_payment_sno') == 'fckoff') ? ' selected' : ''); ?>>
-                                    Не
-                                    передавать
+                                    Не передавать
                                 </option>
                                 <option value="osn" <?php echo((get_option('robokassa_payment_sno') == 'osn') ? ' selected' : ''); ?>>
-                                    Общая
-                                    СН
+                                    Общая СН
                                 </option>
                                 <option value="usn_income" <?php echo((get_option('robokassa_payment_sno') == 'usn_income') ? ' selected'
                                     : ''); ?>>Упрощенная СН (доходы)
@@ -335,12 +333,10 @@ if (!\current_user_can('activate_plugins')) {
                                     ? ' selected' : ''); ?>>Упрощенная СН (доходы минус расходы)
                                 </option>
                                 <option value="envd" <?php echo((get_option('robokassa_payment_sno') == 'envd') ? ' selected' : ''); ?>>
-                                    Единый
-                                    налог на вмененный доход
+                                    Единый налог на вмененный доход
                                 </option>
                                 <option value="esn" <?php echo((get_option('robokassa_payment_sno') == 'esn') ? ' selected' : ''); ?>>
-                                    Единый
-                                    сельскохозяйственный налог
+                                    Единый сельскохозяйственный налог
                                 </option>
                                 <option value="patent" <?php echo((get_option('robokassa_payment_sno') == 'patent') ? ' selected' : ''); ?>>
                                     Патентная СН
@@ -435,6 +431,40 @@ if (!\current_user_can('activate_plugins')) {
                                 : ''; */ ?>><label for="shoppaytype">В магазине</label>
                         </td>
                     </tr>-->
+
+                    <tr valign="top">
+                        <th scope="row">Статус заказа после оплаты</th>
+                        <td>
+                            <select name="robokassa_payment_order_status_after_payment">
+                                <?php
+                                $selected = get_option('robokassa_payment_order_status_after_payment');
+                                $statuses = wc_get_order_statuses();
+                                foreach ($statuses as $status => $label) {
+                                    echo '<option value="' . esc_attr($status) . '" ' . selected($selected, $status, false) . '>' . esc_html($label) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <br/>
+                            <span class="text-description">Этот статус будет присвоен заказу после успешной оплаты через Робокассу. Применяется только для обычных платежей (не отложенных).</span>
+                        </td>
+                    </tr>
+
+                    <tr valign="top">
+                        <th scope="row">Статус для автоматического выбивания второго чека</th>
+                        <td>
+                            <select name="robokassa_payment_order_status_for_second_check">
+                                <?php
+                                $selected = get_option('robokassa_payment_order_status_for_second_check');
+                                $statuses = wc_get_order_statuses();
+                                foreach ($statuses as $status => $label) {
+                                    echo '<option value="' . esc_attr($status) . '" ' . selected($selected, $status, false) . '>' . esc_html($label) . '</option>';
+                                }
+                                ?>
+                            </select><br/>
+                            <span class="text-description">Выберите статус, при котором будет автоматически выбиваться второй чек (если этот статус применен к заказу).</span>
+                        </td>
+                    </tr>
+
 
                     <tr valign="top">
                         <th scope="row">Отложенные платежи</th>

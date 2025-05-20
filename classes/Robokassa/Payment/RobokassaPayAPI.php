@@ -113,12 +113,12 @@ class RobokassaPayAPI {
                     $outCurrency,
                     $receiptJson,
                     $holdPaymentParam,
-                    urlencode((site_url('/?robokassa=result'))),
+                    urlencode((Util::siteUrl('/?robokassa=result'))),
                     $this->mrh_pass1,
                     'shp_label=official_wordpress',
                     'Shp_merchant_id=' . $this->mrh_login,
                     'Shp_order_id=' . $invId,
-                    'Shp_result_url=' . (site_url('/?robokassa=result')),
+                    'Shp_result_url=' . (Util::siteUrl('/?robokassa=result')),
                 ),
                 array(
                     false,
@@ -191,12 +191,12 @@ class RobokassaPayAPI {
             'MrchLogin' => $this->mrh_login,
             'OutSum' => $sum,
             'InvId' => $invId,
-            'ResultUrl2' => urlencode(site_url('/?robokassa=result')),
+            'ResultUrl2' => urlencode(Util::siteUrl('/?robokassa=result')),
             'Desc' => $invDesc,
             'shp_label' => 'official_wordpress',
             'Shp_merchant_id' => $this->mrh_login,
             'Shp_order_id' => $invId,
-            'Shp_result_url' => site_url('/?robokassa=result'),
+            'Shp_result_url' => Util::siteUrl('/?robokassa=result'),
             'recurring'      => $recurring ? 'true' : '',
             'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
         );
@@ -445,22 +445,6 @@ class RobokassaPayAPI {
         ), '', file_get_contents($url))))));
     }
 
-    /**
-     * Запрашивает у робокассы подтверждение платежа
-     *
-     * @param int $invId
-     *
-     * @return bool
-     */
-    public function reCheck($invId) {
-        $result = $this->sendRequest('OpState', array(
-            'MerchantLogin' => $this->mrh_login,
-            'InvoiceID' => $invId,
-            'Signature' => strtoupper(md5("$this->mrh_login:$invId:$this->mrh_pass2")),
-        ));
-
-        return ($result['Result']['Code'] == '0');
-    }
 
     public function getRecurringPaymentData($invoiceId, $parentInvoiceId, $amount, $receipt, $description = '')
     {
@@ -472,12 +456,12 @@ class RobokassaPayAPI {
             'InvoiceID'         => $invoiceId,
             'PreviousInvoiceID' => $parentInvoiceId,
             'Description'       => '',
-            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress:Shp_merchant_id=" . get_option('robokassa_payment_MerchantLogin') . ":Shp_order_id={$invoiceId}:Shp_result_url=" . site_url('/?robokassa=result')),
+            'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress:Shp_merchant_id=" . get_option('robokassa_payment_MerchantLogin') . ":Shp_order_id={$invoiceId}:Shp_result_url=" . Util::siteUrl('/?robokassa=result')),
             'OutSum'            => $amount,
             'shp_label'         => 'official_wordpress',
             'Shp_merchant_id'   => get_option('robokassa_payment_MerchantLogin'),
             'Shp_order_id'      => $invoiceId,
-            'Shp_result_url'    => site_url('/?robokassa=result'),
+            'Shp_result_url'    => Util::siteUrl('/?robokassa=result'),
             'Receipt'           => $receiptJson
         ], function($val) {
             return $val !== null;
