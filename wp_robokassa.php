@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.7.1
+ * Version: 1.7.2
  */
 
 require_once('payment-widget.php');
@@ -517,7 +517,7 @@ function createRobokassaReceipt($order_id)
         $current['sum'] = (double)sprintf("%01.2f", $order->get_shipping_total());
 
         if (get_option('robokassa_country_code') == 'RU') {
-            $current['payment_object'] = get_option('robokassa_payment_paymentObject');
+            $current['payment_object'] = get_option('robokassa_payment_paymentObject_shipping') ?: get_option('robokassa_payment_paymentObject');
             $current['payment_method'] = get_option('robokassa_payment_paymentMethod');
         }
 
@@ -769,7 +769,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
                 'cost' => wc_format_decimal($shipping_total, get_option('woocommerce_price_num_decimals')),
                 'tax' => $tax,
                 'payment_method' => 'full_payment',
-                'payment_object' => get_option('robokassa_payment_paymentObject'),
+                'payment_object' => get_option('robokassa_payment_paymentObject_shipping') ?: get_option('robokassa_payment_paymentObject'),
             ];
 
             $fields['items'][] = $products_items;
@@ -956,7 +956,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
                 'sum' => wc_format_decimal($shipping_total, get_option('woocommerce_price_num_decimals')),
                 'tax' => $tax,
                 'payment_method' => 'full_payment',
-                'payment_object' => get_option('robokassa_payment_paymentObject'),
+                'payment_object' => get_option('robokassa_payment_paymentObject_shipping') ?: get_option('robokassa_payment_paymentObject'),
             );
         }
 
@@ -978,8 +978,6 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
         ));
     }
 }
-
-
 
 function robokassa_hold_cancel($order_id, $old_status, $new_status, $order)
 {
@@ -1012,7 +1010,6 @@ function robokassa_hold_cancel($order_id, $old_status, $new_status, $order)
         }
     }
 }
-
 
 function robokassa_hold_cancel_after5($order_id)
 {

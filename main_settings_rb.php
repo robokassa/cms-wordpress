@@ -26,11 +26,13 @@ if (!\current_user_can('activate_plugins')) {
 <div class="content_holder">
     <?php
 
-    if (isset($_REQUEST['settings-updated']))
-    {
+    if (isset($_REQUEST['settings-updated'])) {
         include 'labelsGenerator.php';
 
-        if (get_option('robokassa_country_code') == 'RU') {
+        $has_methods = get_transient('robokassa_payment_methods_available');
+        delete_transient('robokassa_payment_methods_available');
+
+        if (get_option('robokassa_country_code') === 'RU' && $has_methods) {
             wp_redirect('admin.php?page=robokassa_payment_credit');
             exit;
         }
@@ -53,6 +55,7 @@ if (!\current_user_can('activate_plugins')) {
         'robokassa_payment_FailURL',
         'robokassa_payment_paymentMethod',
         'robokassa_payment_paymentObject',
+        'robokassa_payment_paymentObject_shipping',
         'robokassa_patyment_markup',
         'robokassa_culture',
         'robokassa_iframe',
@@ -359,13 +362,28 @@ if (!\current_user_can('activate_plugins')) {
                         </td>
                     </tr>
                     <tr valign="top" id="payment_object">
-                        <th scope="row">Признак предмета расчёта</th>
+                        <th scope="row">Признак предмета расчёта для товаров/услуг</th>
                         <td>
                             <select id="payment_object_select" name="robokassa_payment_paymentObject"
                                     onchange="spoleer();">
                                 <option value="">Не выбрано</option>
                                 <?php foreach (\Robokassa\Payment\Helper::$paymentObjects as $paymentObject): ?>
                                     <option <?php if (\get_option('robokassa_payment_paymentObject') === $paymentObject['code']): ?>
+                                            selected="selected"
+                                            <?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <tr valign="top" id="payment_object_shipping">
+                        <th scope="row">Признак предмета расчёта для доставки</th>
+                        <td>
+                            <select id="payment_object_shipping_select" name="robokassa_payment_paymentObject_shipping"
+                                    onchange="spoleer();">
+                                <option value="">Не выбрано</option>
+                                <?php foreach (\Robokassa\Payment\Helper::$paymentObjects as $paymentObject): ?>
+                                    <option <?php if (\get_option('robokassa_payment_paymentObject_shipping') === $paymentObject['code']): ?>
                                             selected="selected"
                                             <?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
                                 <?php endforeach; ?>
@@ -419,18 +437,6 @@ if (!\current_user_can('activate_plugins')) {
                             </select>
                         </td>
                     </tr>
-
-                    <!--                    <tr valign="top" id="payment-method-rk">
-                        <th scope="row">Выбор способа оплаты</th>
-                        <td>
-                            <input type="radio" id="robopaytype" name="robokassa_payment_paytype"
-                                   value="false" <?php /*echo get_option('robokassa_payment_paytype') == 'false' ? 'checked="checked"' : ''; */ ?>><label
-                                    for="robopaytype">В Робокассе</label>
-                            <input type="radio" id="shoppaytype" name="robokassa_payment_paytype"
-                                   value="true" <?php /*echo get_option('robokassa_payment_paytype') == 'true' ? 'checked="checked"'
-                                : ''; */ ?>><label for="shoppaytype">В магазине</label>
-                        </td>
-                    </tr>-->
 
                     <tr valign="top">
                         <th scope="row">Статус заказа после оплаты</th>

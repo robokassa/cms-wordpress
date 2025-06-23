@@ -60,6 +60,8 @@
 
         searchAlias($json_decoded, $show_podeli, $show_credit);
 
+        set_transient('robokassa_payment_methods_available', $show_podeli || $show_credit, 60);
+
         if ($show_podeli || $show_credit) {
             if ($show_podeli) {
                 include dirname(__FILE__) . '/templates/podeli-menu-form.php';
@@ -70,7 +72,7 @@
             }
         }
         else {
-            echo 'Дополнительные методы оплаты в рассрочку или кредит не найдены!';
+            echo '<div class="notice notice-info is-dismissible"><p><strong>Дополнительные методы оплаты</strong> в рассрочку или кредит не найдены.</p></div>';
         }
 
         ?>
