@@ -5,10 +5,11 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.7.2
+ * Version: 1.7.3
  */
 
 require_once('payment-widget.php');
+require_once('StatusReporter.php');
 
 use Robokassa\Payment\RoboDataBase;
 use Robokassa\Payment\RobokassaPayAPI;
