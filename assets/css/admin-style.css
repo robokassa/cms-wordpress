@@ -1,0 +1,329 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.robokassa-admin-wrapper {
+	font-family: 'Inter', sans-serif;
+	background: #f1f5f9;
+	padding: 1rem 0;
+}
+
+.robokassa-admin-container {
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 0 1.5rem;
+}
+
+.robokassa-admin-header {
+	text-align: center;
+	margin-bottom: 2.5rem;
+}
+
+.robokassa-admin-header__title {
+	font-size: 2rem;
+	font-weight: 700;
+	color: #0f172a;
+	margin: 0;
+}
+
+.robokassa-admin-header__subtitle {
+	margin-top: 0.5rem;
+	font-size: 1rem;
+	color: #475569;
+}
+
+.robokassa-card {
+	background: #ffffff;
+	border-radius: 1.5rem;
+	box-shadow: 0 20px 40px -20px rgba(15, 23, 42, 0.25);
+	border: 1px solid rgba(148, 163, 184, 0.18);
+	padding: 2.5rem;
+	margin-bottom: 2rem;
+}
+
+.robokassa-card--compact {
+	padding: 2rem;
+}
+
+.robokassa-card__title {
+	margin: 1rem 0 1.25rem 0;
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.robokassa-card__description {
+	margin: 0 0 1.75rem 0;
+	font-size: 0.95rem;
+	line-height: 1.65;
+	color: #475569;
+}
+
+.robokassa-admin-nav {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.robokassa-admin-nav__item {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 1.5rem;
+	border-radius: 1rem;
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	background: rgba(255, 255, 255, 0.9);
+	color: #0f172a;
+	text-decoration: none;
+	transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+	min-height: 100px; /* подгони под макет */
+}
+
+.robokassa-admin-nav__item:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 20px 30px -20px rgba(37, 99, 235, 0.45);
+	border-color: rgba(37, 99, 235, 0.35);
+	color: #1d4ed8;
+}
+
+.robokassa-admin-nav__item--active {
+	background: linear-gradient(135deg, #2563eb, #1d4ed8);
+	color: #ffffff;
+	box-shadow: 0 25px 35px -20px rgba(37, 99, 235, 0.65);
+	border-color: transparent;
+}
+
+.robokassa-admin-nav__label {
+	display: block;
+	font-weight: 600;
+	font-size: 1.1rem;
+	margin-bottom: 0.5rem;
+}
+
+.robokassa-admin-nav__text {
+	display: block;
+	font-size: 0.9rem;
+	color: inherit;
+	opacity: 0.85;
+}
+
+.robokassa-info-list {
+	list-style: decimal inside;
+	margin: 1.5rem 0;
+	padding: 0;
+	color: #334155;
+}
+
+.robokassa-info-list li {
+	margin-bottom: 0.5rem;
+}
+
+.robokassa-info-table {
+	margin-top: 1.75rem;
+}
+
+.robokassa-info-table code {
+	background: #0f172a;
+	color: #facc15;
+	padding: 0.15rem 0.5rem;
+	border-radius: 0.5rem;
+	border: 1px solid rgba(15, 23, 42, 0.35);
+	font-family: 'Fira Code', monospace;
+}
+
+.robokassa-form-table {
+	width: 100%;
+	margin-top: 1.5rem;
+	border-radius: 1.25rem;
+	overflow: hidden;
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	background: #ffffff;
+	border-collapse: separate;
+	border-spacing: 0;
+}
+
+.robokassa-form-table tr + tr th,
+.robokassa-form-table tr + tr td {
+	border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.robokassa-form-table th {
+	width: 30%;
+	padding: 1.25rem;
+	background: rgba(241, 245, 249, 0.75);
+	font-weight: 600;
+	font-size: 0.95rem;
+	color: #0f172a;
+	vertical-align: top;
+}
+
+.robokassa-form-table td {
+	padding: 1.25rem;
+	font-size: 0.95rem;
+	color: #1e293b;
+	background: rgba(255, 255, 255, 0.95);
+}
+
+.robokassa-form-table label {
+	margin-right: 1rem;
+	font-weight: 500;
+	color: #1e293b;
+}
+
+.robokassa-form-table input[type="text"],
+.robokassa-form-table input[type="password"],
+.robokassa-form-table select,
+.robokassa-form-table textarea {
+	border-radius: 0.75rem;
+	border: 1px solid rgba(148, 163, 184, 0.45);
+	padding: 0.75rem 1rem;
+	width: 100%;
+	font-size: 0.95rem;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	background: #ffffff;
+}
+
+.robokassa-form-table textarea {
+	min-height: 140px;
+	resize: vertical;
+}
+
+.robokassa-form-table input[type="text"]:focus,
+.robokassa-form-table input[type="password"]:focus,
+.robokassa-form-table select:focus,
+.robokassa-form-table textarea:focus {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.robokassa-button-primary,
+.robokassa-form-table .button-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #2563eb, #1d4ed8);
+	border: none;
+	border-radius: 0.75rem;
+	padding: 0.75rem 1.75rem;
+	font-weight: 600;
+	font-size: 0.95rem;
+	color: #ffffff;
+	cursor: pointer;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.robokassa-button-primary:hover,
+.robokassa-form-table .button-primary:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 18px 24px -18px rgba(37, 99, 235, 0.65);
+}
+
+.robokassa-button-primary:focus,
+.robokassa-form-table .button-primary:focus {
+	outline: none;
+	box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.35);
+}
+
+.robokassa-text-note {
+	margin-top: 0.75rem;
+	font-size: 0.9rem;
+	color: #475569;
+}
+
+.robokassa-section-divider {
+	margin: 2.5rem 0 1.5rem;
+	height: 1px;
+	background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), rgba(148, 163, 184, 0.1));
+}
+
+.robokassa-grid-two-col {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.robokassa-grid-two-col .robokassa-grid__item {
+	background: rgba(255, 255, 255, 0.75);
+	border-radius: 1rem;
+	padding: 1.5rem;
+	border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.robokassa-grid-two-col .robokassa-grid__item h4 {
+	margin: 0 0 0.75rem 0;
+	font-size: 1.1rem;
+	color: #0f172a;
+}
+
+.robokassa-grid-two-col .robokassa-grid__item p {
+	margin: 0;
+	color: #475569;
+	font-size: 0.95rem;
+	line-height: 1.6;
+}
+
+.robokassa-frame-wrapper iframe {
+	width: 100%;
+	border: none;
+	border-radius: 1rem;
+	box-shadow: 0 25px 40px -25px rgba(15, 23, 42, 0.45);
+	border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.robokassa-warning {
+	padding: 1rem 1.25rem;
+	border-radius: 0.85rem;
+	background: rgba(251, 191, 36, 0.18);
+	border: 1px solid rgba(217, 119, 6, 0.45);
+	color: #92400e;
+	font-size: 0.95rem;
+}
+
+.robokassa-help-list {
+	margin: 1rem 0 0 0;
+	padding-left: 1rem;
+	color: #1f2937;
+}
+
+.robokassa-help-list li {
+	margin-bottom: 0.35rem;
+}
+
+.robokassa-code {
+	background: rgba(15, 23, 42, 0.9);
+	color: #f8fafc;
+	padding: 0.35rem 0.65rem;
+	border-radius: 0.65rem;
+	font-family: 'Fira Code', monospace;
+}
+
+.robokassa-muted {
+	color: #64748b;
+	font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+	.robokassa-card {
+		padding: 2rem;
+	}
+
+	.robokassa-admin-wrapper {
+		padding: 2rem 0;
+	}
+
+	.robokassa-form-table th,
+	.robokassa-form-table td {
+		display: block;
+		width: 100%;
+		padding: 1rem;
+	}
+
+	.robokassa-form-table th {
+		border-bottom: none;
+		background: rgba(241, 245, 249, 0.9);
+	}
+
+	.robokassa-form-table tr + tr td,
+	.robokassa-form-table tr + tr th {
+		border-top: 1px solid rgba(148, 163, 184, 0.2);
+	}
+}

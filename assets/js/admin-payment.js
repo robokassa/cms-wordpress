@@ -26,33 +26,69 @@ function spoleer()
 
 spoleer();
 
-jQuery(document).ready(
-	function ()
-	{
+window.addEventListener('DOMContentLoaded', function () {
+	var componentField = document.getElementById('robokassa_widget_component');
 
-		// jQuery("#size_commission1").mask("99");
-
-		jQuery('.spoiler_links').click(
-			function (e)
-			{
-				jQuery(this).next('.spoiler_body').toggle('normal');
-				e.preventDefault();
-			}
-		);
+	if (!componentField) {
+		return;
 	}
-);
 
-function updateDescription() {
-	var selectedValue = document.getElementById("robokassa_podeli_widget_style").value;
-	var description = document.getElementById("description");
+	var widgetRows = document.querySelectorAll('.robokassa-widget-option--widget');
+	var badgeRows = document.querySelectorAll('.robokassa-widget-option--badge');
+	var secondLineRow = document.querySelector('.robokassa-widget-option--second-line');
+	var sizeField = document.querySelector('select[name="robokassa_widget_size"]');
+	var modeField = document.querySelector('select[name="robokassa_widget_mode"]');
+	var checkoutField = document.querySelector('input[name="robokassa_widget_checkout_url"]');
+	var checkoutRow = checkoutField ? checkoutField.closest('tr') : null;
 
-	if (selectedValue === "0") {
-		description.innerText = "Доступны 2 варианта оформления виджета:\n" +
-			"                1. Упрощенная версия виджета для карточки товара с графиком платежей, но без кнопки «Оплатить»;\n" +
-			"                2. Развернутая версия виджета для корзины.";
-	} else if (selectedValue === "1") {
-		description.innerText = "Доступны 2 варианта оформления виджета:\n" +
-			"                1. Версия виджета для карточки товара с графиком платежей и кнопкой «Оплатить»;\n" +
-			"                2. Версия виджета для корзины.";
+	var toggleRows = function (rows, isVisible) {
+		if (!rows) {
+			return;
+		}
+
+		rows.forEach(function (row) {
+			row.style.display = isVisible ? '' : 'none';
+		});
+	};
+
+	var updateComponentVisibility = function () {
+		var component = componentField.value;
+
+		toggleRows(widgetRows, component !== 'badge');
+		toggleRows(badgeRows, component === 'badge');
+	};
+
+	var updateSecondLineVisibility = function () {
+		if (!secondLineRow || !sizeField) {
+			return;
+		}
+
+		secondLineRow.style.display = sizeField.value === 'm' ? '' : 'none';
+	};
+
+	var updateCheckoutVisibility = function () {
+		if (!checkoutRow || !modeField) {
+			return;
+		}
+
+		checkoutRow.style.display = modeField.value === 'checkout' ? '' : 'none';
+	};
+
+	componentField.addEventListener('change', function () {
+		updateComponentVisibility();
+		updateSecondLineVisibility();
+		updateCheckoutVisibility();
+	});
+
+	if (sizeField) {
+		sizeField.addEventListener('change', updateSecondLineVisibility);
 	}
-}
+
+	if (modeField) {
+		modeField.addEventListener('change', updateCheckoutVisibility);
+	}
+
+	updateComponentVisibility();
+	updateSecondLineVisibility();
+	updateCheckoutVisibility();
+});

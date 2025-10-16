@@ -1,0 +1,49 @@
+.robokassa-redirect-wrapper,
+.robokassa-redirect-notice {
+	margin: 2em auto;
+	max-width: 480px;
+	padding: 1.5em;
+	border: 1px solid #dadada;
+	border-radius: 12px;
+	background-color: #ffffff;
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+	text-align: center;
+}
+
+.robokassa-redirect-title {
+	margin: 0 0 0.75em;
+	font-size: 1.125rem;
+	font-weight: 600;
+}
+
+.robokassa-redirect-status {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75em;
+	color: #444444;
+}
+
+.robokassa-redirect-loader {
+	width: 42px;
+	height: 42px;
+	border-radius: 50%;
+	border: 4px solid rgba(0, 117, 255, 0.18);
+	border-top-color: rgba(0, 117, 255, 0.85);
+	animation: robokassa-redirect-spin 1s linear infinite;
+}
+
+@keyframes robokassa-redirect-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.robokassa-redirect-message {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.5;
+}
