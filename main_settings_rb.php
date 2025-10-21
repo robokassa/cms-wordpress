@@ -500,6 +500,9 @@ if (!\current_user_can('activate_plugins')) {
 										<select name="robokassa_payment_order_status_after_payment">
 											<?php
 											$selected = get_option('robokassa_payment_order_status_after_payment');
+											if (empty($selected)) {
+												$selected = 'wc-processing';
+											}
 											$statuses = wc_get_order_statuses();
 											foreach ($statuses as $status => $label) {
 												echo '<option value="' . esc_attr($status) . '" ' . selected($selected, $status, false) . '>' . esc_html($label) . '</option>';

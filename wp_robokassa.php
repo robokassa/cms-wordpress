@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.0
+ * Version: 1.8.1
  */
 
 require_once('payment-widget.php');
@@ -281,6 +281,9 @@ function robokassa_payment_wp_robokassa_checkPayment()
 		$returner = '';
 
 		$order_status = get_option('robokassa_payment_order_status_after_payment');
+		if (empty($order_status)) {
+			$order_status = 'wc-processing';
+		}
 
 		if ($_REQUEST['robokassa'] === 'result') {
 
@@ -310,11 +313,7 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
 				$order = new WC_Order($_REQUEST['InvId']);
 				$order->add_order_note('Заказ успешно оплачен!');
-				if (!empty($order_status)) {
-					$order->update_status(str_replace('wc-', '', $order_status));
-				} else {
-					$order->payment_complete();
-				}
+				$order->update_status(str_replace('wc-', '', $order_status));
 
 				global $woocommerce;
 				$woocommerce->cart->empty_cart();
