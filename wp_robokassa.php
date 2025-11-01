@@ -750,9 +750,8 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 	$second_check_payment_object = get_option('robokassa_payment_second_check_paymentObject');
 
 	if (empty($second_check_payment_object)) {
-		$second_receipt_payment_object = $payment_object;
+		$second_check_payment_object = $payment_object;
 	}
-
 
 	if ($payment_method == 'advance' || $payment_method == 'full_prepayment' || $payment_method == 'prepayment') {
 		if ($sno == 'fckoff') {
@@ -828,7 +827,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 					'quantity' => $additional_item->get_quantity(),
 					'sum' => wc_format_decimal($additional_item_total, get_option('woocommerce_price_num_decimals')),
 					'cost' => wc_format_decimal($additional_item_total, get_option('woocommerce_price_num_decimals')) / $additional_item->get_quantity(),
-					'payment_object' => $second_receipt_payment_object,
+					'payment_object' => $second_check_payment_object,
 					'payment_method' => 'full_payment',
 					'tax' => $tax,
 				);
@@ -846,7 +845,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				'sum' => wc_format_decimal($item['line_total'], get_option('woocommerce_price_num_decimals')),
 				'tax' => $tax,
 				'payment_method' => 'full_payment',
-				'payment_object' => $second_receipt_payment_object,
+				'payment_object' => $second_check_payment_object,
 			];
 
 			$product = wc_get_product($item['product_id']);
@@ -872,13 +871,15 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				'sum' => wc_format_decimal($additional_item_total, get_option('woocommerce_price_num_decimals')),
 				'tax' => $tax,
 				'payment_method' => 'full_payment',
-				'payment_object' => $second_receipt_payment_object,
+				'payment_object' => $second_check_payment_object,
 			];
 
 			$fields['items'][] = $products_items;
 
 			$fields['vats'][] = ['type' => $tax, 'sum' => calculate_tax_sum($tax, $shipping_total)];
 		}
+
+		robokassa_payment_DEBUG("Robokassa: Second check data for order_id: $order_id -> " . print_r($fields, true));
 
 		/** @var string $startupHash */
 		$startupHash = formatSignFinish(
@@ -908,7 +909,6 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				)
 			)
 		);
-
 
 		$curl = curl_init('https://ws.roboxchange.com/RoboFiscal/Receipt/Attach');
 		curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
