@@ -163,6 +163,10 @@ function robokassa_is_optional_method_available(array $config)
  */
 function robokassa_is_optional_method_active(array $config)
 {
+	if (get_option('robokassa_country_code', 'RU') === 'KZ') {
+		return false;
+	}
+
 	return robokassa_is_optional_method_available($config) && robokassa_is_optional_method_enabled($config);
 }
 

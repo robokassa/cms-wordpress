@@ -21,6 +21,8 @@ if (!\current_user_can('activate_plugins')) {
 	\plugin_dir_url(__FILE__) . 'assets/css/admin-style.css'
 );
 
+$country_code = get_option('robokassa_country_code', 'RU');
+
 $current_tab = 'main';
 
 if (isset($_GET['li'])) {
@@ -49,6 +51,15 @@ $menu_items = array(
 		'page' => 'robokassa_payment_registration',
 	),
 );
+
+if ($country_code === 'KZ') {
+	unset($menu_items['credit']);
+}
+
+if (!isset($menu_items[$current_tab])) {
+	$current_tab = 'main';
+}
+
 
 $base_url = admin_url('admin.php');
 

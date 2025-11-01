@@ -23,9 +23,11 @@ if (!\current_user_can('activate_plugins')) {
 );
 
 \wp_enqueue_style(
-	'robokassa_payment_admin_style_main',
-	\plugin_dir_url(__FILE__) . 'assets/css/main.css'
+        'robokassa_payment_admin_style_main',
+        \plugin_dir_url(__FILE__) . 'assets/css/main.css'
 );
+
+$country_code = get_option('robokassa_country_code', 'RU');
 ?>
 
 <div class="robokassa-admin-wrapper">
@@ -39,7 +41,7 @@ if (!\current_user_can('activate_plugins')) {
 				$has_methods = get_transient('robokassa_payment_methods_available');
 				delete_transient('robokassa_payment_methods_available');
 
-				if (get_option('robokassa_country_code') === 'RU' && $has_methods) {
+                                if ($country_code === 'RU' && $has_methods) {
 					wp_redirect('admin.php?page=robokassa_payment_credit');
 					exit;
 				}
@@ -267,14 +269,15 @@ if (!\current_user_can('activate_plugins')) {
 							</tr>
 						</table>
 
-						<?php $optional_methods = robokassa_get_optional_payment_methods_config(); ?>
+						<?php $optional_methods = ($country_code === 'KZ') ? [] : robokassa_get_optional_payment_methods_config(); ?>
 
 						<?php if (!empty($optional_methods)) : ?>
-							<h2 class="robokassa-card__title">Дополнительные способы оплаты</h2>
-							<p class="robokassa-text-note">Выберите партнёрские решения Robokassa, которые нужно показывать клиентам при оформлении заказа.</p>
+							<div class="robokassa-optional-methods">
+								<h2 class="robokassa-card__title">Дополнительные способы оплаты</h2>
+								<p class="robokassa-text-note">Выберите партнёрские решения Robokassa, которые нужно показывать клиентам при оформлении заказа.</p>
 
-							<div class="spoiler_body">
-								<table class="robokassa-form-table form-table">
+								<div class="spoiler_body">
+									<table class="robokassa-form-table form-table">
 									<?php foreach ($optional_methods as $config) :
 										$option_name = $config['option'];
 										$field_id = $option_name . '_field';
@@ -309,6 +312,7 @@ if (!\current_user_can('activate_plugins')) {
 									<?php endforeach; ?>
 								</table>
 							</div>
+						</div>
 						<?php endif; ?>
 
 						<? if (function_exists('wcs_order_contains_subscription')) { ?>

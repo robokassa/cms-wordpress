@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.1
+ * Version: 1.8.2
  */
 
 require_once('payment-widget.php');
@@ -672,6 +672,11 @@ function robokassa_payment_reg()
  */
 function robokassa_payment_credit()
 {
+	if (get_option('robokassa_country_code', 'RU') === 'KZ') {
+		wp_safe_redirect(admin_url('admin.php?page=robokassa_payment_main_rb'));
+		exit;
+	}
+
 	$_GET['li'] = 'credit';
 	include 'menu_rb.php';
 	include 'main_settings_credit.php';

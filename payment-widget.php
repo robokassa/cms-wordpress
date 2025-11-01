@@ -42,7 +42,7 @@ function payment_product_widget() {
  * @return array
  */
 function robokassa_widget_get_settings() {
-	return [
+	$settings = [
 		'enabled' => get_option('robokassa_widget_enabled', 'false') === 'true',
 		'component' => robokassa_widget_get_choice_option('robokassa_widget_component', ['widget', 'badge'], 'widget'),
 		'theme' => robokassa_widget_get_choice_option('robokassa_widget_theme', ['light', 'dark'], 'light'),
@@ -54,8 +54,13 @@ function robokassa_widget_get_settings() {
 		'description_position' => robokassa_widget_get_choice_option('robokassa_widget_description_position', ['left', 'right'], 'left'),
 		'color_scheme' => robokassa_widget_get_choice_option('robokassa_widget_color_scheme', ['primary', 'secondary', 'accent', ''], ''),
 	];
-}
 
+	if (get_option('robokassa_country_code', 'RU') === 'KZ') {
+		$settings['enabled'] = false;
+	}
+
+	return $settings;
+}
 /**
  * Возвращает значение опции с проверкой допустимых значений.
  *
@@ -170,6 +175,7 @@ function robokassa_widget_prepare_common_attributes(array $settings, array $sign
 		'theme' => $settings['theme'],
 		'size' => $settings['size'],
 		'mode' => 'checkout',
+		'oncheckout' => 'robokassaWidgetHandleCheckout',
 	];
 
 	if ($settings['show_logo'] === 'false') {
@@ -318,6 +324,18 @@ function robokassa_widget_enqueue_assets() {
 		'https://auth.robokassa.ru/merchant/bundle/robokassa-iframe-badge.js',
 		[],
 		null,
+		true
+	);
+
+	$local_script_path = __DIR__ . '/assets/js/robokassa-widget-init.js';
+	$local_script_url = plugin_dir_url(__FILE__) . 'assets/js/robokassa-widget-init.js';
+	$local_script_version = file_exists($local_script_path) ? filemtime($local_script_path) : null;
+
+	wp_enqueue_script(
+		'robokassa-badge-widget-init',
+		$local_script_url,
+		['robokassa-badge-widget'],
+		$local_script_version,
 		true
 	);
 }
