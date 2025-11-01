@@ -64,6 +64,7 @@ $country_code = get_option('robokassa_country_code', 'RU');
 				'robokassa_payment_FailURL',
 				'robokassa_payment_paymentMethod',
 				'robokassa_payment_paymentObject',
+				'robokassa_payment_second_check_paymentObject',
 				'robokassa_payment_paymentObject_shipping',
 				'robokassa_patyment_markup',
 				'robokassa_culture',
@@ -429,10 +430,26 @@ $country_code = get_option('robokassa_country_code', 'RU');
 											<option value="">Не выбрано</option>
 											<?php foreach (\Robokassa\Payment\Helper::$paymentObjects as $paymentObject): ?>
 												<option <?php if (\get_option('robokassa_payment_paymentObject') === $paymentObject['code']): ?>
-														selected="selected"
-														<?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
+													selected="selected"
+												<?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
 											<?php endforeach; ?>
 										</select>
+									</td>
+								</tr>
+								<tr valign="top" id="payment_object_second_receipt">
+									<th scope="row">Признак предмета расчёта для товаров/услуг (второй чек)</th>
+									<td>
+										<select id="payment_object_second_receipt_select" name="robokassa_payment_second_check_paymentObject"
+												onchange="spoleer();">
+											<option value="">Не выбрано</option>
+											<?php foreach (\Robokassa\Payment\Helper::$paymentObjects as $paymentObject): ?>
+												<option <?php if (\get_option('robokassa_payment_second_check_paymentObject') === $paymentObject['code']): ?>
+													selected="selected"
+												<?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
+											<?php endforeach; ?>
+										</select>
+										<br/>
+										<span class="text-description">Если параметр не выбран, используется значение из поля «Признак предмета расчёта для товаров/услуг».</span>
 									</td>
 								</tr>
 

@@ -746,6 +746,12 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 	$payment_method = get_option('robokassa_payment_paymentMethod');
 	$sno = get_option('robokassa_payment_sno');
 	$tax = get_option('robokassa_payment_tax');
+	$payment_object = get_option('robokassa_payment_paymentObject');
+	$second_check_payment_object = get_option('robokassa_payment_second_check_paymentObject');
+
+	if (empty($second_check_payment_object)) {
+		$second_receipt_payment_object = $payment_object;
+	}
 
 
 	if ($payment_method == 'advance' || $payment_method == 'full_prepayment' || $payment_method == 'prepayment') {
@@ -802,7 +808,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				'cost' => wc_format_decimal($shipping_total, get_option('woocommerce_price_num_decimals')),
 				'tax' => $tax,
 				'payment_method' => 'full_payment',
-				'payment_object' => get_option('robokassa_payment_paymentObject_shipping') ?: get_option('robokassa_payment_paymentObject'),
+				'payment_object' => get_option('robokassa_payment_paymentObject_shipping') ?: $payment_object,
 			];
 
 			$fields['items'][] = $products_items;
@@ -822,7 +828,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 					'quantity' => $additional_item->get_quantity(),
 					'sum' => wc_format_decimal($additional_item_total, get_option('woocommerce_price_num_decimals')),
 					'cost' => wc_format_decimal($additional_item_total, get_option('woocommerce_price_num_decimals')) / $additional_item->get_quantity(),
-					'payment_object' => get_option('robokassa_payment_paymentObject'),
+					'payment_object' => $second_receipt_payment_object,
 					'payment_method' => 'full_payment',
 					'tax' => $tax,
 				);
@@ -840,7 +846,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				'sum' => wc_format_decimal($item['line_total'], get_option('woocommerce_price_num_decimals')),
 				'tax' => $tax,
 				'payment_method' => 'full_payment',
-				'payment_object' => get_option('robokassa_payment_paymentObject'),
+				'payment_object' => $second_receipt_payment_object,
 			];
 
 			$product = wc_get_product($item['product_id']);
@@ -866,7 +872,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				'sum' => wc_format_decimal($additional_item_total, get_option('woocommerce_price_num_decimals')),
 				'tax' => $tax,
 				'payment_method' => 'full_payment',
-				'payment_object' => get_option('robokassa_payment_paymentObject'),
+				'payment_object' => $second_receipt_payment_object,
 			];
 
 			$fields['items'][] = $products_items;
