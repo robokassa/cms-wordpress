@@ -348,17 +348,40 @@ class RobokassaPayAPI {
 	 *
 	 * @return string
 	 */
-	private function buildRedirectNotice($manualId = '', $formUrl = '') {
+        private function buildRedirectNotice($manualId = '', $formUrl = '') {
+		$messages = $this->getRedirectNoticeMessages();
+
 		$notice = '<div class="robokassa-redirect-notice" role="status" aria-live="polite">';
-		$notice .= '<p class="robokassa-redirect-title">' . esc_html__('Спасибо за ваш заказ!', 'robokassa') . '</p>';
+		$notice .= '<p class="robokassa-redirect-title">' . esc_html($messages['title']) . '</p>';
 		$notice .= '<div class="robokassa-redirect-status">';
 		$notice .= '<span class="robokassa-redirect-loader" aria-hidden="true"></span>';
-		$notice .= '<p class="robokassa-redirect-message">' . esc_html__('Пожалуйста, подождите, выполняется перенаправление на страницу оплаты.', 'robokassa') . '</p>';
+		$notice .= '<p class="robokassa-redirect-message">' . esc_html($messages['message']) . '</p>';
 		$notice .= '</div>';
 
 		$notice .= '</div>';
 
 		return $notice;
+	}
+
+	/**
+	 * Возвращает локализованные сообщения для блока перенаправления.
+	 *
+	 * @return array
+	 */
+        private function getRedirectNoticeMessages() {
+		$locale = function_exists('determine_locale') ? determine_locale() : get_locale();
+
+		if (strpos((string) $locale, 'ru') === 0) {
+			return [
+				'title' => __('Спасибо за ваш заказ!', 'robokassa'),
+				'message' => __('Пожалуйста, подождите, выполняется перенаправление на страницу оплаты.', 'robokassa'),
+			];
+		}
+
+		return [
+			'title' => __('Thank you for your order!', 'robokassa'),
+			'message' => __('Please wait while we redirect you to the payment page.', 'robokassa'),
+		];
 	}
 
 	/**
