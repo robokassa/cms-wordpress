@@ -3,11 +3,17 @@ function spoleer()
 	var country = document.getElementById("robokassa_country_code");
 	var sno = document.getElementById("sno_select");
 	var taxRow = document.getElementById("tax");
+	var taxSourceRow = document.getElementById("tax_source");
 	var snoRow = document.getElementById("sno");
 	var paymentMethodRow = document.getElementById("payment_method");
 	var paymentObjectRow = document.getElementById("payment_object");
+	var paymentObjectShippingRow = document.getElementById('payment_object_shipping');
 	var creditRow = document.getElementById("robokassa_payment_credit");
+	var secondReceiptRow = document.getElementById('payment_object_second_receipt');
+	var secondReceiptStatusRow = document.getElementById('second_receipt_status_row');
 	var isKazakhstan = country && country.value === 'KZ';
+	var agentSettingsRow = document.getElementById('robokassa_agent_settings');
+	var holdSettingsRow = document.getElementById('robokassa_hold_settings');
 
 	if (creditRow) {
 		creditRow.style.display = isKazakhstan ? 'none' : '';
@@ -25,8 +31,32 @@ function spoleer()
 		paymentObjectRow.style.display = isKazakhstan ? 'none' : 'table-row';
 	}
 
+	if (secondReceiptRow) {
+		secondReceiptRow.style.display = isKazakhstan ? 'none' : 'table-row';
+	}
+
+	if (paymentObjectShippingRow) {
+		paymentObjectShippingRow.style.display = isKazakhstan ? 'none' : 'table-row';
+	}
+
+	if (secondReceiptStatusRow) {
+		secondReceiptStatusRow.style.display = isKazakhstan ? 'none' : 'table-row';
+	}
+
+	if (agentSettingsRow) {
+		agentSettingsRow.style.display = isKazakhstan ? 'none' : '';
+	}
+
+	if (holdSettingsRow) {
+		holdSettingsRow.style.display = isKazakhstan ? 'none' : 'table-row';
+	}
+
 	if (taxRow) {
 		taxRow.style.display = isKazakhstan ? 'table-row' : 'none';
+	}
+
+	if (taxSourceRow) {
+		taxSourceRow.style.display = isKazakhstan ? 'table-row' : 'none';
 	}
 
 	if (!sno) {
@@ -42,6 +72,10 @@ function spoleer()
 
 	if (taxRow && !isKazakhstan) {
 		taxRow.style.display = shouldShowTax ? 'table-row' : 'none';
+	}
+
+	if (taxSourceRow && !isKazakhstan) {
+		taxSourceRow.style.display = shouldShowTax ? 'table-row' : 'none';
 	}
 }
 
