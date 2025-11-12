@@ -21,11 +21,6 @@ if (!\current_user_can('activate_plugins')) {
 	\plugin_dir_url(__FILE__) . 'assets/css/admin-style.css'
 );
 
-\wp_enqueue_style(
-	'robokassa_payment_admin_style_main',
-	\plugin_dir_url(__FILE__) . 'assets/css/main.css'
-);
-
 ?>
 
 <div class="robokassa-admin-wrapper">
