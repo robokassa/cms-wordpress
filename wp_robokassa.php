@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.2
+ * Version: 1.8.3
  */
 
 require_once('payment-widget.php');
@@ -307,7 +307,8 @@ function robokassa_payment_smsWhenCompleted($order_id, $debug = '')
 		$debug .= "translit = $translit \r\n";
 		$debug .= "order_id = $order_id \r\n";
 
-		$roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
+		global $wpdb;
+		$roboDataBase = new RoboDataBase($wpdb);
 		$robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
 
 		$sms = new RobokassaSms($roboDataBase, $robokassa, $phone, $message, $translit, $order_id, 2);
@@ -433,9 +434,10 @@ function robokassa_payment_wp_robokassa_checkPayment()
 				if (get_option('robokassa_payment_sms1_enabled') == 'on') {
 
 					try {
+						global $wpdb;
 
 						(new RobokassaSms(
-							(new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME))),
+							(new RoboDataBase($wpdb)),
 							(new RobokassaPayAPI(
 								get_option('robokassa_payment_MerchantLogin'),
 								get_option('robokassa_payment_shoppass1'),
