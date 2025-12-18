@@ -20,6 +20,73 @@
 		return parsed;
 	}
 
+	function hasRedirectConfig() {
+		return typeof window.robokassaRedirectConfig === 'object' && window.robokassaRedirectConfig !== null;
+	}
+
+	function requestOrderStatus(config) {
+		var payload = new URLSearchParams();
+		payload.append('action', 'robokassa_check_order_status');
+		payload.append('orderId', config.orderId);
+		payload.append('orderKey', config.orderKey);
+
+		return fetch(config.ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: payload.toString()
+		}).then(function(response){
+			if (!response.ok) {
+				return null;
+			}
+
+			return response.json();
+		}).catch(function(){
+			return null;
+		});
+	}
+
+	function startIframeRedirectWatcher() {
+		if (!hasRedirectConfig()) {
+			return;
+		}
+
+		var config = window.robokassaRedirectConfig;
+		var required = ['ajaxUrl', 'orderId', 'orderKey', 'successUrl'];
+
+		for (var i = 0; i < required.length; i++) {
+			if (!config[required[i]]) {
+				return;
+			}
+		}
+
+		var interval = toPositiveInt(config.checkInterval, 5000);
+		var maxAttempts = toPositiveInt(config.maxAttempts, 120);
+		var attempts = 0;
+
+		var timer = window.setInterval(function(){
+			attempts += 1;
+
+			if (maxAttempts > 0 && attempts > maxAttempts) {
+				window.clearInterval(timer);
+				return;
+			}
+
+			requestOrderStatus(config).then(function(result){
+				if (!result || !result.success || !result.data) {
+					return;
+				}
+
+				if (result.data.paid) {
+					window.clearInterval(timer);
+					window.location.href = config.successUrl;
+				}
+			});
+		}, interval);
+	}
+
 	function initWrapper(wrapper) {
 		if (!wrapper || wrapper.dataset.robokassaRedirectInitialized === '1') {
 			return;
@@ -79,6 +146,7 @@
 
 	onReady(function(){
 		scanWrappers(document);
+		startIframeRedirectWatcher();
 
 		var observer = new MutationObserver(function(mutations){
 			mutations.forEach(function(mutation){
@@ -100,3 +168,4 @@
 		observer.observe(document.body, { childList: true, subtree: true });
 	});
 })();
+

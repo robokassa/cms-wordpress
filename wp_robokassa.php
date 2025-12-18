@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.3
+ * Version: 1.8.4
  */
 
 require_once('payment-widget.php');
@@ -89,10 +89,8 @@ function robokassa_enqueue_frontend_assets()
 	if (!function_exists('is_checkout') || !is_checkout()) {
 		return;
 	}
-
 	$stylePath = plugin_dir_path(__FILE__) . 'assets/css/robokassa-redirect.css';
 	$scriptPath = plugin_dir_path(__FILE__) . 'assets/js/robokassa-redirect.js';
-
 	if (file_exists($stylePath)) {
 		wp_enqueue_style(
 			'robokassa-redirect',
@@ -101,11 +99,9 @@ function robokassa_enqueue_frontend_assets()
 			filemtime($stylePath)
 		);
 	}
-
 	if (!file_exists($scriptPath)) {
 		return;
 	}
-
 	wp_enqueue_script(
 		'robokassa-redirect',
 		plugins_url('assets/js/robokassa-redirect.js', __FILE__),
@@ -113,6 +109,65 @@ function robokassa_enqueue_frontend_assets()
 		filemtime($scriptPath),
 		true
 	);
+	$config = robokassa_prepare_redirect_config();
+	if ($config !== null) {
+		wp_localize_script('robokassa-redirect', 'robokassaRedirectConfig', $config);
+	}
+}
+
+/**
+ * Готовит конфигурацию для проверки статуса заказа при iframe-оплате.
+ *
+ * @return array|null
+ */
+function robokassa_prepare_redirect_config()
+{
+	if (get_option('robokassa_iframe') != 1 || !function_exists('is_checkout_pay_page') || !is_checkout_pay_page()) {
+		return null;
+	}
+	$order_id = absint(get_query_var('order-pay'));
+	$order_key = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
+	if ($order_id <= 0 || $order_key === '') {
+		return null;
+	}
+	$order = wc_get_order($order_id);
+	if (!$order instanceof \WC_Order || $order->get_order_key() !== $order_key) {
+		return null;
+	}
+	return array(
+		'ajaxUrl' => admin_url('admin-ajax.php'),
+		'orderId' => $order_id,
+		'orderKey' => $order_key,
+		'successUrl' => $order->get_checkout_order_received_url(),
+		'checkInterval' => 5000,
+		'maxAttempts' => 120,
+	);
+}
+
+/**
+ * Возвращает статус заказа для перенаправления после iframe-оплаты.
+ *
+ * @return void
+ */
+function robokassa_check_order_status()
+{
+	$order_id = isset($_POST['orderId']) ? absint($_POST['orderId']) : 0;
+	$order_key = isset($_POST['orderKey']) ? sanitize_text_field(wp_unslash($_POST['orderKey'])) : '';
+
+	if ($order_id <= 0 || $order_key === '') {
+		wp_send_json_error(array('message' => 'invalid_request'));
+	}
+
+	$order = wc_get_order($order_id);
+
+	if (!$order instanceof \WC_Order || $order->get_order_key() !== $order_key) {
+		wp_send_json_error(array('message' => 'invalid_order'));
+	}
+
+	wp_send_json_success(array(
+		'paid' => $order->is_paid(),
+		'status' => $order->get_status(),
+	));
 }
 
 add_action('admin_menu', 'robokassa_payment_initMenu'); // Хук для добавления страниц плагина в админку
@@ -124,6 +179,8 @@ add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
 add_action('woocommerce_order_status_changed', 'robokassa_hold_confirm', 10, 4);
 add_action('woocommerce_order_status_changed', 'robokassa_hold_cancel', 10, 4);
 add_action('robokassa_cancel_payment_event', 'robokassa_hold_cancel_after5', 10, 1);
+add_action('wp_ajax_robokassa_check_order_status', 'robokassa_check_order_status');
+add_action('wp_ajax_nopriv_robokassa_check_order_status', 'robokassa_check_order_status');
 
 register_activation_hook(__FILE__, 'robokassa_payment_wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
 

@@ -23,11 +23,24 @@ if (!\current_user_can('activate_plugins')) {
 );
 
 $country_code = get_option('robokassa_country_code', 'RU');
+$woocommercePricesIncludeTax = false;
+
+if (function_exists('wc_prices_include_tax')) {
+	$woocommercePricesIncludeTax = wc_prices_include_tax();
+} else {
+	$woocommercePricesIncludeTax = get_option('woocommerce_prices_include_tax') === 'yes';
+}
 ?>
 
 <div class="robokassa-admin-wrapper">
 	<div class="robokassa-admin-container">
 		<div class="content_holder">
+			<?php if ($woocommercePricesIncludeTax): ?>
+				<div class="notice notice-error robokassa-notice-top">
+					<p>Включено добавление налога в цену WooCommerce. Указывайте цены без налога и настраивайте ставки в
+						плагине Robokassa.</p>
+				</div>
+			<?php endif; ?>
 			<?php
 
 			if (isset($_REQUEST['settings-updated'])) {
@@ -485,6 +498,39 @@ $country_code = get_option('robokassa_country_code', 'RU');
 										</select>
 									</td>
 								</tr>
+								<?php
+								$woocommerceTaxRates = array();
+								$woocommerceTaxesEnabled = function_exists('wc_tax_enabled') && wc_tax_enabled();
+
+								if ($woocommerceTaxesEnabled && class_exists('WC_Tax')) {
+									$taxClasses = array_merge(array(''), WC_Tax::get_tax_class_slugs());
+
+									foreach ($taxClasses as $taxClass) {
+										$woocommerceTaxRates = WC_Tax::get_rates($taxClass);
+
+										if (!empty($woocommerceTaxRates)) {
+											break;
+										}
+									}
+								}
+
+								if ($woocommerceTaxesEnabled && !empty($woocommerceTaxRates)): ?>
+									<tr>
+										<td colspan="2">
+											<div class="notice notice-error robokassa-tax-warning">
+												<p>
+													В WooCommerce включены налоговые ставки.
+													В России встроенные налоги WooCommerce не используются — при их
+													включении фискализация по 54-ФЗ будет некорректной.
+													Отключите налоги в разделе <strong>WooCommerce → Настройки → Общие →
+														«Включить налоги и расчёт ставок»</strong>.
+													Используйте ставки НДС только в настройках Robokassa и не применяйте
+													налоговые классы WooCommerce.
+												</p>
+											</div>
+										</td>
+									</tr>
+								<?php endif; ?>
 
 								<tr valign="top" id="tax_source">
 									<th scope="row">Источник налоговой ставки</th>
@@ -519,6 +565,9 @@ $country_code = get_option('robokassa_country_code', 'RU');
 											<option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>
 												НДС чека по ставке 10%
 											</option>
+											<option value="vat22" <?php echo((get_option('robokassa_payment_tax') == 'vat22') ? ' selected' : ''); ?>>
+												НДС чека по ставке 22%
+											</option>
 											<option value="vat20" <?php echo((get_option('robokassa_payment_tax') == 'vat20') ? ' selected' : ''); ?>>
 												НДС чека по ставке 20%
 											</option>
@@ -527,6 +576,9 @@ $country_code = get_option('robokassa_country_code', 'RU');
 											</option>
 											<option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat120') ? ' selected' : ''); ?>>
 												НДС чека по расчетной ставке 20/120
+											</option>
+											<option value="vat122" <?php echo((get_option('robokassa_payment_tax') == 'vat122') ? ' selected' : ''); ?>>
+												НДС чека по расчетной ставке 22/122
 											</option>
 											<option value="vat5" <?php echo((get_option('robokassa_payment_tax') == 'vat5') ? ' selected' : ''); ?>>
 												НДС по ставке 5%
@@ -626,9 +678,11 @@ $country_code = get_option('robokassa_country_code', 'RU');
 													<option selected="selected" value="0">Отключено</option>
 												<?php } ?>
 											</select><br/>
-											<span class="text-description">Данная <a href="https://docs.robokassa.ru/holding/">услуга</a> доступна только по предварительному согласованию.<span><br/>
+											<span class="text-description">Данная <a
+														href="https://docs.robokassa.ru/holding/">услуга</a> доступна только по предварительному согласованию.<span><br/>
 											<span class="text-description">Функционал доступен только при использовании банковских карт.<span><br/>
-											<span class="text-description"><a href="https://docs.robokassa.ru/media/guides/hold_woocommerce.pdf">Инструкция по настройке</a></span>
+											<span class="text-description"><a
+														href="https://docs.robokassa.ru/media/guides/hold_woocommerce.pdf">Инструкция по настройке</a></span>
 										</td>
 									</tr>
 

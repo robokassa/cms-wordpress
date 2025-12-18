@@ -75,17 +75,17 @@ class RobokassaPayAPI {
 		$this->mrh_pass2 = $pass2;
 		$this->method = $method;
 
-		$this->apiUrl = substr($_SERVER['SERVER_PROTOCOL'], 0, -4).'://auth.robokassa.ru/Merchant/WebService/Service.asmx/';
+		$this->apiUrl = substr($_SERVER['SERVER_PROTOCOL'], 0, -4) . '://auth.robokassa.ru/Merchant/WebService/Service.asmx/';
 	}
 
 	/**
 	 * @param string $mthd
-	 * @param array  $data
+	 * @param array $data
 	 *
 	 * @return array
 	 */
 	private function sendRequest($mthd, $data) {
-		return json_decode($this->parseXmlAndConvertToJson($this->apiUrl.$mthd.'?'.http_build_query($data)), true);
+		return json_decode($this->parseXmlAndConvertToJson($this->apiUrl . $mthd . '?' . http_build_query($data)), true);
 	}
 
 	/**
@@ -98,8 +98,7 @@ class RobokassaPayAPI {
 	 *
 	 * @return string
 	 */
-	private function getSignatureString($sum, $invId, $receiptJson, $recurring = false)
-	{
+	private function getSignatureString($sum, $invId, $receiptJson, $recurring = false) {
 		$outCurrency = get_option('robokassa_out_currency');
 		$holdPaymentParam = (get_option('robokassa_payment_hold_onoff') == '1') ? 'true' : '';
 
@@ -178,7 +177,7 @@ class RobokassaPayAPI {
 
 		if (get_option('robokassa_country_code') == "RU")
 			$paymentUrl = $ruUrl;
-		elseif(get_option('robokassa_country_code') == "KZ")
+		elseif (get_option('robokassa_country_code') == "KZ")
 			$paymentUrl = $kzUrl;
 
 
@@ -197,7 +196,7 @@ class RobokassaPayAPI {
 			'Shp_merchant_id' => $this->mrh_login,
 			'Shp_order_id' => $invId,
 			'Shp_result_url' => Util::siteUrl('/?robokassa=result'),
-			'recurring'      => $recurring ? 'true' : '',
+			'recurring' => $recurring ? 'true' : '',
 			'SignatureValue' => $this->getSignature($this->getSignatureString($sum, $invId, $receiptJson)),
 		);
 
@@ -207,12 +206,12 @@ class RobokassaPayAPI {
 
 		//$formData['OutSumCurrency'] = get_option('robokassa_out_currency');
 
-		if($email !== null)
+		if ($email !== null)
 			$formData['Email'] = $email;
 
 
 		$culture = get_option('robokassa_culture');
-		if($culture !== Helper::CULTURE_AUTO)
+		if ($culture !== Helper::CULTURE_AUTO)
 			$formData['Culture'] = $culture;
 
 		if (!empty($receipt)) {
@@ -241,15 +240,14 @@ class RobokassaPayAPI {
 	}
 
 
-
 	/**
 	 * @param string $formUrl
-	 * @param array  $formData
+	 * @param array $formData
 	 *
 	 * @return string
 	 */
 	private function renderForm($formUrl, array $formData) {
-		$chosenMethod = (string) WC()->session->get('chosen_payment_method');
+		$chosenMethod = (string)WC()->session->get('chosen_payment_method');
 
 		if (get_option('robokassa_iframe')) {
 			return $this->renderIframePayment($formData);
@@ -289,7 +287,7 @@ class RobokassaPayAPI {
 	 * Формирует скрипт прямого запуска партнёрских оплат.
 	 *
 	 * @param string $chosenMethod
-	 * @param array  $formData
+	 * @param array $formData
 	 *
 	 * @return string
 	 */
@@ -317,7 +315,7 @@ class RobokassaPayAPI {
 	 * Строит стандартную HTML-форму и автоматически её отправляет.
 	 *
 	 * @param string $formUrl
-	 * @param array  $formData
+	 * @param array $formData
 	 *
 	 * @return string
 	 */
@@ -348,7 +346,7 @@ class RobokassaPayAPI {
 	 *
 	 * @return string
 	 */
-        private function buildRedirectNotice($manualId = '', $formUrl = '') {
+	private function buildRedirectNotice($manualId = '', $formUrl = '') {
 		$messages = $this->getRedirectNoticeMessages();
 
 		$notice = '<div class="robokassa-redirect-notice" role="status" aria-live="polite">';
@@ -368,10 +366,10 @@ class RobokassaPayAPI {
 	 *
 	 * @return array
 	 */
-        private function getRedirectNoticeMessages() {
+	private function getRedirectNoticeMessages() {
 		$locale = function_exists('determine_locale') ? determine_locale() : get_locale();
 
-		if (strpos((string) $locale, 'ru') === 0) {
+		if (strpos((string)$locale, 'ru') === 0) {
 			return [
 				'title' => __('Спасибо за ваш заказ!', 'robokassa'),
 				'message' => __('Пожалуйста, подождите, выполняется перенаправление на страницу оплаты.', 'robokassa'),
@@ -388,7 +386,7 @@ class RobokassaPayAPI {
 	 * Собирает HTML формы для автоперехода на оплату.
 	 *
 	 * @param string $formUrl
-	 * @param array  $formData
+	 * @param array $formData
 	 * @param string $formId
 	 *
 	 * @return string
@@ -505,10 +503,6 @@ class RobokassaPayAPI {
 		$payload = array();
 
 		foreach ($formData as $inputName => $inputValue) {
-			if ($inputName === 'IsTest') {
-				continue;
-			}
-
 			$payload[$inputName] = $inputValue;
 		}
 
@@ -533,6 +527,7 @@ class RobokassaPayAPI {
 
 		return 'https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js';
 	}
+
 	/**
 	 * Отправляет СМС с помощью GET-запроса на робокассу
 	 *
@@ -550,7 +545,7 @@ class RobokassaPayAPI {
 			'signature' => $this->getSignature("$this->mrh_login:$phone:$message:$this->mrh_pass1"),
 		);
 
-		$url = substr($_SERVER['SERVER_PROTOCOL'], 0, -4).'://services.robokassa.ru/SMS/?'.http_build_query($data);
+		$url = substr($_SERVER['SERVER_PROTOCOL'], 0, -4) . '://services.robokassa.ru/SMS/?' . http_build_query($data);
 
 		$response = file_get_contents($url);
 		$parsed = json_decode($response, true);
@@ -566,8 +561,7 @@ class RobokassaPayAPI {
 	 *
 	 * @return array
 	 */
-	public function getCurrLabels()
-	{
+	public function getCurrLabels() {
 		return $this->sendRequest('GetCurrencies', array(
 			'MerchantLogin' => $this->mrh_login,
 			'Language' => 'ru',
@@ -590,23 +584,22 @@ class RobokassaPayAPI {
 	}
 
 
-	public function getRecurringPaymentData($invoiceId, $parentInvoiceId, $amount, $receipt, $description = '')
-	{
+	public function getRecurringPaymentData($invoiceId, $parentInvoiceId, $amount, $receipt, $description = '') {
 		// $receipt = (get_option('robokassa_payment_type_commission') == 'false' && get_option('robokassa_country_code') != 'KZ') ? $receipt : [];
 		$receiptJson = (!empty($receipt) && \is_array($receipt)) ? \urlencode(\json_encode($receipt, 256)) : null;
 
 		$data = array_filter([
-			'MerchantLogin'     => $this->mrh_login,
-			'InvoiceID'         => $invoiceId,
+			'MerchantLogin' => $this->mrh_login,
+			'InvoiceID' => $invoiceId,
 			'PreviousInvoiceID' => $parentInvoiceId,
-			'Description'       => '',
-			'SignatureValue'    => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress:Shp_merchant_id=" . get_option('robokassa_payment_MerchantLogin') . ":Shp_order_id={$invoiceId}:Shp_result_url=" . Util::siteUrl('/?robokassa=result')),
-			'OutSum'            => $amount,
-			'shp_label'         => 'official_wordpress',
-			'Shp_merchant_id'   => get_option('robokassa_payment_MerchantLogin'),
-			'Shp_order_id'      => $invoiceId,
-			'Shp_result_url'    => Util::siteUrl('/?robokassa=result'),
-			'Receipt'           => $receiptJson
+			'Description' => '',
+			'SignatureValue' => md5("{$this->mrh_login}:{$amount}:{$invoiceId}:{$receiptJson}:{$this->mrh_pass1}:shp_label=official_wordpress:Shp_merchant_id=" . get_option('robokassa_payment_MerchantLogin') . ":Shp_order_id={$invoiceId}:Shp_result_url=" . Util::siteUrl('/?robokassa=result')),
+			'OutSum' => $amount,
+			'shp_label' => 'official_wordpress',
+			'Shp_merchant_id' => get_option('robokassa_payment_MerchantLogin'),
+			'Shp_order_id' => $invoiceId,
+			'Shp_result_url' => Util::siteUrl('/?robokassa=result'),
+			'Receipt' => $receiptJson
 		], function($val) {
 			return $val !== null;
 		});

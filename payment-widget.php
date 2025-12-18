@@ -61,6 +61,7 @@ function robokassa_widget_get_settings() {
 
 	return $settings;
 }
+
 /**
  * Возвращает значение опции с проверкой допустимых значений.
  *
