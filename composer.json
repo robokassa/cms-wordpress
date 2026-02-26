@@ -1,0 +1,27 @@
+{
+	"name": "robokassa/woocommerce",
+	"description": "Официальный модуль приема платежей Robokassa для WordPress WooCommerce",
+	"version": "1.8.4",
+	"type": "wordpress-plugin",
+	"license": "GPL-2.0-or-later",
+	"homepage": "https://robokassa.com",
+	"authors": [
+		{
+			"name": "Robokassa",
+			"homepage": "https://robokassa.com"
+		}
+	],
+	"require": {
+		"php": ">=7.4",
+		"composer/installers": "^1.12 || ^2.0"
+	},
+	"keywords": [
+		"wordpress",
+		"woocommerce",
+		"robokassa",
+		"payment"
+	],
+	"extra": {
+		"installer-name": "robokassa"
+	}
+}
