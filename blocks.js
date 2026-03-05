@@ -19,6 +19,10 @@ const paymentMethods = [
         name: 'robokassa_split',
         fallback: window.wp.i18n.__('Robokassa X Яндекс Сплит', 'robokassa'),
     },
+    {
+        name: 'robokassa_sbp',
+        fallback: window.wp.i18n.__('Оплата через QR-код СБП', 'robokassa'),
+    },
 ];
 
 paymentMethods.forEach((config) => {
@@ -51,6 +55,7 @@ const ROBOKASSA_QUERY_MAPPING = {
     otp: 'robokassa_credit',
     mokka: 'robokassa_mokka',
     yandexpaysplit: 'robokassa_split',
+    sbp: 'robokassa_sbp',
 };
 
 function robokassaNormalizeGateway(label) {
@@ -180,6 +185,7 @@ window.addEventListener('DOMContentLoaded', () => {
         otp: 'robokassa_credit',
         mokka: 'robokassa_mokka',
         yandexpaysplit: 'robokassa_split',
+        sbp: 'robokassa_sbp',
     };
 
     const methodKey = mapping[methodParam.toLowerCase()];

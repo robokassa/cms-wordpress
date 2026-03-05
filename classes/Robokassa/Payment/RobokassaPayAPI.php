@@ -249,6 +249,10 @@ class RobokassaPayAPI {
 	private function renderForm($formUrl, array $formData) {
 		$chosenMethod = (string)WC()->session->get('chosen_payment_method');
 
+		if ($chosenMethod === 'robokassa_sbp') {
+			return $this->renderSbpPayment($formData);
+		}
+
 		if (get_option('robokassa_iframe')) {
 			return $this->renderIframePayment($formData);
 		}
@@ -309,6 +313,151 @@ class RobokassaPayAPI {
 		$script .= '</script>';
 
 		return $this->buildRedirectNotice() . $script;
+	}
+
+	/**
+	 * Формирует сценарий оплаты через QR-код СБП.
+	 *
+	 * @param array $formData
+	 *
+	 * @return string
+	 */
+	private function renderSbpPayment(array $formData) {
+		$scriptUrl = 'https://auth.robokassa.ru/merchant/bundle/robokassa-iframe-badge.js';
+		$containerId = $this->generateHtmlId('robokassa-sbp-qr-');
+		$options = $this->buildSbpOptions($formData, $containerId);
+
+		$html = '<div class="robokassa-sbp-wrapper">';
+		$html .= $this->buildSbpNotice();
+		$html .= '<div id="' . esc_attr($containerId) . '" class="robokassa-sbp-qr"></div>';
+		$html .= '</div>';
+		$html .= '<script type="text/javascript" src="' . esc_url($scriptUrl) . '"></script>';
+		$html .= '<script type="text/javascript">';
+		$html .= 'document.addEventListener("DOMContentLoaded", function(){';
+		$html .= 'if (window.Robokassa && window.Robokassa.pay && typeof window.Robokassa.pay.startOp === "function") {';
+		$html .= 'window.Robokassa.pay.startOp(' . $options . ');';
+		$html .= '}';
+		$html .= '});';
+		$html .= '</script>';
+
+		return $html;
+	}
+
+	/**
+	 * Формирует блок подсказки для оплаты через QR-код СБП.
+	 *
+	 * @return string
+	 */
+	private function buildSbpNotice() {
+		$notice = '<div class="robokassa-sbp-notice" role="status" aria-live="polite">';
+		$notice .= '<p class="robokassa-sbp-title">' . esc_html__('Оплата через СБП', 'robokassa') . '</p>';
+		$notice .= '<p class="robokassa-sbp-message">';
+		$notice .= esc_html__('Сейчас вам отобразится QR-код для оплаты. Отсканируйте его в банковском приложении, чтобы завершить заказ.', 'robokassa');
+		$notice .= '</p>';
+		$notice .= '</div>';
+
+		return $notice;
+	}
+
+	/**
+	 * Подготавливает параметры запуска SBP-оплаты.
+	 *
+	 * @param array $formData
+	 * @param string $containerId
+	 *
+	 * @return string
+	 */
+	private function buildSbpOptions(array $formData, $containerId) {
+
+		if (!isset($formData['OutSum'], $formData['InvId'], $formData['Email'], $formData['MrchLogin'])) {
+			throw new \InvalidArgumentException('Missing required SBP fields');
+		}
+
+		$outSum = (string)$formData['OutSum'];
+		$invId  = (string)$formData['InvId'];
+
+		$receipt = '';
+		if (!empty($formData['Receipt'])) {
+			$receipt = urldecode((string)$formData['Receipt']);
+		}
+
+		$signData = [
+			'OutSum' => $outSum,
+			'InvId'  => $invId,
+		];
+
+		if ($receipt !== '') {
+			$signData['Receipt'] = rawurlencode($receipt);
+		}
+
+		$options = [
+			'paymentMethod'   => 'SBP',
+			'email'           => (string)$formData['Email'],
+			'merchantLogin'   => (string)$formData['MrchLogin'],
+			'outSum'          => $outSum,
+			'invId'           => (int)$invId,
+			'signature'       => $this->buildSbpSignature($signData),
+			'shp_label'       => 'official_wordpress',
+			'Shp_merchant_id' => get_option('robokassa_payment_MerchantLogin'),
+			'Shp_order_id'    => (int)$invId,
+			'Shp_result_url'  => (Util::siteUrl('/?robokassa=result')),
+			'onpaymentlink'   => '__ROBO_SBPPAYMENTLINK__',
+			'qrContainerId'   => $containerId,
+			'qrContainerSize' => 360,
+		];
+
+		if ($receipt !== '') {
+			$options['receipt'] = $receipt;
+		}
+
+		return $this->buildSbpOptionsScript($options);
+	}
+
+	/**
+	 * Формирует JavaScript-объект параметров для старта SBP-оплаты.
+	 *
+	 * @param array $options
+	 *
+	 * @return string
+	 */
+	private function buildSbpOptionsScript(array $options) {
+		$json = wp_json_encode($options, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+		if (!is_string($json)) {
+			return '{}';
+		}
+
+		$callback = 'function(url){ window.robokassaSbpLink = url; return url; }';
+
+		return str_replace('"__ROBO_SBPPAYMENTLINK__"', $callback, $json);
+	}
+
+	/**
+	 * Возвращает подпись для метода оплаты SBP.
+	 *
+	 * @param array $formData
+	 *
+	 * @return string
+	 */
+	private function buildSbpSignature(array $formData) {
+		$outSum = (string)($formData['OutSum'] ?? '');
+		$invId = (string)($formData['InvId'] ?? '');
+		$receipt = isset($formData['Receipt']) ? urldecode((string)$formData['Receipt']) : '';
+
+		$parts = [$this->mrh_login, $outSum, $invId];
+
+		if ($receipt !== '') {
+			$parts[] = $receipt;
+		}
+
+		$parts[] = $this->mrh_pass1;
+
+		$parts[] = 'shp_label=official_wordpress';
+		$parts[] = 'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin');
+		$parts[] = 'Shp_order_id=' . $invId;
+		$parts[] = 'Shp_result_url=' . Util::siteUrl('/?robokassa=result');
+
+		return md5(implode(':', $parts));
 	}
 
 	/**

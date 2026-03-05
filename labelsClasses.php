@@ -55,6 +55,17 @@ class payment_robokassa_pay_method_request_split extends \Robokassa\Payment\WC_W
 	}
 }
 
+class payment_robokassa_pay_method_request_sbp extends \Robokassa\Payment\WC_WP_robokassa {
+	public function __construct() {
+		$this->id = 'robokassa_sbp';
+		$this->method_title = 'Robokassa';
+		$this->long_name = 'Оплата через Robokassa';
+		$this->title = 'Оплата через QR-код СБП';
+
+		parent::__construct();
+	}
+}
+
 /**
  * Возвращает описание дополнительных способов оплаты Robokassa.
  *
@@ -90,6 +101,13 @@ function robokassa_get_optional_payment_methods_config()
 			'option' => 'robokassa_payment_method_split_enabled',
 			'alias' => 'YandexPaySplit',
 			'title' => 'Robokassa X Яндекс Сплит',
+		],
+		[
+			'class' => 'payment_robokassa_pay_method_request_sbp',
+			'gateway_id' => 'robokassa_sbp',
+			'option' => 'robokassa_payment_method_sbp_enabled',
+			'alias' => 'SBP',
+			'title' => 'Оплата через QR-код СБП',
 		],
 	];
 }

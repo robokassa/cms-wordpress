@@ -74,6 +74,7 @@ if (function_exists('wc_prices_include_tax')) {
 				'robokassa_payment_FailURL',
 				'robokassa_payment_paymentMethod',
 				'robokassa_payment_paymentObject',
+				'robokassa_payment_payment_object_source',
 				'robokassa_payment_second_check_paymentObject',
 				'robokassa_payment_paymentObject_shipping',
 				'robokassa_patyment_markup',
@@ -91,6 +92,7 @@ if (function_exists('wc_prices_include_tax')) {
 				'robokassa_payment_method_podeli_enabled',
 				'robokassa_payment_method_mokka_enabled',
 				'robokassa_payment_method_split_enabled',
+				'robokassa_payment_method_sbp_enabled',
 			];
 
 			require_once __DIR__ . '/labelsClasses.php';
@@ -283,7 +285,7 @@ if (function_exists('wc_prices_include_tax')) {
 											<option selected="selected" value="0">Отключено</option>
 										<?php } ?>
 									</select><br/>
-									<span class="text-description">При включённом iframe, способов оплаты меньше, чем в обычной платежной странице - только карты, Apple и Samsung pay, Qiwi. incurlabel работает, но ограничено.<span>
+									<span class="text-description">При включенном iframe доступно меньше способов оплаты, чем на стандартной платежной странице.<span>
 								</td>
 							</tr>
 						</table>
@@ -463,6 +465,23 @@ if (function_exists('wc_prices_include_tax')) {
 														<?php endif; ?>value="<?php echo $paymentObject['code']; ?>"><?php echo $paymentObject['title']; ?></option>
 											<?php endforeach; ?>
 										</select>
+									</td>
+								</tr>
+								<tr valign="top" id="payment_object_source">
+									<th scope="row">Источник предмета расчёта для товаров/услуг</th>
+									<td>
+										<?php $payment_object_source = get_option('robokassa_payment_payment_object_source', 'global'); ?>
+										<select id="payment_object_source_select" name="robokassa_payment_payment_object_source"
+												onchange="spoleer();">
+											<option value="global" <?php selected($payment_object_source, 'global'); ?>>
+												Использовать предмет расчёта из настроек плагина
+											</option>
+											<option value="product" <?php selected($payment_object_source, 'product'); ?>>
+												Использовать предмет расчёта из карточки товара (при наличии)
+											</option>
+										</select>
+										<br/>
+										<span class="text-description">Если в карточке товара значение не задано, используется предмет расчёта из настроек плагина.</span>
 									</td>
 								</tr>
 								<tr valign="top" id="payment_object_second_receipt">

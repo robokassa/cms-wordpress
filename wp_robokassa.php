@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.4
+ * Version: 1.8.5
  */
 
 require_once('payment-widget.php');
@@ -16,6 +16,7 @@ use Robokassa\Payment\RobokassaPayAPI;
 use Robokassa\Payment\RobokassaSms;
 use Robokassa\Payment\Util;
 use Robokassa\Payment\AgentManager;
+use Robokassa\Payment\PaymentObjectManager;
 use Robokassa\Payment\TaxManager;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
@@ -67,8 +68,10 @@ if (!function_exists('robokassa_chosen_payment_method')) {
 
 add_action('woocommerce_review_order_before_payment', 'refresh_payment_methods');
 add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_tax_field');
+add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_payment_object_field');
 add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_agent_fields');
 add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_tax_field');
+add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_payment_object_field');
 add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_agent_fields');
 function refresh_payment_methods()
 {
@@ -122,18 +125,27 @@ function robokassa_enqueue_frontend_assets()
  */
 function robokassa_prepare_redirect_config()
 {
-	if (get_option('robokassa_iframe') != 1 || !function_exists('is_checkout_pay_page') || !is_checkout_pay_page()) {
+	if (!function_exists('is_checkout_pay_page') || !is_checkout_pay_page()) {
 		return null;
 	}
+
 	$order_id = absint(get_query_var('order-pay'));
 	$order_key = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
+
 	if ($order_id <= 0 || $order_key === '') {
 		return null;
 	}
+
 	$order = wc_get_order($order_id);
+
 	if (!$order instanceof \WC_Order || $order->get_order_key() !== $order_key) {
 		return null;
 	}
+
+	if (!robokassa_should_track_payment_redirect($order)) {
+		return null;
+	}
+
 	return array(
 		'ajaxUrl' => admin_url('admin-ajax.php'),
 		'orderId' => $order_id,
@@ -142,6 +154,36 @@ function robokassa_prepare_redirect_config()
 		'checkInterval' => 5000,
 		'maxAttempts' => 120,
 	);
+}
+
+/**
+ * Определяет необходимость отслеживания оплаты и автоперехода на страницу успеха.
+ *
+ * @param \WC_Order $order
+ *
+ * @return bool
+ */
+function robokassa_should_track_payment_redirect(\WC_Order $order)
+{
+	if ((int)get_option('robokassa_iframe') === 1) {
+		return true;
+	}
+
+	if ($order->get_payment_method() === 'robokassa_sbp') {
+		return true;
+	}
+
+	if (!function_exists('WC')) {
+		return false;
+	}
+
+	$session = WC()->session;
+
+	if (!is_object($session)) {
+		return false;
+	}
+
+	return $session->get('chosen_payment_method') === 'robokassa_sbp';
 }
 
 /**
@@ -233,6 +275,22 @@ function robokassa_payment_get_tax_manager()
 }
 
 /**
+ * Возвращает сервис управления источником предмета расчёта.
+ *
+ * @return PaymentObjectManager
+ */
+function robokassa_payment_get_payment_object_manager()
+{
+	global $robokassa_payment_payment_object_manager;
+
+	if (!$robokassa_payment_payment_object_manager instanceof PaymentObjectManager) {
+		$robokassa_payment_payment_object_manager = new PaymentObjectManager();
+	}
+
+	return $robokassa_payment_payment_object_manager;
+}
+
+/**
  * Возвращает сервис управления агенскими полями товаров.
  *
  * @return AgentManager
@@ -284,6 +342,18 @@ function robokassa_payment_get_item_tax($item)
 }
 
 /**
+ * Определяет предмет расчёта для позиции заказа.
+ *
+ * @param \WC_Order_Item $item
+ *
+ * @return string
+ */
+function robokassa_payment_get_item_payment_object($item)
+{
+	return robokassa_payment_get_payment_object_manager()->getItemPaymentObject($item);
+}
+
+/**
  * Отрисовывает поле выбора налоговой ставки в карточке товара.
  *
  * @return void
@@ -291,6 +361,16 @@ function robokassa_payment_get_item_tax($item)
 function robokassa_payment_render_product_tax_field()
 {
 	robokassa_payment_get_tax_manager()->renderProductTaxField();
+}
+
+/**
+ * Отрисовывает поле выбора предмета расчёта в карточке товара.
+ *
+ * @return void
+ */
+function robokassa_payment_render_product_payment_object_field()
+{
+	robokassa_payment_get_payment_object_manager()->renderProductPaymentObjectField();
 }
 
 /**
@@ -313,6 +393,18 @@ function robokassa_payment_render_product_agent_fields()
 function robokassa_payment_save_product_tax_field($product)
 {
 	robokassa_payment_get_tax_manager()->saveProductTaxField($product);
+}
+
+/**
+ * Сохраняет выбранный предмет расчёта товара.
+ *
+ * @param \WC_Product $product
+ *
+ * @return void
+ */
+function robokassa_payment_save_product_payment_object_field($product)
+{
+	robokassa_payment_get_payment_object_manager()->saveProductPaymentObjectField($product);
 }
 
 /**
@@ -385,6 +477,7 @@ function robokassa_payment_wp_robokassa_activate($debug)
 	add_option('robokassa_payment_type_commission', 'true');
 	add_option('robokassa_payment_tax', 'none');
 	add_option('robokassa_payment_tax_source', 'global');
+	add_option('robokassa_payment_payment_object_source', 'global');
 	add_option('robokassa_payment_sno', 'fckoff');
 	add_option('robokassa_payment_who_commission', 'shop');
 	add_option('robokassa_payment_paytype', 'false');
@@ -550,6 +643,7 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
 				try {
 					$order = new WC_Order($_REQUEST['InvId']);
+					error_log('REQUEST: ' . print_r($_REQUEST, true));
 					$order->add_order_note('Bad CRC '. $crc_confirm .' . '. $_REQUEST['SignatureValue']);
 					$order->update_status('failed');
 				} catch (Exception $e) {}
@@ -648,7 +742,7 @@ function createRobokassaReceipt($order_id)
 		$item_tax = robokassa_payment_get_item_tax($item);
 
 		if ($country == 'RU') {
-			$current['payment_object'] = get_option('robokassa_payment_paymentObject');
+			$current['payment_object'] = robokassa_payment_get_item_payment_object($item);
 			$current['payment_method'] = get_option('robokassa_payment_paymentMethod');
 		}
 
@@ -1146,7 +1240,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
 			$total_receipt += $current['sum'];
 
 			if ($country == 'RU') {
-				$current['payment_object'] = get_option('robokassa_payment_paymentObject');
+				$current['payment_object'] = robokassa_payment_get_item_payment_object($item);
 				$current['payment_method'] = get_option('robokassa_payment_paymentMethod');
 			}
 

@@ -7,6 +7,7 @@ function spoleer()
 	var snoRow = document.getElementById("sno");
 	var paymentMethodRow = document.getElementById("payment_method");
 	var paymentObjectRow = document.getElementById("payment_object");
+	var paymentObjectSourceRow = document.getElementById('payment_object_source');
 	var paymentObjectShippingRow = document.getElementById('payment_object_shipping');
 	var creditRow = document.getElementById("robokassa_payment_credit");
 	var secondReceiptRow = document.getElementById('payment_object_second_receipt');
@@ -29,6 +30,10 @@ function spoleer()
 
 	if (paymentObjectRow) {
 		paymentObjectRow.style.display = isKazakhstan ? 'none' : 'table-row';
+	}
+
+	if (paymentObjectSourceRow) {
+		paymentObjectSourceRow.style.display = isKazakhstan ? 'none' : 'table-row';
 	}
 
 	if (secondReceiptRow) {
