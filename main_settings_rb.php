@@ -44,7 +44,8 @@ if (function_exists('wc_prices_include_tax')) {
 			<?php
 
 			if (isset($_REQUEST['settings-updated'])) {
-				include 'labelsGenerator.php';
+				include_once 'labelsGenerator.php';
+				robokassa_update_currency_labels(true);
 
 				$has_methods = get_transient('robokassa_payment_methods_available');
 				delete_transient('robokassa_payment_methods_available');

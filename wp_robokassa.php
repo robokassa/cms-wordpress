@@ -22,6 +22,7 @@ use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
 
 define('ROBOKASSA_PAYMENT_DEBUG_STATUS', false);
+define('ROBOKASSA_PAYMENT_CURRENCY_LABELS_CRON_HOOK', 'robokassa_refresh_currency_labels_daily');
 
 spl_autoload_register(
 	function ($className) {
@@ -370,6 +371,7 @@ function robokassa_check_order_status()
 
 add_action('admin_menu', 'robokassa_payment_initMenu'); // Хук для добавления страниц плагина в админку
 add_action('plugins_loaded', 'robokassa_payment_initWC'); // Хук инициализации плагина робокассы
+add_action('init', 'robokassa_payment_schedule_currency_labels_refresh');
 add_action('parse_request', 'robokassa_payment_wp_robokassa_checkPayment'); // Хук парсера запросов
 add_action('woocommerce_order_status_completed', 'robokassa_payment_smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
 
@@ -377,10 +379,12 @@ add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
 add_action('woocommerce_order_status_changed', 'robokassa_hold_confirm', 10, 4);
 add_action('woocommerce_order_status_changed', 'robokassa_hold_cancel', 10, 4);
 add_action('robokassa_cancel_payment_event', 'robokassa_hold_cancel_after5', 10, 1);
+add_action(ROBOKASSA_PAYMENT_CURRENCY_LABELS_CRON_HOOK, 'robokassa_payment_refresh_currency_labels_cron');
 add_action('wp_ajax_robokassa_check_order_status', 'robokassa_check_order_status');
 add_action('wp_ajax_nopriv_robokassa_check_order_status', 'robokassa_check_order_status');
 
 register_activation_hook(__FILE__, 'robokassa_payment_wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
+register_deactivation_hook(__FILE__, 'robokassa_payment_wp_robokassa_deactivate');
 
 add_filter('woocommerce_get_privacy_policy_text', 'robokassa_get_privacy_policy_text', 10, 2);
 
@@ -639,6 +643,44 @@ function robokassa_payment_wp_robokassa_activate($debug)
 	add_option('robokassa_payment_paytype', 'false');
 	add_option('robokassa_payment_SuccessURL', 'wc_success');
 	add_option('robokassa_payment_FailURL', 'wc_checkout');
+
+	robokassa_payment_schedule_currency_labels_refresh();
+}
+
+/**
+ * @return void
+ */
+function robokassa_payment_wp_robokassa_deactivate()
+{
+	wp_clear_scheduled_hook(ROBOKASSA_PAYMENT_CURRENCY_LABELS_CRON_HOOK);
+}
+
+/**
+ * Планирует ежедневное обновление списка доступных способов оплаты Robokassa.
+ *
+ * @return void
+ */
+function robokassa_payment_schedule_currency_labels_refresh()
+{
+	if (!wp_next_scheduled(ROBOKASSA_PAYMENT_CURRENCY_LABELS_CRON_HOOK)) {
+		wp_schedule_event(time(), 'daily', ROBOKASSA_PAYMENT_CURRENCY_LABELS_CRON_HOOK);
+	}
+}
+
+/**
+ * Обновляет список доступных способов оплаты по расписанию WP-Cron.
+ *
+ * @return bool
+ */
+function robokassa_payment_refresh_currency_labels_cron()
+{
+	include_once __DIR__ . '/labelsGenerator.php';
+
+	if (!function_exists('robokassa_update_currency_labels')) {
+		return false;
+	}
+
+	return robokassa_update_currency_labels(false);
 }
 
 /**
