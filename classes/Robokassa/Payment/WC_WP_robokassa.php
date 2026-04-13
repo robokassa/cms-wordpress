@@ -49,6 +49,10 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			? get_option('RobokassaOrderPageDescription_' . $this->id, null)
 			: $this->description;
 
+		if (function_exists('robokassa_append_payment_graph_to_description')) {
+			$this->description = robokassa_append_payment_graph_to_description($this->description, $this->id);
+		}
+
 		$this->supports = [
 			'products',
 			'subscriptions',

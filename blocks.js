@@ -35,7 +35,25 @@ paymentMethods.forEach((config) => {
         settings.title || config.fallback
     );
 
-    const Content = () => window.wp.htmlEntities.decodeEntities(settings.description || '');
+    const Content = () => {
+        const description = window.wp.htmlEntities.decodeEntities(settings.description || '');
+
+        if (!description) {
+            return null;
+        }
+
+        if (window.wp.element.RawHTML) {
+            return Object(window.wp.element.createElement)(
+                window.wp.element.RawHTML,
+                null,
+                description
+            );
+        }
+
+        return Object(window.wp.element.createElement)('div', {
+            dangerouslySetInnerHTML: { __html: description },
+        });
+    };
 
     window.wc.wcBlocksRegistry.registerPaymentMethod({
         name: config.name,

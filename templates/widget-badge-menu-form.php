@@ -12,6 +12,7 @@ $border_radius       = get_option('robokassa_widget_border_radius', '');
 $has_second_line     = get_option('robokassa_widget_has_second_line', 'false');
 $description_position = get_option('robokassa_widget_description_position', 'left');
 $color_scheme        = get_option('robokassa_widget_color_scheme', 'primary');
+$graph_enabled       = get_option('robokassa_graph_enabled', 'true');
 ?>
 
 <div class="robokassa-widget-settings">
@@ -47,6 +48,22 @@ $color_scheme        = get_option('robokassa_widget_color_scheme', 'primary');
 					<option value="light" <?php selected($widget_theme, 'light'); ?>>Светлая тема</option>
 					<option value="dark" <?php selected($widget_theme, 'dark'); ?>>Тёмная тема</option>
 				</select>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<div class="robokassa-widget-graph-settings">
+	<p class="mid_title_rb robokassa-card__title">График платежей на странице оформления</p>
+
+	<table class="robokassa-form-table form-table">
+		<tr valign="top">
+			<th scope="row">Показывать robokassa-graph</th>
+			<td>
+				<label><input type="radio" name="robokassa_graph_enabled" value="true" <?php checked($graph_enabled, 'true'); ?>> Включено</label>
+				<label style="margin-left: 15px;"><input type="radio" name="robokassa_graph_enabled" value="false" <?php checked($graph_enabled, 'false'); ?>> Отключено</label>
+				<br/>
+				<span class="text-description">После активации график платежей будет отображаться в описании способов оплаты «Robokassa Х Подели», «Robokassa X Mokka» и «Robokassa X Яндекс Сплит» на странице оформления заказа.</span>
 			</td>
 		</tr>
 	</table>

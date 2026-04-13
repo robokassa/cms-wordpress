@@ -34,6 +34,7 @@ spl_autoload_register(
 
 add_action('woocommerce_cart_calculate_fees', 'robokassa_chosen_payment_method');
 add_action('wp_enqueue_scripts', 'robokassa_enqueue_frontend_assets');
+add_filter('wp_kses_allowed_html', 'robokassa_allow_graph_html', 10, 2);
 
 if (!function_exists('robokassa_chosen_payment_method')) {
 	/**
@@ -92,8 +93,18 @@ function robokassa_enqueue_frontend_assets()
 	if (!function_exists('is_checkout') || !is_checkout()) {
 		return;
 	}
+
+	wp_enqueue_script(
+		'robokassa-badge-widget',
+		'https://auth.robokassa.ru/Merchant/bundle/robokassa-iframe-badge.js',
+		array(),
+		null,
+		true
+	);
+
 	$stylePath = plugin_dir_path(__FILE__) . 'assets/css/robokassa-redirect.css';
 	$scriptPath = plugin_dir_path(__FILE__) . 'assets/js/robokassa-redirect.js';
+	$graphScriptPath = plugin_dir_path(__FILE__) . 'assets/js/robokassa-graph-init.js';
 	if (file_exists($stylePath)) {
 		wp_enqueue_style(
 			'robokassa-redirect',
@@ -102,20 +113,165 @@ function robokassa_enqueue_frontend_assets()
 			filemtime($stylePath)
 		);
 	}
-	if (!file_exists($scriptPath)) {
-		return;
+	if (file_exists($scriptPath)) {
+		wp_enqueue_script(
+			'robokassa-redirect',
+			plugins_url('assets/js/robokassa-redirect.js', __FILE__),
+			array(),
+			filemtime($scriptPath),
+			true
+		);
 	}
-	wp_enqueue_script(
-		'robokassa-redirect',
-		plugins_url('assets/js/robokassa-redirect.js', __FILE__),
-		array(),
-		filemtime($scriptPath),
-		true
-	);
+	if (file_exists($graphScriptPath)) {
+		wp_enqueue_script(
+			'robokassa-graph-init',
+			plugins_url('assets/js/robokassa-graph-init.js', __FILE__),
+			array('robokassa-badge-widget'),
+			filemtime($graphScriptPath),
+			true
+		);
+	}
 	$config = robokassa_prepare_redirect_config();
-	if ($config !== null) {
+	if ($config !== null && wp_script_is('robokassa-redirect', 'enqueued')) {
 		wp_localize_script('robokassa-redirect', 'robokassaRedirectConfig', $config);
 	}
+}
+
+/**
+ * Разрешает HTML-тег графика платежей Robokassa в описаниях способов оплаты.
+ *
+ * @param array[] $tags
+ * @param string  $context
+ *
+ * @return array[]
+ */
+function robokassa_allow_graph_html($tags, $context)
+{
+	if ($context !== 'post') {
+		return $tags;
+	}
+
+	$tags['robokassa-graph'] = array(
+		'merchantlogin' => true,
+		'outsum' => true,
+		'paymentmethod' => true,
+		'class' => true,
+	);
+	if (!isset($tags['div']) || !is_array($tags['div'])) {
+		$tags['div'] = array();
+	}
+	$tags['div']['class'] = true;
+
+	return $tags;
+}
+
+/**
+ * Добавляет график платежей Robokassa к описанию поддерживаемого способа оплаты.
+ *
+ * @param string $description
+ * @param string $gateway_id
+ *
+ * @return string
+ */
+function robokassa_append_payment_graph_to_description($description, $gateway_id)
+{
+	$graph = robokassa_get_payment_graph_html($gateway_id);
+
+	if ($graph === '' || strpos((string)$description, '<robokassa-graph') !== false) {
+		return (string)$description;
+	}
+
+	return trim((string)$description . "\n" . $graph);
+}
+
+/**
+ * Формирует HTML мини-виджета графика оплат для checkout.
+ *
+ * @param string $gateway_id
+ *
+ * @return string
+ */
+function robokassa_get_payment_graph_html($gateway_id)
+{
+	if (get_option('robokassa_graph_enabled', 'true') !== 'true') {
+		return '';
+	}
+
+	$payment_method = robokassa_get_payment_graph_method($gateway_id);
+
+	if ($payment_method === '') {
+		return '';
+	}
+
+	$merchant_login = sanitize_text_field(get_option('robokassa_payment_MerchantLogin'));
+
+	if ($merchant_login === '') {
+		return '';
+	}
+
+	$out_sum = robokassa_get_checkout_graph_amount();
+
+	if ($out_sum === null || $out_sum <= 0) {
+		return '';
+	}
+
+	return sprintf(
+		'<div class="robokassa-payment-graph"><robokassa-graph merchantLogin="%s" outSum="%s" paymentMethod="%s"></robokassa-graph></div>',
+		esc_attr($merchant_login),
+		esc_attr(number_format((float)$out_sum, 2, '.', '')),
+		esc_attr($payment_method)
+	);
+}
+
+/**
+ * Возвращает paymentMethod для графика оплат.
+ *
+ * @param string $gateway_id
+ *
+ * @return string
+ */
+function robokassa_get_payment_graph_method($gateway_id)
+{
+	$methods = array(
+		'robokassa_podeli' => 'Podeli',
+		'robokassa_mokka' => 'Mokka',
+		'robokassa_split' => 'YandexPaySplit',
+	);
+
+	return isset($methods[$gateway_id]) ? $methods[$gateway_id] : '';
+}
+
+/**
+ * Возвращает текущую сумму checkout для графика оплат.
+ *
+ * @return float|null
+ */
+function robokassa_get_checkout_graph_amount()
+{
+	if (function_exists('is_checkout_pay_page') && is_checkout_pay_page()) {
+		$order_id = absint(get_query_var('order-pay'));
+		$order_key = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
+
+		if ($order_id > 0) {
+			$order = wc_get_order($order_id);
+
+			if ($order instanceof \WC_Order && ($order_key === '' || $order->get_order_key() === $order_key)) {
+				return robokassa_normalize_amount_value($order->get_total());
+			}
+		}
+	}
+
+	if (!function_exists('WC') || !is_object(WC()->cart)) {
+		return null;
+	}
+
+	$total = WC()->cart->get_total('edit');
+
+	if ($total === '' || $total === null) {
+		return null;
+	}
+
+	return robokassa_normalize_amount_value($total);
 }
 
 /**
