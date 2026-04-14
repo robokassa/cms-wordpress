@@ -502,6 +502,32 @@ function robokassa_payment_get_item_tax($item)
 }
 
 /**
+ * Определяет, нужно ли передавать СНО в фискальные данные.
+ *
+ * @param string $country
+ * @param string $sno
+ *
+ * @return bool
+ */
+function robokassa_payment_should_send_sno($country, $sno)
+{
+	return $country !== 'KZ' && $sno !== 'fckoff';
+}
+
+/**
+ * Определяет, нужно ли передавать выбранную ставку НДС.
+ *
+ * @param string $country
+ * @param string $sno
+ *
+ * @return bool
+ */
+function robokassa_payment_should_send_tax($country, $sno)
+{
+	return $country === 'KZ' || $country === 'RU' || $sno === 'osn';
+}
+
+/**
  * Определяет предмет расчёта для позиции заказа.
  *
  * @param \WC_Order_Item $item
@@ -917,9 +943,11 @@ function createRobokassaReceipt($order_id)
 	$default_tax = robokassa_payment_get_default_tax();
 	$country = get_option('robokassa_country_code');
 
-	$receipt = array(
-		'sno' => $sno,
-	);
+	$receipt = array();
+
+	if (robokassa_payment_should_send_sno($country, $sno)) {
+		$receipt['sno'] = $sno;
+	}
 
 	$total_order = $order->get_total();
 	$total_receipt = 0;
@@ -944,7 +972,7 @@ function createRobokassaReceipt($order_id)
 			$current['payment_method'] = get_option('robokassa_payment_paymentMethod');
 		}
 
-		if (($sno == 'osn') || $country == 'RU') {
+		if (robokassa_payment_should_send_tax($country, $sno)) {
 			$current['tax'] = $item_tax;
 		} else {
 			$current['tax'] = 'none';
@@ -978,7 +1006,7 @@ function createRobokassaReceipt($order_id)
 			'payment_method' => get_option('robokassa_payment_paymentMethod'),
 		);
 
-		if (($sno == 'osn') || $country == 'RU') {
+		if (robokassa_payment_should_send_tax($country, $sno)) {
 			$additional_item_data['tax'] = $default_tax;
 		} else {
 			$additional_item_data['tax'] = 'none';
@@ -1000,7 +1028,7 @@ function createRobokassaReceipt($order_id)
 			$current['payment_method'] = get_option('robokassa_payment_paymentMethod');
 		}
 
-		if (($sno == 'osn') || ($country != 'KZ')) {
+		if (robokassa_payment_should_send_tax($country, $sno)) {
 			$current['tax'] = $default_tax;
 		} else {
 			$current['tax'] = 'none';
@@ -1242,7 +1270,6 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			'id' => $order->get_id() + 1,
 			'originId' => $order->get_id(),
 			'operation' => 'sell',
-			'sno' => $sno,
 			'url' => urlencode('http://' . $_SERVER['HTTP_HOST']),
 			'total' => $order->get_total(),
 			'items' => [],
@@ -1255,14 +1282,17 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 					'type' => 2,
 					'sum' => $order->get_total()
 				]
-			],
-			'vats' => []
+			]
 		];
+
+		if (robokassa_payment_should_send_sno($country, $sno)) {
+			$fields['sno'] = $sno;
+		}
 
 		$shipping_total = $order->get_shipping_total();
 
 		if ($shipping_total > 0) {
-			$shipping_tax = ((isset($fields['sno']) && $fields['sno'] == 'osn') || ($country != 'KZ')) ? $default_tax : 'none';
+			$shipping_tax = robokassa_payment_should_send_tax($country, $sno) ? $default_tax : 'none';
 
 			$products_items = [
 				'name' => 'Доставка',
@@ -1275,10 +1305,6 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			];
 
 			$fields['items'][] = $products_items;
-
-			if ($shipping_tax !== 'none') {
-				$fields['vats'][] = ['type' => $shipping_tax, 'sum' => calculate_tax_sum($shipping_tax, $shipping_total)];
-			}
 		}
 
 		if (is_plugin_active('woocommerce-checkout-add-ons/woocommerce-checkout-add-ons.php')) {
@@ -1288,7 +1314,7 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				$additional_item_name = $additional_item->get_name();
 				$additional_item_total = floatval($additional_item->get_total());
 
-				$additional_tax = ((isset($fields['sno']) && $fields['sno'] == 'osn') || $country == 'RU') ? $default_tax : 'none';
+				$additional_tax = robokassa_payment_should_send_tax($country, $sno) ? $default_tax : 'none';
 
 				$products_items = array(
 					'name' => $additional_item_name,
@@ -1301,17 +1327,13 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				);
 
 				$fields['items'][] = $products_items;
-
-				if ($additional_tax !== 'none') {
-					$fields['vats'][] = ['type' => $additional_tax, 'sum' => calculate_tax_sum($additional_tax, $additional_item_total)];
-				}
 			}
 		}
 
 		foreach ($order->get_items() as $item) {
 			$item_total = (float)$item->get_total();
 			$item_tax_code = robokassa_payment_get_item_tax($item);
-			$item_tax_to_send = ((isset($fields['sno']) && $fields['sno'] == 'osn') || $country == 'RU') ? $item_tax_code : 'none';
+			$item_tax_to_send = robokassa_payment_should_send_tax($country, $sno) ? $item_tax_code : 'none';
 
 			$products_items = [
 				'name' => $item->get_name(),
@@ -1333,15 +1355,11 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			}
 
 			$fields['items'][] = $products_items;
-
-			if ($item_tax_to_send !== 'none') {
-				$fields['vats'][] = ['type' => $item_tax_to_send, 'sum' => calculate_tax_sum($item_tax_to_send, $item_total)];
-			}
 		}
 
 		foreach ($order->get_items('fee') as $fee_item) {
 			$fee_total = (float)$fee_item->get_total();
-			$fee_tax = ((isset($fields['sno']) && $fields['sno'] == 'osn') || $country == 'RU') ? $default_tax : 'none';
+			$fee_tax = robokassa_payment_should_send_tax($country, $sno) ? $default_tax : 'none';
 
 			$products_items = [
 				'name' => $fee_item->get_name(),
@@ -1353,10 +1371,6 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			];
 
 			$fields['items'][] = $products_items;
-
-			if ($fee_tax !== 'none') {
-				$fields['vats'][] = ['type' => $fee_tax, 'sum' => calculate_tax_sum($fee_tax, $fee_total)];
-			}
 		}
 
 		robokassa_payment_DEBUG("Robokassa: Second check data for order_id: $order_id -> " . print_r($fields, true));
@@ -1443,7 +1457,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
 			}
 
 			$item_tax = robokassa_payment_get_item_tax($item);
-			if (($sno == 'osn') || $country == 'RU') {
+			if (robokassa_payment_should_send_tax($country, $sno)) {
 				$current['tax'] = $item_tax;
 			} else {
 				$current['tax'] = 'none';
@@ -1465,7 +1479,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
 				'payment_method' => get_option('robokassa_payment_paymentMethod'),
 			);
 
-			if (($sno == 'osn') || $country == 'RU') {
+			if (robokassa_payment_should_send_tax($country, $sno)) {
 				$additional_item_data['tax'] = $default_tax;
 			} else {
 				$additional_item_data['tax'] = 'none';
@@ -1485,7 +1499,7 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
 				'payment_object' => get_option('robokassa_payment_paymentObject_shipping') ?: get_option('robokassa_payment_paymentObject'),
 			);
 
-			if (($sno == 'osn') || ($country != 'KZ')) {
+			if (robokassa_payment_should_send_tax($country, $sno)) {
 				$shipping_item['tax'] = $default_tax;
 			} else {
 				$shipping_item['tax'] = 'none';
