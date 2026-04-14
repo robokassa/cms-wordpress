@@ -12,6 +12,12 @@ $border_radius       = get_option('robokassa_widget_border_radius', '');
 $has_second_line     = get_option('robokassa_widget_has_second_line', 'false');
 $description_position = get_option('robokassa_widget_description_position', 'left');
 $color_scheme        = get_option('robokassa_widget_color_scheme', 'primary');
+$catalog_badge_enabled = get_option('robokassa_catalog_badge_enabled', 'false');
+$catalog_badge_settings = function_exists('robokassa_catalog_badge_get_settings')
+	? robokassa_catalog_badge_get_settings()
+	: ['size' => 'xs', 'theme' => 'light'];
+$catalog_badge_size = $catalog_badge_settings['size'];
+$catalog_badge_theme = $catalog_badge_settings['theme'];
 $graph_enabled       = get_option('robokassa_graph_enabled', 'true');
 ?>
 
@@ -48,6 +54,45 @@ $graph_enabled       = get_option('robokassa_graph_enabled', 'true');
 					<option value="light" <?php selected($widget_theme, 'light'); ?>>Светлая тема</option>
 					<option value="dark" <?php selected($widget_theme, 'dark'); ?>>Тёмная тема</option>
 				</select>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<div class="robokassa-widget-catalog-settings">
+	<p class="mid_title_rb robokassa-card__title">Бейдж в листинге товаров</p>
+
+	<table class="robokassa-form-table form-table">
+		<tr valign="top">
+			<th scope="row">Показывать бейдж в листинге</th>
+			<td>
+				<label><input type="radio" name="robokassa_catalog_badge_enabled" value="true" <?php checked($catalog_badge_enabled, 'true'); ?>> Включено</label>
+				<label style="margin-left: 15px;"><input type="radio" name="robokassa_catalog_badge_enabled" value="false" <?php checked($catalog_badge_enabled, 'false'); ?>> Отключено</label>
+				<br/>
+				<span class="text-description">По умолчанию отключено. При включении под ценой товара в каталоге будет показана статичная SVG-картинка.</span>
+			</td>
+		</tr>
+
+		<tr valign="top">
+			<th scope="row">Размер бейджа</th>
+			<td>
+				<select name="robokassa_catalog_badge_size">
+					<option value="xs" <?php selected($catalog_badge_size, 'xs'); ?>>xs</option>
+					<option value="s" <?php selected($catalog_badge_size, 's'); ?>>s</option>
+				</select>
+				<br/>
+				<span class="text-description">Выберите размер статичной SVG-картинки для каталога.</span>
+			</td>
+		</tr>
+
+		<tr valign="top">
+			<th scope="row">Тема бейджа</th>
+			<td>
+				<select name="robokassa_catalog_badge_theme">
+					<option value="light" <?php selected($catalog_badge_theme, 'light'); ?>>Светлая</option>
+					<option value="dark" <?php selected($catalog_badge_theme, 'dark'); ?>>Тёмная</option>
+				</select>
+				<br/>
 			</td>
 		</tr>
 	</table>
