@@ -49,6 +49,10 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			? get_option('RobokassaOrderPageDescription_' . $this->id, null)
 			: $this->description;
 
+		if (function_exists('robokassa_append_payment_graph_to_description')) {
+			$this->description = robokassa_append_payment_graph_to_description($this->description, $this->id);
+		}
+
 		$this->supports = [
 			'products',
 			'subscriptions',
@@ -242,11 +246,14 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 		}
 
 		$sno = get_option('robokassa_payment_sno');
-		$tax = get_option('robokassa_payment_tax');
+		$tax = \function_exists('robokassa_payment_get_default_tax')
+			? \robokassa_payment_get_default_tax()
+			: get_option('robokassa_payment_tax');
+		$country = get_option('robokassa_country_code');
 
 		$receipt = array();
 
-		if ($sno != 'fckoff') {
+		if ($country !== 'KZ' && $sno != 'fckoff') {
 			$receipt['sno'] = $sno;
 		}
 
@@ -264,7 +271,7 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			$current['payment_object'] = \get_option('robokassa_payment_paymentObject');
 			$current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
-			if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
+			if ($country === 'KZ' || (isset($receipt['sno']) && ($receipt['sno'] == 'osn'))) {
 				$current['tax'] = $tax;
 			} else {
 				$current['tax'] = 'none';
@@ -285,8 +292,8 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			$current['payment_object'] = \get_option('robokassa_payment_paymentObject_shipping') ?: get_option('robokassa_payment_paymentObject');
 			$current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
-			if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
-				$current['tax'] = $renewal_order->get_shipping_tax();
+			if ($country === 'KZ' || (isset($receipt['sno']) && ($receipt['sno'] == 'osn'))) {
+				$current['tax'] = $tax;
 			} else {
 				$current['tax'] = 'none';
 			}

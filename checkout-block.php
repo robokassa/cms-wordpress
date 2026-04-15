@@ -45,6 +45,16 @@ final class WC_Robokassa_Blocks extends AbstractPaymentMethodType
 	 */
 	public function get_payment_method_script_handles()
 	{
+		if (!wp_script_is('robokassa-badge-widget', 'registered')) {
+			wp_register_script(
+				'robokassa-badge-widget',
+				'https://auth.robokassa.ru/Merchant/bundle/robokassa-iframe-badge.js',
+				[],
+				null,
+				true
+			);
+		}
+
 		if (!wp_script_is('robokassa-blocks-integration', 'registered')) {
 			wp_register_script(
 				'robokassa-blocks-integration',
@@ -61,7 +71,7 @@ final class WC_Robokassa_Blocks extends AbstractPaymentMethodType
 			);
 		}
 
-		return ['robokassa-blocks-integration'];
+		return ['robokassa-badge-widget', 'robokassa-blocks-integration'];
 	}
 
 	/**
@@ -71,9 +81,23 @@ final class WC_Robokassa_Blocks extends AbstractPaymentMethodType
 	 */
 	public function get_payment_method_data()
 	{
+		$gateway = $this->get_gateway_instance();
+		$title = get_option('RobokassaOrderPageTitle_' . $this->gateway_id, null);
+		$description = get_option('RobokassaOrderPageDescription_' . $this->gateway_id, null);
+
+		if (($title === null || $title === '') && $gateway) {
+			$title = $gateway->title;
+		}
+
+		if (($description === null || $description === '') && $gateway) {
+			$description = $gateway->description;
+		} elseif (function_exists('robokassa_append_payment_graph_to_description')) {
+			$description = robokassa_append_payment_graph_to_description($description, $this->gateway_id);
+		}
+
 		return [
-			'title' => get_option('RobokassaOrderPageTitle_' . $this->gateway_id, null),
-			'description' => get_option('RobokassaOrderPageDescription_' . $this->gateway_id, null),
+			'title' => $title,
+			'description' => wp_kses_post((string)$description),
 			'supports' => $this->get_gateway_supports(),
 		];
 	}

@@ -30,6 +30,10 @@ $formProperties = [
 	'robokassa_widget_has_second_line',
 	'robokassa_widget_description_position',
 	'robokassa_widget_color_scheme',
+	'robokassa_catalog_badge_enabled',
+	'robokassa_catalog_badge_size',
+	'robokassa_catalog_badge_theme',
+	'robokassa_graph_enabled',
 ];
 
 ?>

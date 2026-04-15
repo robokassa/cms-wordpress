@@ -1,0 +1,41 @@
+.robokassa-widget-wrapper--loop {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 8px 0 12px;
+	min-height: 24px;
+	text-align: center;
+	width: 100%;
+}
+
+.woocommerce ul.products li.product,
+.wc-block-product,
+.wp-block-post.product {
+	position: relative;
+}
+
+.robokassa-widget-wrapper--loop-overlay {
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	z-index: 3;
+	width: auto;
+	margin: 0;
+	pointer-events: none;
+}
+
+.robokassa-catalog-badge {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.robokassa-catalog-badge--xs {
+	width: 74px;
+}
+
+.robokassa-catalog-badge--s {
+	width: 100px;
+}

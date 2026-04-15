@@ -44,7 +44,8 @@ if (function_exists('wc_prices_include_tax')) {
 			<?php
 
 			if (isset($_REQUEST['settings-updated'])) {
-				include 'labelsGenerator.php';
+				include_once 'labelsGenerator.php';
+				robokassa_update_currency_labels(true);
 
 				$has_methods = get_transient('robokassa_payment_methods_available');
 				delete_transient('robokassa_payment_methods_available');
@@ -571,52 +572,19 @@ if (function_exists('wc_prices_include_tax')) {
 								<tr valign="top" id="tax">
 									<th scope="row">Налоговая ставка</th>
 									<td>
+										<?php
+										$tax_manager = robokassa_payment_get_tax_manager();
+										$selected_tax = $tax_manager->normalizeTaxCodeForCountry(
+											(string)get_option('robokassa_payment_tax', 'none'),
+											$country_code
+										);
+										?>
 										<select id="tax_select" name="robokassa_payment_tax" onchange="spoleer();">
-											<option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>
-												Не передавать
-											</option>
-											<option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>
-												Без НДС
-											</option>
-											<option value="vat0" <?php echo((get_option('robokassa_payment_tax') == 'vat0') ? ' selected' : ''); ?>>
-												НДС по ставке 0%
-											</option>
-											<option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>
-												НДС чека по ставке 10%
-											</option>
-											<option value="vat22" <?php echo((get_option('robokassa_payment_tax') == 'vat22') ? ' selected' : ''); ?>>
-												НДС чека по ставке 22%
-											</option>
-											<option value="vat20" <?php echo((get_option('robokassa_payment_tax') == 'vat20') ? ' selected' : ''); ?>>
-												НДС чека по ставке 20%
-											</option>
-											<option value="vat110" <?php echo((get_option('robokassa_payment_tax') == 'vat110') ? ' selected' : ''); ?>>
-												НДС чека по расчетной ставке 10/110
-											</option>
-											<option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat120') ? ' selected' : ''); ?>>
-												НДС чека по расчетной ставке 20/120
-											</option>
-											<option value="vat122" <?php echo((get_option('robokassa_payment_tax') == 'vat122') ? ' selected' : ''); ?>>
-												НДС чека по расчетной ставке 22/122
-											</option>
-											<option value="vat5" <?php echo((get_option('robokassa_payment_tax') == 'vat5') ? ' selected' : ''); ?>>
-												НДС по ставке 5%
-											</option>
-											<option value="vat7" <?php echo((get_option('robokassa_payment_tax') == 'vat7') ? ' selected' : ''); ?>>
-												НДС по ставке 7%
-											</option>
-											<option value="vat105" <?php echo((get_option('robokassa_payment_tax') == 'vat105') ? ' selected' : ''); ?>>
-												НДС чека по расчетной ставке 5/105
-											</option>
-											<option value="vat107" <?php echo((get_option('robokassa_payment_tax') == 'vat107') ? ' selected' : ''); ?>>
-												НДС чека по расчетной ставке 7/107
-											</option>
-											<option value="vat8" <?php echo((get_option('robokassa_payment_tax') == 'vat8') ? ' selected' : ''); ?>>
-												НДС чека по ставке 8% (Казахстан)
-											</option>
-											<option value="vat12" <?php echo((get_option('robokassa_payment_tax') == 'vat12') ? ' selected' : ''); ?>>
-												НДС чека по ставке 12% (Казахстан)
-											</option>
+											<?php foreach ($tax_manager->getTaxLabels($country_code) as $tax_code => $tax_label): ?>
+												<option value="<?php echo esc_attr($tax_code); ?>" <?php selected($selected_tax, $tax_code); ?>>
+													<?php echo esc_html($tax_label); ?>
+												</option>
+											<?php endforeach; ?>
 										</select>
 									</td>
 								</tr>

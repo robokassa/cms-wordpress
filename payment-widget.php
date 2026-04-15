@@ -1,6 +1,7 @@
 <?php
 
 add_action('woocommerce_single_product_summary', 'payment_product_widget', 25);
+add_action('woocommerce_before_shop_loop_item_title', 'robokassa_product_loop_badge', 11);
 add_action('wp_enqueue_scripts', 'robokassa_widget_enqueue_assets');
 
 /**
@@ -11,6 +12,51 @@ add_action('wp_enqueue_scripts', 'robokassa_widget_enqueue_assets');
 function payment_product_widget() {
 	global $product;
 
+	robokassa_widget_render_for_product($product);
+}
+
+/**
+ * Выводит бейдж Robokassa поверх изображения товара в листинге.
+ *
+ * @return void
+ */
+function robokassa_product_loop_badge() {
+	global $product;
+
+	if (!$product instanceof WC_Product) {
+		return;
+	}
+
+	if (get_option('robokassa_catalog_badge_enabled', 'false') !== 'true') {
+		return;
+	}
+
+	if (!robokassa_catalog_badge_has_installment_method()) {
+		return;
+	}
+
+	$badge = robokassa_catalog_badge_get_settings();
+	if (!file_exists(__DIR__ . '/assets/images/robokassa-badges/' . $badge['file'])) {
+		return;
+	}
+
+	$src = plugin_dir_url(__FILE__) . 'assets/images/robokassa-badges/' . $badge['file'];
+
+	echo '<div class="robokassa-widget-wrapper robokassa-widget-wrapper--loop robokassa-widget-wrapper--loop-overlay">';
+	echo '<img class="robokassa-catalog-badge robokassa-catalog-badge--' . esc_attr($badge['size']) . '" src="' . esc_url($src) . '" alt="' . esc_attr__('Оплата частями Robokassa', 'robokassa') . '" loading="lazy" decoding="async" width="' . esc_attr($badge['width']) . '" height="' . esc_attr($badge['height']) . '" />';
+	echo '</div>';
+}
+
+/**
+ * Выводит компонент Robokassa для переданного товара.
+ *
+ * @param WC_Product|null $product
+ * @param string|null     $component
+ * @param string          $context
+ *
+ * @return void
+ */
+function robokassa_widget_render_for_product($product, $component = null, $context = 'single') {
 	if (!$product instanceof WC_Product) {
 		return;
 	}
@@ -18,6 +64,12 @@ function payment_product_widget() {
 	$settings = robokassa_widget_get_settings();
 	if (!$settings['enabled']) {
 		return;
+	}
+	if ($component !== null) {
+		$settings['component'] = $component;
+	}
+	if ($context === 'loop' && $settings['component'] === 'badge') {
+		$settings['size'] = 's';
 	}
 
 	$amount = wc_get_price_to_display($product);
@@ -33,7 +85,7 @@ function payment_product_widget() {
 	$checkout_url = robokassa_widget_prepare_checkout_url($product->get_id(), $settings);
 	$attributes = robokassa_widget_prepare_attributes($settings, $signature, $checkout_url);
 
-	robokassa_widget_output_component($settings['component'], $attributes, $product->get_id(), $checkout_url, $settings);
+	robokassa_widget_output_component($settings['component'], $attributes, $product->get_id(), $checkout_url, $settings, $context);
 }
 
 /**
@@ -60,6 +112,82 @@ function robokassa_widget_get_settings() {
 	}
 
 	return $settings;
+}
+
+/**
+ * Возвращает настройки статичного бейджа для каталога.
+ *
+ * @return array
+ */
+function robokassa_catalog_badge_get_settings() {
+	$size = robokassa_widget_get_choice_option('robokassa_catalog_badge_size', ['xs', 's'], 'xs');
+	$theme_default = robokassa_widget_get_choice_option('robokassa_catalog_badge_variant', ['light', 'dark'], 'light');
+	$theme = robokassa_widget_get_choice_option('robokassa_catalog_badge_theme', ['light', 'dark'], $theme_default);
+	$dimensions = robokassa_catalog_badge_get_dimensions($size);
+
+	return [
+		'size' => $size,
+		'theme' => $theme,
+		'file' => sprintf('%s-catalog-badge-%s.svg', $size, $theme),
+		'width' => $dimensions['width'],
+		'height' => $dimensions['height'],
+	];
+}
+
+/**
+ * Возвращает размеры статичного бейджа для каталога.
+ *
+ * @param string $size
+ *
+ * @return array
+ */
+function robokassa_catalog_badge_get_dimensions($size) {
+	if ($size === 's') {
+		return [
+			'width' => 88,
+			'height' => 48,
+		];
+	}
+
+	return [
+		'width' => 74,
+		'height' => 42,
+	];
+}
+
+/**
+ * Проверяет наличие хотя бы одного метода оплаты частями для каталожного бейджа.
+ *
+ * @return bool
+ */
+function robokassa_catalog_badge_has_installment_method() {
+	static $has_installment_method = null;
+
+	if ($has_installment_method !== null) {
+		return $has_installment_method;
+	}
+
+	$gateway_ids = [
+		'robokassa_podeli',
+		'robokassa_mokka',
+		'robokassa_split',
+	];
+
+	if (!function_exists('robokassa_get_optional_method_config_by_gateway') || !function_exists('robokassa_is_optional_method_active')) {
+		$has_installment_method = false;
+		return $has_installment_method;
+	}
+
+	foreach ($gateway_ids as $gateway_id) {
+		$config = robokassa_get_optional_method_config_by_gateway($gateway_id);
+		if (!empty($config) && robokassa_is_optional_method_active($config)) {
+			$has_installment_method = true;
+			return $has_installment_method;
+		}
+	}
+
+	$has_installment_method = false;
+	return $has_installment_method;
 }
 
 /**
@@ -237,19 +365,22 @@ function robokassa_widget_apply_badge_attributes(array $attributes, array $setti
  * @param int $product_id
  * @param string $checkout_url
  * @param array $settings
+ * @param string $context
  *
  * @return void
  */
-function robokassa_widget_output_component($component, array $attributes, $product_id, $checkout_url, array $settings) {
+function robokassa_widget_output_component($component, array $attributes, $product_id, $checkout_url, array $settings, $context = 'single') {
 	if (empty($attributes)) {
 		return;
 	}
 
 	$tag = $component === 'badge' ? 'robokassa-badge' : 'robokassa-widget';
-	$element_id = sprintf('%s-%d', $tag, (int)$product_id);
+	$unique_suffix = function_exists('wp_unique_id') ? wp_unique_id() : uniqid('', false);
+	$element_id = sprintf('%s-%d-%s', $tag, (int)$product_id, $unique_suffix);
+	$context_class = sanitize_html_class($context);
 	$attributes['id'] = $element_id;
 
-	echo '<div class="robokassa-widget-wrapper">';
+	echo '<div class="robokassa-widget-wrapper robokassa-widget-wrapper--' . esc_attr($context_class) . '">';
 	echo robokassa_widget_build_tag($tag, $attributes);
 	echo '</div>';
 
@@ -311,12 +442,30 @@ function robokassa_widget_print_badge_script($element_id, $checkout_url) {
  * @return void
  */
 function robokassa_widget_enqueue_assets() {
-	if (!is_product()) {
+	if (!robokassa_widget_should_enqueue_assets()) {
 		return;
 	}
 
 	$settings = robokassa_widget_get_settings();
-	if (!$settings['enabled']) {
+	$is_product = function_exists('is_product') && is_product();
+	$catalog_badge_enabled = get_option('robokassa_catalog_badge_enabled', 'false') === 'true';
+
+	if (!$settings['enabled'] && (!$catalog_badge_enabled || $is_product)) {
+		return;
+	}
+
+	$style_path = __DIR__ . '/assets/css/robokassa-widget.css';
+	$style_url = plugin_dir_url(__FILE__) . 'assets/css/robokassa-widget.css';
+	$style_version = file_exists($style_path) ? filemtime($style_path) : null;
+
+	wp_enqueue_style(
+		'robokassa-widget',
+		$style_url,
+		[],
+		$style_version
+	);
+
+	if (!$is_product || !$settings['enabled']) {
 		return;
 	}
 
@@ -339,4 +488,25 @@ function robokassa_widget_enqueue_assets() {
 		$local_script_version,
 		true
 	);
+}
+
+/**
+ * Проверяет, нужна ли загрузка скриптов Robokassa на текущей витрине.
+ *
+ * @return bool
+ */
+function robokassa_widget_should_enqueue_assets() {
+	if (function_exists('is_product') && is_product()) {
+		return true;
+	}
+
+	if (function_exists('is_shop') && is_shop()) {
+		return true;
+	}
+
+	if (function_exists('is_product_taxonomy') && is_product_taxonomy()) {
+		return true;
+	}
+
+	return false;
 }

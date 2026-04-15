@@ -29,8 +29,33 @@ class TaxManager {
 		'vat7',
 		'vat105',
 		'vat107',
-		'vat8',
-		'vat12'
+		'vat12',
+		'vat16'
+	);
+
+	/** @var array */
+	private $countryTaxes = array(
+		'RU' => array(
+			'none',
+			'vat0',
+			'vat10',
+			'vat110',
+			'vat20',
+			'vat22',
+			'vat120',
+			'vat122',
+			'vat5',
+			'vat7',
+			'vat105',
+			'vat107'
+		),
+		'KZ' => array(
+			'none',
+			'vat0',
+			'vat5',
+			'vat12',
+			'vat16'
+		)
 	);
 
 	/** @var array */
@@ -41,14 +66,14 @@ class TaxManager {
 		'vat22' => 'НДС чека по ставке 22%',
 		'vat20' => 'НДС чека по ставке 20%',
 		'vat110' => 'НДС чека по расчётной ставке 10/110',
-		'vat118' => 'НДС чека по расчётной ставке 20/120',
+		'vat120' => 'НДС чека по расчётной ставке 20/120',
 		'vat122' => 'НДС чека по расчётной ставке 22/122',
 		'vat5' => 'НДС по ставке 5%',
 		'vat7' => 'НДС по ставке 7%',
 		'vat105' => 'НДС чека по расчётной ставке 5/105',
 		'vat107' => 'НДС чека по расчётной ставке 7/107',
-		'vat8' => 'НДС чека по ставке 8% (Казахстан)',
-		'vat12' => 'НДС чека по ставке 12% (Казахстан)'
+		'vat12' => 'НДС чека по расчётной ставке 12%',
+		'vat16' => 'НДС чека по расчётной ставке 16%'
 	);
 
 	/** @var array */
@@ -57,9 +82,9 @@ class TaxManager {
 		'vat0' => 0,
 		'vat5' => 5,
 		'vat7' => 7,
-		'vat8' => 8,
 		'vat10' => 10,
 		'vat12' => 12,
+		'vat16' => 16,
 		'vat22' => 22,
 		'vat20' => 20,
 		'vat105' => 5 / 105,
@@ -96,10 +121,6 @@ class TaxManager {
 	 * @return string
 	 */
 	public function prepareTaxValueForDisplay($tax) {
-		if ($tax === 'vat120') {
-			return 'vat118';
-		}
-
 		return $tax;
 	}
 
@@ -115,16 +136,61 @@ class TaxManager {
 			return 'none';
 		}
 
-		return $this->normalizeTaxCode((string)$tax);
+		return $this->normalizeTaxCodeForCountry((string)$tax, get_option('robokassa_country_code', 'RU'));
 	}
 
 	/**
 	 * Возвращает список подписей ставок для админки.
 	 *
+	 * @param string|null $country
+	 *
 	 * @return array
 	 */
-	public function getTaxLabels() {
-		return $this->taxLabels;
+	public function getTaxLabels($country = null) {
+		$country = $country ?: get_option('robokassa_country_code', 'RU');
+		$codes = $this->getTaxCodesForCountry($country);
+		$labels = array();
+
+		foreach ($codes as $code) {
+			if (isset($this->taxLabels[$code])) {
+				$labels[$code] = $this->taxLabels[$code];
+			}
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * Возвращает список налоговых кодов для страны.
+	 *
+	 * @param string $country
+	 *
+	 * @return array
+	 */
+	public function getTaxCodesForCountry($country) {
+		if (isset($this->countryTaxes[$country])) {
+			return $this->countryTaxes[$country];
+		}
+
+		return $this->countryTaxes['RU'];
+	}
+
+	/**
+	 * Возвращает нормализованное значение ставки с учётом страны.
+	 *
+	 * @param string $tax
+	 * @param string $country
+	 *
+	 * @return string
+	 */
+	public function normalizeTaxCodeForCountry($tax, $country) {
+		$tax = $this->normalizeTaxCode($tax);
+
+		if (!in_array($tax, $this->getTaxCodesForCountry($country), true)) {
+			return 'none';
+		}
+
+		return $tax;
 	}
 
 	/**
@@ -179,7 +245,7 @@ class TaxManager {
 			return $defaultTax;
 		}
 
-		return $this->normalizeTaxCode((string)$tax);
+		return $this->normalizeTaxCodeForCountry((string)$tax, get_option('robokassa_country_code', 'RU'));
 	}
 
 	/**
@@ -203,7 +269,7 @@ class TaxManager {
 
 		$options = array('' => 'Использовать настройку по умолчанию');
 
-		foreach ($this->getTaxLabels() as $code => $label) {
+		foreach ($this->getTaxLabels(get_option('robokassa_country_code', 'RU')) as $code => $label) {
 			$options[$code] = $label;
 		}
 
@@ -241,14 +307,16 @@ class TaxManager {
 			return;
 		}
 
-		if (!in_array($value, $this->knownTaxes, true)) {
+		$value = $this->normalizeTaxCodeForCountry($value, get_option('robokassa_country_code', 'RU'));
+
+		if ($value === 'none' && sanitize_text_field($rawValue) !== 'none') {
 			$product->delete_meta_data($this->metaKey);
 			return;
 		}
 
 		$product->update_meta_data(
 			$this->metaKey,
-			$this->normalizeTaxCode($value)
+			$value
 		);
 	}
 }
