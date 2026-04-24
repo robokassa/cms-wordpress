@@ -329,7 +329,13 @@ class RobokassaPayAPI {
 
 		$html = '<div class="robokassa-sbp-wrapper">';
 		$html .= $this->buildSbpNotice();
+		$html .= '<div class="robokassa-sbp-card">';
+		$html .= '<div class="robokassa-sbp-card-label">' . esc_html__('QR-код для оплаты', 'robokassa') . '</div>';
+		$html .= '<div class="robokassa-sbp-card-caption">' . esc_html__('Откройте банковское приложение и отсканируйте код.', 'robokassa') . '</div>';
+		$html .= '<div class="robokassa-sbp-qr-shell">';
 		$html .= '<div id="' . esc_attr($containerId) . '" class="robokassa-sbp-qr"></div>';
+		$html .= '</div>';
+		$html .= '</div>';
 		$html .= '</div>';
 		$html .= '<script type="text/javascript" src="' . esc_url($scriptUrl) . '"></script>';
 		$html .= '<script type="text/javascript">';
@@ -403,7 +409,7 @@ class RobokassaPayAPI {
 			'Shp_result_url'  => (Util::siteUrl('/?robokassa=result')),
 			'onpaymentlink'   => '__ROBO_SBPPAYMENTLINK__',
 			'qrContainerId'   => $containerId,
-			'qrContainerSize' => 360,
+			'qrContainerSize' => 280,
 		];
 
 		if ($receipt !== '') {

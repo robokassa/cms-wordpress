@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.6
+ * Version: 1.8.7
  */
 
 require_once('payment-widget.php');
@@ -95,14 +95,6 @@ function robokassa_enqueue_frontend_assets()
 		return;
 	}
 
-	wp_enqueue_script(
-		'robokassa-badge-widget',
-		'https://auth.robokassa.ru/Merchant/bundle/robokassa-iframe-badge.js',
-		array(),
-		null,
-		true
-	);
-
 	$stylePath = plugin_dir_path(__FILE__) . 'assets/css/robokassa-redirect.css';
 	$scriptPath = plugin_dir_path(__FILE__) . 'assets/js/robokassa-redirect.js';
 	$graphScriptPath = plugin_dir_path(__FILE__) . 'assets/js/robokassa-graph-init.js';
@@ -123,7 +115,15 @@ function robokassa_enqueue_frontend_assets()
 			true
 		);
 	}
-	if (file_exists($graphScriptPath)) {
+	if (robokassa_should_enqueue_graph_assets() && file_exists($graphScriptPath)) {
+		wp_enqueue_script(
+			'robokassa-badge-widget',
+			'https://auth.robokassa.ru/Merchant/bundle/robokassa-iframe-badge.js',
+			array(),
+			null,
+			true
+		);
+
 		wp_enqueue_script(
 			'robokassa-graph-init',
 			plugins_url('assets/js/robokassa-graph-init.js', __FILE__),
@@ -136,6 +136,24 @@ function robokassa_enqueue_frontend_assets()
 	if ($config !== null && wp_script_is('robokassa-redirect', 'enqueued')) {
 		wp_localize_script('robokassa-redirect', 'robokassaRedirectConfig', $config);
 	}
+}
+
+/**
+ * Определяет, можно ли подключать скрипты графика оплат на текущей checkout-странице.
+ *
+ * @return bool
+ */
+function robokassa_should_enqueue_graph_assets()
+{
+	if (function_exists('is_checkout_pay_page') && is_checkout_pay_page()) {
+		return false;
+	}
+
+	if (function_exists('is_order_received_page') && is_order_received_page()) {
+		return false;
+	}
+
+	return get_option('robokassa_graph_enabled', 'true') === 'true';
 }
 
 /**

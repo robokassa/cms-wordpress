@@ -45,7 +45,10 @@ final class WC_Robokassa_Blocks extends AbstractPaymentMethodType
 	 */
 	public function get_payment_method_script_handles()
 	{
-		if (!wp_script_is('robokassa-badge-widget', 'registered')) {
+		$handles = ['robokassa-blocks-integration'];
+		$has_payment_graph = $this->has_payment_graph();
+
+		if ($has_payment_graph && !wp_script_is('robokassa-badge-widget', 'registered')) {
 			wp_register_script(
 				'robokassa-badge-widget',
 				'https://auth.robokassa.ru/Merchant/bundle/robokassa-iframe-badge.js',
@@ -71,7 +74,11 @@ final class WC_Robokassa_Blocks extends AbstractPaymentMethodType
 			);
 		}
 
-		return ['robokassa-badge-widget', 'robokassa-blocks-integration'];
+		if ($has_payment_graph) {
+			array_unshift($handles, 'robokassa-badge-widget');
+		}
+
+		return $handles;
 	}
 
 	/**
@@ -144,6 +151,32 @@ final class WC_Robokassa_Blocks extends AbstractPaymentMethodType
 		}
 
 		return array_values($gateway->supports);
+	}
+
+	/**
+	 * Проверяет, нужен ли методу внешний скрипт графика оплат.
+	 *
+	 * @return bool
+	 */
+	private function has_payment_graph()
+	{
+		if (function_exists('is_checkout_pay_page') && is_checkout_pay_page()) {
+			return false;
+		}
+
+		if (function_exists('is_order_received_page') && is_order_received_page()) {
+			return false;
+		}
+
+		if (get_option('robokassa_graph_enabled', 'true') !== 'true') {
+			return false;
+		}
+
+		if (!function_exists('robokassa_get_payment_graph_method')) {
+			return false;
+		}
+
+		return robokassa_get_payment_graph_method($this->gateway_id) !== '';
 	}
 
 	/**
