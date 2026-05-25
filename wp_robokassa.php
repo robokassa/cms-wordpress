@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.7
+ * Version: 1.8.8
  */
 
 require_once('payment-widget.php');
@@ -18,12 +18,10 @@ use Robokassa\Payment\Util;
 use Robokassa\Payment\AgentManager;
 use Robokassa\Payment\PaymentObjectManager;
 use Robokassa\Payment\TaxManager;
-use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
 
 define('ROBOKASSA_PAYMENT_DEBUG_STATUS', false);
 define('ROBOKASSA_PAYMENT_CURRENCY_LABELS_CRON_HOOK', 'robokassa_refresh_currency_labels_daily');
-
 spl_autoload_register(
 	function ($className) {
 		$file = __DIR__ . '/classes/' . str_replace('\\', '/', $className) . '.php';
@@ -50,13 +48,8 @@ if (!function_exists('robokassa_chosen_payment_method')) {
 			(double)get_option('robokassa_patyment_markup') > 0
 			&& in_array(
 				WC()->session->get('chosen_payment_method'),
-				array_map(
-					function ($class) {
-						$method = new $class;
-						return $method->id;
-					},
-					robokassa_payment_add_WC_WP_robokassa_class()
-				)
+				robokassa_get_gateway_ids(),
+				true
 			)
 		) {
 			$cart->add_fee(
@@ -325,10 +318,29 @@ function robokassa_prepare_redirect_config()
 		'ajaxUrl' => admin_url('admin-ajax.php'),
 		'orderId' => $order_id,
 		'orderKey' => $order_key,
-		'successUrl' => $order->get_checkout_order_received_url(),
+		'successUrl' => robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $order_id),
 		'checkInterval' => 5000,
 		'maxAttempts' => 120,
 	);
+}
+
+/**
+ * Применяет стандартную WooCommerce-логику успешной оплаты и опциональный кастомный статус.
+ *
+ * @param \WC_Order $order
+ * @param string    $order_status
+ *
+ * @return void
+ */
+function robokassa_mark_order_payment_complete(WC_Order $order, $order_status)
+{
+	$order->payment_complete();
+
+	$custom_status = str_replace('wc-', '', (string)$order_status);
+
+	if ($custom_status !== '' && $order->get_status() !== $custom_status) {
+		$order->update_status($custom_status);
+	}
 }
 
 /**
@@ -687,7 +699,6 @@ function robokassa_payment_wp_robokassa_activate($debug)
 	add_option('robokassa_payment_paytype', 'false');
 	add_option('robokassa_payment_SuccessURL', 'wc_success');
 	add_option('robokassa_payment_FailURL', 'wc_checkout');
-
 	robokassa_payment_schedule_currency_labels_refresh();
 }
 
@@ -758,7 +769,9 @@ function robokassa_payment_get_success_fail_url($name, $order_id)
 		case 'wc_payment':
 			return $order->get_checkout_payment_url();
 		default:
-			return get_page_link(get_option($name));
+			$page_url = get_page_link(absint($name));
+
+			return $page_url ?: $order->get_checkout_order_received_url();
 	}
 }
 
@@ -806,7 +819,7 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
 				$order = new WC_Order($_REQUEST['InvId']);
 				$order->add_order_note('Заказ успешно оплачен!');
-				$order->update_status(str_replace('wc-', '', $order_status));
+				robokassa_mark_order_payment_complete($order, $order_status);
 
 				global $woocommerce;
 				$woocommerce->cart->empty_cart();
@@ -1849,27 +1862,5 @@ function robokassa_get_block_gateway_ids()
 		require_once __DIR__ . '/labelsClasses.php';
 	}
 
-	$gateway_ids = [];
-
-	foreach ((array)robokassa_payment_add_WC_WP_robokassa_class() as $class_name) {
-		if (!class_exists($class_name)) {
-			continue;
-		}
-
-		$method = new $class_name();
-
-		if (empty($method->id)) {
-			continue;
-		}
-
-		$config = robokassa_get_optional_method_config_by_gateway($method->id);
-
-		if (!empty($config) && !robokassa_is_optional_method_active($config)) {
-			continue;
-		}
-
-		$gateway_ids[] = $method->id;
-	}
-
-	return array_values(array_unique($gateway_ids));
+	return robokassa_get_gateway_ids();
 }

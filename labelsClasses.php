@@ -67,13 +67,18 @@ class payment_robokassa_pay_method_request_sbp extends \Robokassa\Payment\WC_WP_
 }
 
 /**
- * Возвращает описание дополнительных способов оплаты Robokassa.
+ * Возвращает конфигурацию всех способов оплаты Robokassa.
  *
  * @return array
  */
-function robokassa_get_optional_payment_methods_config()
+function robokassa_get_payment_methods_config()
 {
 	return [
+		[
+			'class' => 'payment_robokassa_pay_method_request_main',
+			'gateway_id' => 'robokassa',
+			'title' => 'Robokassa',
+		],
 		[
 			'class' => 'payment_robokassa_pay_method_request_credit',
 			'gateway_id' => 'robokassa_credit',
@@ -113,6 +118,23 @@ function robokassa_get_optional_payment_methods_config()
 }
 
 /**
+ * Возвращает описание дополнительных способов оплаты Robokassa.
+ *
+ * @return array
+ */
+function robokassa_get_optional_payment_methods_config()
+{
+	return array_values(
+		array_filter(
+			robokassa_get_payment_methods_config(),
+			function (array $config) {
+				return !empty($config['option']);
+			}
+		)
+	);
+}
+
+/**
  * Возвращает конфигурацию дополнительного метода по идентификатору шлюза.
  *
  * @param string $gateway_id
@@ -121,7 +143,7 @@ function robokassa_get_optional_payment_methods_config()
  */
 function robokassa_get_optional_method_config_by_gateway($gateway_id)
 {
-	foreach (robokassa_get_optional_payment_methods_config() as $config) {
+	foreach (robokassa_get_payment_methods_config() as $config) {
 		if (($config['gateway_id'] ?? '') === $gateway_id) {
 			return $config;
 		}
@@ -188,15 +210,37 @@ function robokassa_is_optional_method_active(array $config)
 	return robokassa_is_optional_method_available($config) && robokassa_is_optional_method_enabled($config);
 }
 
-function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
-	$methods[] = 'payment_robokassa_pay_method_request_main';
+/**
+ * Возвращает список gateway id без создания экземпляров классов.
+ *
+ * @return array
+ */
+function robokassa_get_gateway_ids()
+{
+	$gateway_ids = [];
 
-	foreach (robokassa_get_optional_payment_methods_config() as $config) {
-		if (!isset($config['class'])) {
+	foreach (robokassa_get_payment_methods_config() as $config) {
+		if (empty($config['gateway_id'])) {
 			continue;
 		}
 
-		if (!robokassa_is_optional_method_active($config)) {
+		if (!empty($config['option']) && !robokassa_is_optional_method_active($config)) {
+			continue;
+		}
+
+		$gateway_ids[] = $config['gateway_id'];
+	}
+
+	return array_values(array_unique($gateway_ids));
+}
+
+function robokassa_payment_add_WC_WP_robokassa_class($methods = null) {
+	foreach (robokassa_get_payment_methods_config() as $config) {
+		if (empty($config['class'])) {
+			continue;
+		}
+
+		if (!empty($config['option']) && !robokassa_is_optional_method_active($config)) {
 			continue;
 		}
 
