@@ -318,7 +318,7 @@ function robokassa_prepare_redirect_config()
 		'ajaxUrl' => admin_url('admin-ajax.php'),
 		'orderId' => $order_id,
 		'orderKey' => $order_key,
-		'successUrl' => $order->get_checkout_order_received_url(),
+		'successUrl' => robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $order_id),
 		'checkInterval' => 5000,
 		'maxAttempts' => 120,
 	);
@@ -769,7 +769,9 @@ function robokassa_payment_get_success_fail_url($name, $order_id)
 		case 'wc_payment':
 			return $order->get_checkout_payment_url();
 		default:
-			return get_page_link(get_option($name));
+			$page_url = get_page_link(absint($name));
+
+			return $page_url ?: $order->get_checkout_order_received_url();
 	}
 }
 
