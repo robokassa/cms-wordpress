@@ -24,6 +24,10 @@ if (!is_plugin_active('woocommerce/woocommerce.php')) {
  * Класс выбора типа оплаты на стороне Робокассы
  */
 class WC_WP_robokassa extends \WC_Payment_Gateway {
+	/**
+	 * @var array
+	 */
+	protected static $registered_subscription_hooks = [];
 
 	/**
 	 * @var string
@@ -53,19 +57,25 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			$this->description = robokassa_append_payment_graph_to_description($this->description, $this->id);
 		}
 
-		$this->supports = [
-			'products',
-			'subscriptions',
-			'subscription_cancellation',
-			'subscription_suspension',
-			'subscription_reactivation',
-			// 'subscription_amount_changes',
-			'subscription_date_changes',
-			// 'subscription_payment_method_change',
-			// 'subscription_payment_method_change_customer',
-			// 'subscription_payment_method_change_admin',
-			// 'multiple_subscriptions'
-		];
+		$this->supports = ['products'];
+
+		if ($this->id === 'robokassa') {
+			$this->supports = array_merge(
+				$this->supports,
+				[
+					'subscriptions',
+					'subscription_cancellation',
+					'subscription_suspension',
+					'subscription_reactivation',
+					// 'subscription_amount_changes',
+					'subscription_date_changes',
+					// 'subscription_payment_method_change',
+					// 'subscription_payment_method_change_customer',
+					// 'subscription_payment_method_change_admin',
+					// 'multiple_subscriptions'
+				]
+			);
+		}
 
 		$this->init_form_fields();
 		$this->init_settings();
@@ -75,8 +85,35 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 		add_action('woocommerce_api_wc_'.$this->id, array($this, 'check_ipn'));
 		add_action('woocommerce_receipt_'.$this->id, array($this, 'receipt_page'));
 
-		if (class_exists('WC_Subscriptions_Order')) {
-			add_action('woocommerce_scheduled_subscription_payment_' . $this->id, [$this, 'scheduled_subscription_payment'], 10, 2);
+		$this->register_subscription_hooks();
+	}
+
+	/**
+	 * Регистрирует подписочные хуки один раз для каждого gateway id.
+	 *
+	 * @return void
+	 */
+	protected function register_subscription_hooks()
+	{
+		if (!class_exists('WC_Subscriptions_Order')) {
+			return;
+		}
+
+		$gateway_ids = [$this->id];
+
+		foreach (array_unique(array_filter($gateway_ids)) as $gateway_id) {
+			if (isset(self::$registered_subscription_hooks[$gateway_id])) {
+				continue;
+			}
+
+			add_action(
+				'woocommerce_scheduled_subscription_payment_' . $gateway_id,
+				[$this, 'scheduled_subscription_payment'],
+				10,
+				2
+			);
+
+			self::$registered_subscription_hooks[$gateway_id] = true;
 		}
 	}
 
@@ -106,6 +143,10 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			return false;
 		}
 
+		if ($this->is_subscription_context() && $this->id !== 'robokassa') {
+			return false;
+		}
+
 		if (!function_exists('robokassa_get_optional_method_config_by_gateway')) {
 			return true;
 		}
@@ -127,6 +168,30 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 		}
 
 		return robokassa_is_amount_allowed_for_alias($config['alias'], $amount);
+	}
+
+	/**
+	 * Проверяет, относится ли текущий checkout к подписке.
+	 *
+	 * @return bool
+	 */
+	protected function is_subscription_context()
+	{
+		if (function_exists('wcs_cart_contains_subscription') && wcs_cart_contains_subscription()) {
+			return true;
+		}
+
+		if (!function_exists('wcs_order_contains_subscription')) {
+			return false;
+		}
+
+		$order_id = absint(get_query_var('order-pay'));
+
+		if ($order_id > 0 && wcs_order_contains_subscription($order_id)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
