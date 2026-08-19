@@ -125,7 +125,7 @@ class RobokassaSms {
 				array('%d')
 			);
 
-			return false;
+			return true;
 		}
 
 		$this->dataBase->insert(

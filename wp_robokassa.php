@@ -16,6 +16,7 @@ use Robokassa\Payment\RobokassaPayAPI;
 use Robokassa\Payment\RobokassaSms;
 use Robokassa\Payment\Util;
 use Robokassa\Payment\AgentManager;
+use Robokassa\Payment\MarkingManager;
 use Robokassa\Payment\PaymentObjectManager;
 use Robokassa\Payment\TaxManager;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
@@ -65,9 +66,18 @@ add_action('woocommerce_review_order_before_payment', 'refresh_payment_methods')
 add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_tax_field');
 add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_payment_object_field');
 add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_agent_fields');
+add_action('woocommerce_product_options_general_product_data', 'robokassa_payment_render_product_marking_field');
 add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_tax_field');
 add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_payment_object_field');
 add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_agent_fields');
+add_action('woocommerce_admin_process_product_object', 'robokassa_payment_save_product_marking_field');
+add_action('woocommerce_checkout_create_order_line_item', 'robokassa_payment_snapshot_order_item_marking', 10, 4);
+add_action('woocommerce_admin_order_item_headers', 'robokassa_payment_render_order_marking_header');
+add_action('woocommerce_admin_order_item_values', 'robokassa_payment_render_order_marking_value', 10, 3);
+add_action('admin_enqueue_scripts', 'robokassa_payment_enqueue_marking_assets');
+add_action('admin_footer', 'robokassa_payment_render_marking_modal');
+add_action('wp_ajax_robokassa_get_marking_codes', 'robokassa_payment_ajax_get_marking_codes');
+add_action('wp_ajax_robokassa_save_marking_codes', 'robokassa_payment_ajax_save_marking_codes');
 function refresh_payment_methods()
 {
 	// jQuery code
@@ -497,6 +507,20 @@ function robokassa_payment_get_agent_manager()
 }
 
 /**
+ * @return MarkingManager
+ */
+function robokassa_payment_get_marking_manager()
+{
+	global $robokassa_payment_marking_manager;
+
+	if (!$robokassa_payment_marking_manager instanceof MarkingManager) {
+		$robokassa_payment_marking_manager = new MarkingManager();
+	}
+
+	return $robokassa_payment_marking_manager;
+}
+
+/**
  * Вычисляет сумму налога для передачи в Робокассу.
  *
  * @param string    $tax
@@ -599,6 +623,11 @@ function robokassa_payment_render_product_agent_fields()
 	robokassa_payment_get_agent_manager()->renderProductAgentFields();
 }
 
+function robokassa_payment_render_product_marking_field()
+{
+	robokassa_payment_get_marking_manager()->renderProductField();
+}
+
 /**
  * Сохраняет выбранную налоговую ставку товара.
  *
@@ -633,6 +662,46 @@ function robokassa_payment_save_product_payment_object_field($product)
 function robokassa_payment_save_product_agent_fields($product)
 {
 	robokassa_payment_get_agent_manager()->saveProductAgentFields($product);
+}
+
+function robokassa_payment_save_product_marking_field($product)
+{
+	robokassa_payment_get_marking_manager()->saveProductField($product);
+}
+
+function robokassa_payment_snapshot_order_item_marking($item, $cart_item_key, $values, $order)
+{
+	robokassa_payment_get_marking_manager()->snapshotOrderItem($item, $cart_item_key, $values);
+}
+
+function robokassa_payment_render_order_marking_header()
+{
+	robokassa_payment_get_marking_manager()->renderOrderItemHeader();
+}
+
+function robokassa_payment_render_order_marking_value($product, $item, $item_id)
+{
+	robokassa_payment_get_marking_manager()->renderOrderItemValue($product, $item, $item_id);
+}
+
+function robokassa_payment_enqueue_marking_assets()
+{
+	robokassa_payment_get_marking_manager()->enqueueOrderAssets();
+}
+
+function robokassa_payment_render_marking_modal()
+{
+	robokassa_payment_get_marking_manager()->renderOrderModal();
+}
+
+function robokassa_payment_ajax_get_marking_codes()
+{
+	robokassa_payment_get_marking_manager()->ajaxGetCodes();
+}
+
+function robokassa_payment_ajax_save_marking_codes()
+{
+	robokassa_payment_get_marking_manager()->ajaxSaveCodes();
 }
 
 /**
@@ -694,6 +763,7 @@ function robokassa_payment_wp_robokassa_activate($debug)
 	add_option('robokassa_payment_tax', 'none');
 	add_option('robokassa_payment_tax_source', 'global');
 	add_option('robokassa_payment_payment_object_source', 'global');
+	add_option(MarkingManager::OPTION_ENABLED, 'no');
 	add_option('robokassa_payment_sno', 'fckoff');
 	add_option('robokassa_payment_who_commission', 'shop');
 	add_option('robokassa_payment_paytype', 'false');
@@ -1295,10 +1365,37 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			return;
 		}
 
+		if ($order->get_meta('_robokassa_second_receipt_sent', true) === 'yes') {
+			robokassa_payment_DEBUG("Robokassa: Second receipt for order_id: $order_id was already sent");
+			return;
+		}
+
+		$receipt_operation_id = (int)$order->get_meta('_robokassa_second_receipt_operation_id', true);
+
+		if ($receipt_operation_id <= 0) {
+			$receipt_operation_id = (int)(time() * 1000000 + ($order->get_id() % 1000000));
+			$order->update_meta_data('_robokassa_second_receipt_operation_id', $receipt_operation_id);
+			$order->save();
+		}
+
+		$marking_manager = robokassa_payment_get_marking_manager();
+		$marking_errors = $marking_manager->validateOrder($order);
+
+		if (!empty($marking_errors)) {
+			$message = 'Robokassa: второй чек не отправлен. Заполните маркировку: ' . implode('; ', $marking_errors);
+			robokassa_payment_DEBUG($message);
+
+			if (method_exists($order, 'add_order_note')) {
+				$order->add_order_note($message);
+			}
+
+			return;
+		}
+
 		/** @var array $fields */
 		$fields = [
 			'merchantId' => get_option('robokassa_payment_MerchantLogin'),
-			'id' => $order->get_id() + 1,
+			'id' => $receipt_operation_id,
 			'originId' => $order->get_id(),
 			'operation' => 'sell',
 			'url' => urlencode('http://' . $_SERVER['HTTP_HOST']),
@@ -1375,17 +1472,9 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 				'payment_object' => $second_check_payment_object,
 			];
 
-			$product = $item->get_product();
-
-			if ($product instanceof WC_Product) {
-				$sku = $product->get_sku();
-
-				if (!empty($sku)) {
-					$products_items['nomenclature_code'] = mb_convert_encoding($sku, 'UTF-8');
-				}
+			foreach ($marking_manager->buildSecondReceiptItems($item, $products_items) as $receipt_item) {
+				$fields['items'][] = $receipt_item;
 			}
-
-			$fields['items'][] = $products_items;
 		}
 
 		foreach ($order->get_items('fee') as $fee_item) {
@@ -1449,6 +1538,14 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			robokassa_payment_DEBUG("Robokassa: cURL error: " . curl_error($curl));
 		} else {
 			robokassa_payment_DEBUG("Robokassa: cURL result: " . $result);
+			$response_data = json_decode($result, true);
+
+			if (is_array($response_data) && isset($response_data['ResultCode']) && (string)$response_data['ResultCode'] === '0') {
+				$order->update_meta_data('_robokassa_second_receipt_sent', 'yes');
+				$order->update_meta_data('_robokassa_second_receipt_response', $response_data);
+				$order->save();
+				$order->add_order_note('Robokassa: второй чек принят в обработку. ID операции: ' . $receipt_operation_id);
+			}
 		}
 
 		curl_close($curl);

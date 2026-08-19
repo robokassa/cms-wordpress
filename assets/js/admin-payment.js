@@ -12,6 +12,7 @@ function spoleer()
 	var creditRow = document.getElementById("robokassa_payment_credit");
 	var secondReceiptRow = document.getElementById('payment_object_second_receipt');
 	var secondReceiptStatusRow = document.getElementById('second_receipt_status_row');
+	var markingSettingsRow = document.getElementById('robokassa_marking_settings');
 	var isKazakhstan = country && country.value === 'KZ';
 	var agentSettingsRow = document.getElementById('robokassa_agent_settings');
 	var holdSettingsRow = document.getElementById('robokassa_hold_settings');
@@ -46,6 +47,10 @@ function spoleer()
 
 	if (secondReceiptStatusRow) {
 		secondReceiptStatusRow.style.display = isKazakhstan ? 'none' : 'table-row';
+	}
+
+	if (markingSettingsRow) {
+		markingSettingsRow.style.display = isKazakhstan ? 'none' : 'table-row';
 	}
 
 	if (agentSettingsRow) {

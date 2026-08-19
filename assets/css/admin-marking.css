@@ -1,0 +1,65 @@
+.robokassa-marking-column {
+	width: 110px;
+	text-align: center;
+}
+
+.robokassa-marking-open.is-complete {
+	border-color: #008a20;
+	color: #008a20;
+}
+
+.robokassa-marking-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.robokassa-marking-modal[hidden] {
+	display: none;
+}
+
+.robokassa-marking-dialog {
+	position: relative;
+	width: min(560px, calc(100vw - 40px));
+	max-height: calc(100vh - 60px);
+	overflow: auto;
+	box-sizing: border-box;
+	padding: 24px;
+	background: #fff;
+	box-shadow: 0 5px 30px rgba(0, 0, 0, 0.35);
+}
+
+.robokassa-marking-close {
+	position: absolute;
+	top: 10px;
+	right: 12px;
+	border: 0;
+	background: transparent;
+	font-size: 28px;
+	cursor: pointer;
+}
+
+.robokassa-marking-field {
+	display: block;
+	margin: 14px 0;
+}
+
+.robokassa-marking-field span {
+	display: block;
+	margin-bottom: 5px;
+	font-weight: 600;
+}
+
+.robokassa-marking-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 20px;
+}
+
+.robokassa-marking-message.is-error {
+	color: #b32d2e;
+}
