@@ -1,5 +1,36 @@
 <?php
 
+if (!defined('MINUTE_IN_SECONDS')) {
+	define('MINUTE_IN_SECONDS', 60);
+}
+if (!defined('HOUR_IN_SECONDS')) {
+	define('HOUR_IN_SECONDS', 3600);
+}
+
+class WP_Error {
+	private $code;
+	private $message;
+	private $data;
+
+	public function __construct($code = '', $message = '', $data = null) {
+		$this->code = $code;
+		$this->message = $message;
+		$this->data = $data;
+	}
+
+	public function get_error_code() {
+		return $this->code;
+	}
+
+	public function get_error_message() {
+		return $this->message;
+	}
+
+	public function get_error_data() {
+		return $this->data;
+	}
+}
+
 class WP_Post {
 	public $ID;
 
@@ -65,6 +96,10 @@ class WC_Order_Item_Product extends WC_Order_Item {
 
 	public function get_total() {
 		return $this->total;
+	}
+
+	public function get_total_tax() {
+		return 0;
 	}
 
 	public function get_meta($key, $single = true) {
@@ -155,12 +190,35 @@ class WC_Order {
 	}
 
 	public function get_items($type = 'line_item') {
-		$key = $type === 'fee' ? 'fees' : 'items';
+		$key = array(
+			'line_item' => 'items',
+			'fee' => 'fees',
+			'shipping' => 'shipping_items',
+		)[$type] ?? 'items';
 		return isset($this->data[$key]) ? $this->data[$key] : array();
+	}
+
+	public function get_item($item_id) {
+		foreach ($this->get_items() as $item) {
+			if (method_exists($item, 'get_id') && (int)$item->get_id() === (int)$item_id) {
+				return $item;
+			}
+		}
+		return false;
 	}
 
 	public function get_total() {
 		return isset($this->data['total']) ? $this->data['total'] : 0;
+	}
+
+	public function get_total_refunded() {
+		return isset($this->data['total_refunded']) ? $this->data['total_refunded'] : 0;
+	}
+
+	public function get_refunds() {
+		return isset($GLOBALS['robokassa_test_refunds'][$this->get_id()])
+			? $GLOBALS['robokassa_test_refunds'][$this->get_id()]
+			: array();
 	}
 
 	public function get_shipping_total() {
@@ -187,7 +245,14 @@ class WC_Order {
 		$this->data['meta'][$key] = $value;
 	}
 
+	public function delete_meta_data($key) {
+		unset($this->data['meta'][$key]);
+	}
+
 	public function save() {
+		if ($this->get_id() > 0) {
+			$GLOBALS['robokassa_test_orders'][$this->get_id()] = $this->data;
+		}
 	}
 
 	public function payment_complete() {
@@ -232,6 +297,18 @@ class WC_Order {
 	}
 }
 
+class WC_Order_Refund extends WC_Order {
+	public function get_amount() {
+		$data = $this->export_data();
+		return isset($data['amount']) ? $data['amount'] : abs((float)$this->get_total());
+	}
+
+	public function get_reason() {
+		$data = $this->export_data();
+		return isset($data['reason']) ? $data['reason'] : '';
+	}
+}
+
 class WC_Payment_Gateway {
 	public $id;
 	public $method_title;
@@ -252,6 +329,10 @@ class WC_Payment_Gateway {
 
 	public function is_available() {
 		return $this->enabled === 'yes';
+	}
+
+	public function can_refund_order($order) {
+		return (bool)$order && in_array('refunds', $this->supports, true);
 	}
 }
 
@@ -288,15 +369,21 @@ function get_option($key, $default = false) {
 		: $default;
 }
 
-function update_option($key, $value) {
+function update_option($key, $value, $autoload = null) {
 	$GLOBALS['robokassa_test_options'][$key] = $value;
 	return true;
 }
 
-function add_option($key, $value) {
+function add_option($key, $value, $deprecated = '', $autoload = null) {
 	if (!array_key_exists($key, $GLOBALS['robokassa_test_options'])) {
 		$GLOBALS['robokassa_test_options'][$key] = $value;
+		return true;
 	}
+	return false;
+}
+
+function delete_option($key) {
+	unset($GLOBALS['robokassa_test_options'][$key]);
 	return true;
 }
 
@@ -368,6 +455,57 @@ function wp_json_encode($value, $flags = 0) {
 	return json_encode($value, $flags);
 }
 
+function is_wp_error($value) {
+	return $value instanceof WP_Error;
+}
+
+function add_query_arg($key, $value = null, $url = '') {
+	$args = is_array($key) ? $key : array($key => $value);
+	if (is_array($key)) {
+		$url = (string)$value;
+	}
+	$separator = strpos($url, '?') === false ? '?' : '&';
+	return $url . $separator . http_build_query($args);
+}
+
+function wp_remote_post($url, $args = array()) {
+	$GLOBALS['robokassa_test_http_requests'][] = array('method' => 'POST', 'url' => $url, 'args' => $args);
+	if (isset($GLOBALS['robokassa_test_http_callback'])) {
+		return call_user_func($GLOBALS['robokassa_test_http_callback'], 'POST', $url, $args);
+	}
+	return new WP_Error('http_not_mocked', 'HTTP request was not mocked.');
+}
+
+function wp_remote_get($url, $args = array()) {
+	$GLOBALS['robokassa_test_http_requests'][] = array('method' => 'GET', 'url' => $url, 'args' => $args);
+	if (isset($GLOBALS['robokassa_test_http_callback'])) {
+		return call_user_func($GLOBALS['robokassa_test_http_callback'], 'GET', $url, $args);
+	}
+	return new WP_Error('http_not_mocked', 'HTTP request was not mocked.');
+}
+
+function wp_remote_retrieve_response_code($response) {
+	return isset($response['response']['code']) ? $response['response']['code'] : 0;
+}
+
+function wp_remote_retrieve_body($response) {
+	return isset($response['body']) ? $response['body'] : '';
+}
+
+function wp_schedule_single_event($timestamp, $hook, $args = array()) {
+	$GLOBALS['robokassa_test_scheduled_events'][] = compact('timestamp', 'hook', 'args');
+	return true;
+}
+
+function as_schedule_single_action($timestamp, $hook, $args = array(), $group = '', $unique = false) {
+	$GLOBALS['robokassa_test_scheduled_events'][] = compact('timestamp', 'hook', 'args', 'group', 'unique');
+	return count($GLOBALS['robokassa_test_scheduled_events']);
+}
+
+function absint($value) {
+	return abs((int)$value);
+}
+
 function site_url($path = '') {
 	return 'https://shop.example.test' . $path;
 }
@@ -389,9 +527,18 @@ function admin_url($path = '') {
 }
 
 function wc_get_order($order_id) {
+	if (isset($GLOBALS['robokassa_test_refund_orders'][$order_id])) {
+		return $GLOBALS['robokassa_test_refund_orders'][$order_id];
+	}
 	return isset($GLOBALS['robokassa_test_orders'][$order_id])
 		? new WC_Order($order_id)
 		: false;
+}
+
+function wc_get_order_refunds($order_id) {
+	return isset($GLOBALS['robokassa_test_refunds'][$order_id])
+		? $GLOBALS['robokassa_test_refunds'][$order_id]
+		: array();
 }
 
 function current_time($type) {

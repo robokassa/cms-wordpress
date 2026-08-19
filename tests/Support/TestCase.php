@@ -13,7 +13,12 @@ abstract class TestCase extends PhpUnitTestCase {
 			'robokassa_country_code' => 'RU',
 		);
 		$GLOBALS['robokassa_test_orders'] = array();
+		$GLOBALS['robokassa_test_refunds'] = array();
+		$GLOBALS['robokassa_test_refund_orders'] = array();
 		$GLOBALS['robokassa_test_wc'] = new \Robokassa_Test_WC_Container();
+		$GLOBALS['robokassa_test_http_requests'] = array();
+		$GLOBALS['robokassa_test_scheduled_events'] = array();
+		unset($GLOBALS['robokassa_test_http_callback']);
 		$_POST = array();
 		$_GET = array();
 		$_REQUEST = array();

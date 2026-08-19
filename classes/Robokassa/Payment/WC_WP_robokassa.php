@@ -59,6 +59,10 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 
 		$this->supports = ['products'];
 
+		if (get_option('robokassa_country_code', 'RU') === 'RU') {
+			$this->supports[] = 'refunds';
+		}
+
 		if ($this->id === 'robokassa') {
 			$this->supports = array_merge(
 				$this->supports,
@@ -398,6 +402,289 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 			'result' => 'success',
 			'redirect' => $order->get_checkout_payment_url(true)
 		);
+	}
+
+	/**
+	 * Создаёт полный или частичный возврат через штатный интерфейс WooCommerce.
+	 *
+	 * @param int        $order_id
+	 * @param float|null $amount
+	 * @param string     $reason
+	 * @return bool|\WP_Error
+	 */
+	public function process_refund($order_id, $amount = null, $reason = '')
+	{
+		$order = wc_get_order($order_id);
+
+		if (!$order instanceof \WC_Order) {
+			return new \WP_Error('robokassa_refund_order_not_found', 'Заказ для возврата не найден.');
+		}
+
+		if (get_option('robokassa_country_code', 'RU') !== 'RU') {
+			return new \WP_Error('robokassa_refund_country_unsupported', 'API возвратов доступно только для Robokassa Россия.');
+		}
+
+		if (get_option('robokassa_payment_test_onoff') === 'true') {
+			return new \WP_Error('robokassa_refund_test_unsupported', 'API возвратов Robokassa не поддерживает тестовые платежи.');
+		}
+
+		$amount = $amount === null ? (float)$order->get_total() : (float)$amount;
+		if ($amount <= 0 || $amount > (float)$order->get_total()) {
+			return new \WP_Error('robokassa_refund_invalid_amount', 'Указана некорректная сумма возврата Robokassa.');
+		}
+
+		$api = $this->getRefundApi();
+		$wooRefund = $this->getMatchingWooRefund($order, $amount, $reason);
+		if ($wooRefund && (string)$wooRefund->get_meta('_robokassa_refund_request_id', true) !== '') {
+			// Повторный вызов WooCommerce для уже отправленного возврата.
+			return true;
+		}
+		$operationKey = (string)$order->get_meta('_robokassa_operation_key', true);
+
+		if ($operationKey === '') {
+			$operationKey = $api->getOperationKey($order_id);
+			if (is_wp_error($operationKey)) {
+				return $operationKey;
+			}
+			$order->update_meta_data('_robokassa_operation_key', $operationKey);
+			$order->save();
+		}
+
+		$invoiceItems = $this->getRefundInvoiceItems($order, $amount, $wooRefund);
+		$fingerprint = hash('sha256', implode('|', array(
+			(int)$order_id,
+			wc_format_decimal($amount, 2),
+			(string)$reason,
+			wp_json_encode($invoiceItems),
+		)));
+		$uncertain = $order->get_meta('_robokassa_refund_uncertain', true);
+		if (is_array($uncertain)
+			&& ($uncertain['fingerprint'] ?? '') === $fingerprint
+			&& (int)($uncertain['expires_at'] ?? 0) > time()
+		) {
+			return new \WP_Error(
+				'robokassa_refund_submission_uncertain',
+				'Предыдущая отправка этого возврата завершилась без однозначного ответа. Проверьте возврат в личном кабинете Robokassa перед повтором.'
+			);
+		}
+
+		$lockKey = 'robokassa_refund_lock_' . substr($fingerprint, 0, 32);
+		if (!add_option($lockKey, time(), '', false)) {
+			$lockCreated = (int)get_option($lockKey, 0);
+			if ($lockCreated > time() - 5 * MINUTE_IN_SECONDS) {
+				return new \WP_Error('robokassa_refund_locked', 'Этот возврат уже отправляется в Robokassa.');
+			}
+			delete_option($lockKey);
+			if (!add_option($lockKey, time(), '', false)) {
+				return new \WP_Error('robokassa_refund_locked', 'Не удалось установить блокировку возврата Robokassa.');
+			}
+		}
+		$refundSum = $amount;
+		if (method_exists($order, 'get_total_refunded')) {
+			$previouslyRefunded = max(0, (float)$order->get_total_refunded() - $amount);
+			$remainingBeforeRequest = max(0, (float)$order->get_total() - $previouslyRefunded);
+			if (abs($remainingBeforeRequest - $amount) <= 0.005) {
+				// Для полного возврата документация требует не передавать RefundSum.
+				$refundSum = null;
+			}
+		}
+		$result = $api->create($operationKey, $refundSum, $invoiceItems);
+		delete_option($lockKey);
+
+		if (is_wp_error($result)) {
+			$errorData = $result->get_error_data();
+			$status = is_array($errorData) && isset($errorData['status']) ? (int)$errorData['status'] : 0;
+			$definitelyRejected = in_array($result->get_error_code(), array(
+				'robokassa_refund_password3_missing',
+				'robokassa_refund_credentials_missing',
+			), true);
+			$responseCouldBeAccepted = $status === 0 || $status >= 500 || ($status >= 200 && $status < 300);
+			if (!$definitelyRejected && $responseCouldBeAccepted) {
+				$order->update_meta_data('_robokassa_refund_uncertain', array(
+					'fingerprint' => $fingerprint,
+					'expires_at' => time() + HOUR_IN_SECONDS,
+					'error' => $result->get_error_message(),
+				));
+				$order->add_order_note('Robokassa: результат отправки возврата неизвестен. Перед повтором проверьте личный кабинет, чтобы не вернуть деньги дважды.');
+				$order->save();
+			}
+			return $result;
+		}
+
+		if (empty($result['success']) || empty($result['requestId'])) {
+			$message = !empty($result['message']) ? (string)$result['message'] : 'Robokassa отклонила заявку на возврат.';
+			return new \WP_Error('robokassa_refund_rejected', $message);
+		}
+
+		$requestId = sanitize_text_field($result['requestId']);
+		$requests = $order->get_meta('_robokassa_refund_requests', true);
+		$requests = is_array($requests) ? $requests : array();
+		$requests[$requestId] = array(
+			'amount' => $amount,
+			'reason' => sanitize_text_field($reason),
+			'refund_id' => $wooRefund ? (int)$wooRefund->get_id() : 0,
+			'is_full' => $refundSum === null,
+			'status' => 'processing',
+			'attempts' => 0,
+			'created_at' => current_time('mysql'),
+		);
+		$order->update_meta_data('_robokassa_refund_requests', $requests);
+		if (method_exists($order, 'delete_meta_data')) {
+			$order->delete_meta_data('_robokassa_refund_uncertain');
+		}
+		if ($wooRefund) {
+			$wooRefund->update_meta_data('_robokassa_refund_request_id', $requestId);
+			$wooRefund->update_meta_data('_robokassa_refund_status', 'processing');
+			$wooRefund->save();
+		}
+		$order->add_order_note(sprintf(
+			'Robokassa: заявка на возврат %s принята. ID заявки: %s%s',
+			wc_format_decimal($amount, 2),
+			$requestId,
+			empty($invoiceItems) ? ' (без формирования фискального чека)' : ''
+		));
+		$order->save();
+
+		if (function_exists('robokassa_schedule_refund_status_check')) {
+			robokassa_schedule_refund_status_check($order_id, $requestId, MINUTE_IN_SECONDS);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Показывает автоматический возврат только когда Refund API настроено.
+	 *
+	 * @param \WC_Order $order
+	 * @return bool
+	 */
+	public function can_refund_order($order)
+	{
+		return parent::can_refund_order($order)
+			&& get_option('robokassa_country_code', 'RU') === 'RU'
+			&& get_option('robokassa_payment_test_onoff') !== 'true'
+			&& (string)get_option('robokassa_payment_shoppass3') !== '';
+	}
+
+	/** @return RefundApi */
+	protected function getRefundApi()
+	{
+		return new RefundApi(
+			get_option('robokassa_payment_MerchantLogin'),
+			get_option('robokassa_payment_shoppass2'),
+			get_option('robokassa_payment_shoppass3')
+		);
+	}
+
+	/**
+	 * Формирует чек только когда WooCommerce уже создал позиции возврата и их
+	 * сумма точно совпадает с суммой запроса. Иначе API выполняет денежный возврат
+	 * без чека — это безопаснее, чем фискализировать угаданный состав товаров.
+	 *
+	 * @param \WC_Order $order
+	 * @param float     $amount
+	 * @return array
+	 */
+	protected function getRefundInvoiceItems($order, $amount, $refund = null)
+	{
+		if (!$refund) {
+			$refund = $this->getMatchingWooRefund($order, $amount, '');
+		}
+		if (!$refund) {
+			return array();
+		}
+
+		$items = array();
+		$total = 0.0;
+		foreach ($refund->get_items('line_item') as $item) {
+				$quantity = abs((float)$item->get_quantity());
+				$lineTotal = abs((float)$item->get_total());
+				if (method_exists($item, 'get_total_tax')) {
+					$lineTotal += abs((float)$item->get_total_tax());
+				}
+				if ($quantity <= 0 || $lineTotal <= 0) {
+					continue;
+				}
+
+				$original = null;
+				if (method_exists($order, 'get_item') && method_exists($item, 'get_meta')) {
+					$original = $order->get_item(absint($item->get_meta('_refunded_item_id', true)));
+				}
+				$tax = ($original && function_exists('robokassa_payment_get_item_tax'))
+					? robokassa_payment_get_item_tax($original)
+					: get_option('robokassa_payment_tax', 'none');
+				$paymentObject = ($original && function_exists('robokassa_payment_get_item_payment_object'))
+					? robokassa_payment_get_item_payment_object($original)
+					: get_option('robokassa_payment_paymentObject', 'commodity');
+
+				$items[] = array(
+					'Name' => method_exists($item, 'get_name') ? (string)$item->get_name() : 'Товар',
+					'Quantity' => $quantity,
+					'Cost' => round($lineTotal / $quantity, 2),
+					'Tax' => $tax ?: 'none',
+					'PaymentMethod' => 'full_payment',
+					'PaymentObject' => $paymentObject ?: 'commodity',
+				);
+			$total += $lineTotal;
+		}
+
+		foreach (array('shipping', 'fee') as $type) {
+			foreach ($refund->get_items($type) as $item) {
+				$lineTotal = abs((float)$item->get_total());
+				if (method_exists($item, 'get_total_tax')) {
+					$lineTotal += abs((float)$item->get_total_tax());
+				}
+				if ($lineTotal <= 0) {
+					continue;
+				}
+				$items[] = array(
+					'Name' => method_exists($item, 'get_name') ? (string)$item->get_name() : ($type === 'shipping' ? 'Доставка' : 'Доплата'),
+					'Quantity' => 1,
+					'Cost' => round($lineTotal, 2),
+					'Tax' => get_option('robokassa_payment_tax', 'none') ?: 'none',
+					'PaymentMethod' => 'full_payment',
+					'PaymentObject' => $type === 'shipping'
+						? (get_option('robokassa_payment_paymentObject_shipping') ?: 'service')
+						: (get_option('robokassa_payment_paymentObject') ?: 'commodity'),
+				);
+				$total += $lineTotal;
+			}
+		}
+
+		return !empty($items) && abs($total - $amount) <= 0.01 ? $items : array();
+	}
+
+	/**
+	 * Находит связанный WooCommerce refund; WooCommerce сохраняет его до вызова gateway API.
+	 *
+	 * @param \WC_Order $order
+	 * @param float     $amount
+	 * @param string    $reason
+	 * @return object|null
+	 */
+	protected function getMatchingWooRefund($order, $amount, $reason)
+	{
+		if (method_exists($order, 'get_refunds')) {
+			$refunds = $order->get_refunds();
+		} elseif (function_exists('wc_get_order_refunds')) {
+			// Совместимость со старыми версиями WooCommerce.
+			$refunds = wc_get_order_refunds($order->get_id());
+		} else {
+			$refunds = array();
+		}
+
+		foreach ($refunds as $refund) {
+			if (!method_exists($refund, 'get_amount') || abs((float)$refund->get_amount() - $amount) > 0.005) {
+				continue;
+			}
+			if ($reason !== '' && method_exists($refund, 'get_reason') && (string)$refund->get_reason() !== (string)$reason) {
+				continue;
+			}
+
+			return $refund;
+		}
+
+		return null;
 	}
 
 }

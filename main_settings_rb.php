@@ -61,6 +61,7 @@ if (function_exists('wc_prices_include_tax')) {
 				'robokassa_payment_MerchantLogin',
 				'robokassa_payment_shoppass1',
 				'robokassa_payment_shoppass2',
+				'robokassa_payment_shoppass3',
 				'robokassa_payment_test_onoff',
 				'robokassa_payment_testshoppass1',
 				'robokassa_payment_testshoppass2',
@@ -258,11 +259,20 @@ if (function_exists('wc_prices_include_tax')) {
 									echo get_option('robokassa_payment_shoppass1'); ?>"/></td>
 							</tr>
 
-							<tr valign="top">
+			<tr valign="top">
 								<th scope="row">Пароль магазина #2</th>
 								<td><input type="password" name="robokassa_payment_shoppass2" value="<?php
 									echo get_option('robokassa_payment_shoppass2'); ?>"/></td>
-							</tr>
+			</tr>
+
+			<tr valign="top">
+				<th scope="row">Пароль магазина #3</th>
+				<td>
+					<input type="password" name="robokassa_payment_shoppass3" value="<?php
+						echo esc_attr(get_option('robokassa_payment_shoppass3')); ?>"/>
+					<br/><span class="text-description">Используется только для возвратов. Сгенерируйте Password3 в личном кабинете Robokassa.</span>
+				</td>
+			</tr>
 
 							<tr valign="top">
 								<th scope="row">Язык интерфейса робокассы</th>
