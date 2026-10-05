@@ -55,6 +55,118 @@ class CoreFunctionsTest extends TestCase {
 		$this->assertSame(array('pass1' => 'test-1', 'pass2' => 'test-2'), \getRobokassaPasses());
 	}
 
+	public function testRejectsInvalidCallbackSignatureWithoutChangingOrder(): void {
+		$this->setOptions(array(
+			'robokassa_payment_MerchantLogin' => 'merchant',
+			'robokassa_payment_shoppass2' => 'pass2',
+		));
+		$GLOBALS['robokassa_test_orders'][5000] = array(
+			'id' => 5000,
+			'status' => 'completed',
+			'notes' => array(),
+		);
+		$request = array(
+			'OutSum' => '5990',
+			'InvId' => '5000',
+			'SignatureValue' => 'x',
+		);
+
+		$this->assertFalse(\robokassa_payment_is_valid_callback_signature(
+			$request,
+			\robokassa_payment_get_callback_password(2)
+		));
+
+		$order = \wc_get_order(5000);
+		$this->assertSame('completed', $order->get_status());
+		$this->assertSame(array(), $order->export_data()['notes']);
+	}
+
+	public function testAcceptsValidLiveAndTestCallbackSignatures(): void {
+		$this->setOptions(array(
+			'robokassa_payment_MerchantLogin' => 'merchant',
+			'robokassa_payment_test_onoff' => 'false',
+			'robokassa_payment_shoppass2' => 'live-pass2',
+			'robokassa_payment_testshoppass2' => 'test-pass2',
+		));
+		$request = array('OutSum' => '100.00', 'InvId' => '42');
+		$request['SignatureValue'] = \robokassa_payment_build_callback_signature($request, 'live-pass2');
+
+		$this->assertTrue(\robokassa_payment_is_valid_callback_signature(
+			$request,
+			\robokassa_payment_get_callback_password(2)
+		));
+
+		$this->setOptions(array('robokassa_payment_test_onoff' => 'true'));
+		$request['SignatureValue'] = strtolower(\robokassa_payment_build_callback_signature($request, 'test-pass2'));
+
+		$this->assertTrue(\robokassa_payment_is_valid_callback_signature(
+			$request,
+			\robokassa_payment_get_callback_password(2)
+		));
+	}
+
+	/** @dataProvider invalidCallbackProvider */
+	public function testRejectsMalformedCallbackData(array $request, string $password): void {
+		$this->assertFalse(\robokassa_payment_is_valid_callback_signature($request, $password));
+	}
+
+	public function invalidCallbackProvider(): array {
+		return array(
+			'missing signature' => array(array('OutSum' => '1', 'InvId' => '1'), 'pass'),
+			'missing amount' => array(array('InvId' => '1', 'SignatureValue' => str_repeat('a', 32)), 'pass'),
+			'array invoice id' => array(array('OutSum' => '1', 'InvId' => array('1'), 'SignatureValue' => str_repeat('a', 32)), 'pass'),
+			'empty password' => array(array('OutSum' => '1', 'InvId' => '1', 'SignatureValue' => str_repeat('a', 32)), ''),
+		);
+	}
+
+	public function testUnsignedCallbackRedirectDoesNotExposeOrderUrl(): void {
+		$this->setOptions(array(
+			'robokassa_payment_SuccessURL' => 'wc_success',
+			'robokassa_payment_shoppass1' => 'pass1',
+		));
+		$GLOBALS['robokassa_test_orders'][5000] = array(
+			'id' => 5000,
+			'order_key' => 'wc_order_secret',
+		);
+
+		$url = \robokassa_payment_get_callback_redirect_url('success', array(
+			'OutSum' => '5990',
+			'InvId' => '5000',
+			'SignatureValue' => 'x',
+		));
+
+		$this->assertSame('https://shop.example.test/checkout/', $url);
+		$this->assertStringNotContainsString('wc_order_secret', $url);
+	}
+
+	public function testSignedCallbackRedirectPreservesConfiguredOrderDestination(): void {
+		$this->setOptions(array(
+			'robokassa_payment_MerchantLogin' => 'merchant',
+			'robokassa_payment_SuccessURL' => 'wc_success',
+			'robokassa_payment_shoppass1' => 'pass1',
+		));
+		$GLOBALS['robokassa_test_orders'][42] = array(
+			'id' => 42,
+			'order_key' => 'wc_order_valid',
+		);
+		$request = array('OutSum' => '100.00', 'InvId' => '42');
+		$request['SignatureValue'] = \robokassa_payment_build_callback_signature($request, 'pass1');
+
+		$this->assertSame(
+			'https://shop.example.test/checkout/order-received/42/?key=wc_order_valid',
+			\robokassa_payment_get_callback_redirect_url('success', $request)
+		);
+	}
+
+	public function testCustomCallbackPageDoesNotRequireOrderData(): void {
+		$this->setOptions(array('robokassa_payment_SuccessURL' => '123'));
+
+		$this->assertSame(
+			'https://shop.example.test/?page_id=123',
+			\robokassa_payment_get_callback_redirect_url('success', array('InvId' => '5000'))
+		);
+	}
+
 	public function testCountryAndTaxReceiptRules(): void {
 		$this->assertTrue(\robokassa_payment_should_send_sno('RU', 'osn'));
 		$this->assertFalse(\robokassa_payment_should_send_sno('KZ', 'osn'));

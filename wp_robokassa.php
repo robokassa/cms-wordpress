@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.8.9
+ * Version: 1.9.0
  */
 
 require_once('payment-widget.php');
@@ -1045,6 +1045,123 @@ function robokassa_payment_get_success_fail_url($name, $order_id)
 }
 
 /**
+ * Возвращает пароль для проверки входящего callback-запроса.
+ *
+ * @param int $password_number
+ *
+ * @return string
+ */
+function robokassa_payment_get_callback_password($password_number)
+{
+	$is_test = get_option('robokassa_payment_test_onoff') === 'true';
+	$option = $is_test
+		? 'robokassa_payment_testshoppass' . absint($password_number)
+		: 'robokassa_payment_shoppass' . absint($password_number);
+
+	return (string)get_option($option, '');
+}
+
+/**
+ * Вычисляет подпись callback-запроса ResultURL или SuccessURL.
+ *
+ * @param array  $request
+ * @param string $password
+ *
+ * @return string
+ */
+function robokassa_payment_build_callback_signature(array $request, $password)
+{
+	if (
+		$password === ''
+		|| !isset($request['OutSum'], $request['InvId'])
+		|| !is_scalar($request['OutSum'])
+		|| !is_scalar($request['InvId'])
+	) {
+		return '';
+	}
+
+	$out_sum = (string)$request['OutSum'];
+	$invoice_id = (string)$request['InvId'];
+
+	if ($out_sum === '' || $invoice_id === '') {
+		return '';
+	}
+
+	return strtoupper(md5(implode(':', array(
+		$out_sum,
+		$invoice_id,
+		$password,
+		'shp_label=official_wordpress',
+		'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin'),
+		'Shp_order_id=' . $invoice_id,
+		'Shp_result_url=' . Util::siteUrl('/?robokassa=result'),
+	))));
+}
+
+/**
+ * Проверяет подпись callback-запроса без изменения заказа.
+ *
+ * @param array  $request
+ * @param string $password
+ *
+ * @return bool
+ */
+function robokassa_payment_is_valid_callback_signature(array $request, $password)
+{
+	if (
+		!isset($request['SignatureValue'])
+		|| !is_scalar($request['SignatureValue'])
+	) {
+		return false;
+	}
+
+	$provided_signature = strtoupper(trim((string)$request['SignatureValue']));
+	$expected_signature = robokassa_payment_build_callback_signature($request, (string)$password);
+
+	return $expected_signature !== ''
+		&& preg_match('/^[A-F0-9]{32}$/', $provided_signature) === 1
+		&& hash_equals($expected_signature, $provided_signature);
+}
+
+/**
+ * Возвращает URL после callback-запроса, не раскрывая данные заказа
+ * по неподписанному InvId.
+ *
+ * @param string $type success|fail
+ * @param array  $request
+ *
+ * @return string
+ */
+function robokassa_payment_get_callback_redirect_url($type, array $request)
+{
+	$option_name = $type === 'success'
+		? 'robokassa_payment_SuccessURL'
+		: 'robokassa_payment_FailURL';
+	$destination = get_option($option_name);
+
+	if (!in_array($destination, array('wc_success', 'wc_checkout', 'wc_payment'), true)) {
+		$page_url = get_page_link(absint($destination));
+
+		return $page_url ?: wc_get_checkout_url();
+	}
+
+	$password = robokassa_payment_get_callback_password(1);
+
+	if (!robokassa_payment_is_valid_callback_signature($request, $password)) {
+		return wc_get_checkout_url();
+	}
+
+	$order_id = isset($request['InvId']) ? absint($request['InvId']) : 0;
+	$order = $order_id > 0 ? wc_get_order($order_id) : false;
+
+	if (!$order instanceof \WC_Order) {
+		return wc_get_checkout_url();
+	}
+
+	return robokassa_payment_get_success_fail_url($destination, $order_id);
+}
+
+/**
  * @return void
  */
 function robokassa_payment_wp_robokassa_checkPayment()
@@ -1066,90 +1183,64 @@ function robokassa_payment_wp_robokassa_checkPayment()
 				return;
 			}
 
-			/** @var string $crc_confirm */
-			$crc_confirm = strtoupper(
-				md5(
-					implode(
-						':',
-						[
-							$_REQUEST['OutSum'],
-							$_REQUEST['InvId'],
-							(
-							(get_option('robokassa_payment_test_onoff') == 'true')
-								? get_option('robokassa_payment_testshoppass2')
-								: get_option('robokassa_payment_shoppass2')
-							),
-							'shp_label=official_wordpress',
-							'Shp_merchant_id=' . get_option('robokassa_payment_MerchantLogin'),
-							'Shp_order_id=' . $_REQUEST['InvId'],
-							'Shp_result_url=' . (Util::siteUrl('/?robokassa=result'))
-						]
-					)
-				)
-			);
+			$password = robokassa_payment_get_callback_password(2);
 
-			if ($crc_confirm == $_REQUEST['SignatureValue']) {
+			if (!robokassa_payment_is_valid_callback_signature($_REQUEST, $password)) {
+				status_header(400);
+				echo 'BAD SIGN';
+				die;
+			}
 
-				$order = new WC_Order($_REQUEST['InvId']);
-				$order->add_order_note('Заказ успешно оплачен!');
-				robokassa_mark_order_payment_complete($order, $order_status);
+			$order = new WC_Order($_REQUEST['InvId']);
+			$order->add_order_note('Заказ успешно оплачен!');
+			robokassa_mark_order_payment_complete($order, $order_status);
 
-				global $woocommerce;
-				$woocommerce->cart->empty_cart();
+			global $woocommerce;
+			$woocommerce->cart->empty_cart();
 
-				if (function_exists('wcs_order_contains_subscription')) {
-					$subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
+			if (function_exists('wcs_order_contains_subscription')) {
+				$subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
 
-					if ($subscriptions == true) {
-						foreach ($subscriptions as $subscription) {
-							$subscription->update_status('active');
-						}
+				if ($subscriptions == true) {
+					foreach ($subscriptions as $subscription) {
+						$subscription->update_status('active');
 					}
 				}
+			}
 
-				$returner = 'OK' . $_REQUEST['InvId'];
+			$returner = 'OK' . $_REQUEST['InvId'];
 
-				if (get_option('robokassa_payment_sms1_enabled') == 'on') {
-
-					try {
-						global $wpdb;
-
-						(new RobokassaSms(
-							(new RoboDataBase($wpdb)),
-							(new RobokassaPayAPI(
-								get_option('robokassa_payment_MerchantLogin'),
-								get_option('robokassa_payment_shoppass1'),
-								get_option('robokassa_payment_shoppass2')
-							)
-							),
-							$order->billing_phone,
-							get_option('robokassa_payment_sms1_text'),
-							(get_option('robokassa_payment_sms_translit') == 'on'),
-							$_REQUEST['InvId'],
-							1
-						))->send();
-					} catch (Exception $e) {
-					}
-				}
-			} else {
-				$returner = 'BAD SIGN';
+			if (get_option('robokassa_payment_sms1_enabled') == 'on') {
 
 				try {
-					$order = new WC_Order($_REQUEST['InvId']);
-					error_log('REQUEST: ' . print_r($_REQUEST, true));
-					$order->add_order_note('Bad CRC '. $crc_confirm .' . '. $_REQUEST['SignatureValue']);
-					$order->update_status('failed');
-				} catch (Exception $e) {}
+					global $wpdb;
+
+					(new RobokassaSms(
+						(new RoboDataBase($wpdb)),
+						(new RobokassaPayAPI(
+							get_option('robokassa_payment_MerchantLogin'),
+							get_option('robokassa_payment_shoppass1'),
+							get_option('robokassa_payment_shoppass2')
+						)
+						),
+						$order->billing_phone,
+						get_option('robokassa_payment_sms1_text'),
+						(get_option('robokassa_payment_sms_translit') == 'on'),
+						$_REQUEST['InvId'],
+						1
+					))->send();
+				} catch (Exception $e) {
+				}
 			}
 		}
 
 		if ($_REQUEST['robokassa'] == 'success') {
-			header('Location:' . robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $_REQUEST['InvId']));
+			wp_safe_redirect(robokassa_payment_get_callback_redirect_url('success', $_REQUEST));
 			die;
 		}
 
 		if ($_REQUEST['robokassa'] == 'fail') {
-			header('Location:' . robokassa_payment_get_success_fail_url(get_option('robokassa_payment_FailURL'), $_REQUEST['InvId']));
+			wp_safe_redirect(robokassa_payment_get_callback_redirect_url('fail', $_REQUEST));
 			die;
 		}
 		echo $returner;

@@ -280,6 +280,18 @@ class WC_Order {
 			: 'https://shop.example.test/checkout/order-pay';
 	}
 
+	public function get_checkout_order_received_url() {
+		return isset($this->data['checkout_order_received_url'])
+			? $this->data['checkout_order_received_url']
+			: 'https://shop.example.test/checkout/order-received/' . $this->get_id() . '/?key=' . $this->get_order_key();
+	}
+
+	public function get_view_order_url() {
+		return isset($this->data['view_order_url'])
+			? $this->data['view_order_url']
+			: 'https://shop.example.test/my-account/view-order/' . $this->get_id() . '/';
+	}
+
 	public function get_order_key() {
 		return isset($this->data['order_key']) ? $this->data['order_key'] : '';
 	}
@@ -524,6 +536,14 @@ function plugins_url($path = '', $file = '') {
 
 function admin_url($path = '') {
 	return 'https://shop.example.test/wp-admin/' . ltrim($path, '/');
+}
+
+function wc_get_checkout_url() {
+	return 'https://shop.example.test/checkout/';
+}
+
+function get_page_link($page_id) {
+	return $page_id > 0 ? 'https://shop.example.test/?page_id=' . $page_id : false;
 }
 
 function wc_get_order($order_id) {
