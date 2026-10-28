@@ -63,5 +63,5 @@ function robokassa_notify_status_change($status) {
         'timeout' => 5,
     ]);
 
-    robokassa_payment_DEBUG("[Robokassa] Статус $status отправлен на $apiUrl");
+    robokassa_payment_DEBUG('module_status_reported');
 }

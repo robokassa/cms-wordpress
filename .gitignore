@@ -5,3 +5,4 @@
 *.log
 /vendor/
 /.phpunit.result.cache
+/data/robokassa_DEBUG.txt

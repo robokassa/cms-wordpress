@@ -15,6 +15,8 @@ abstract class TestCase extends PhpUnitTestCase {
 		$GLOBALS['robokassa_test_orders'] = array();
 		$GLOBALS['robokassa_test_products'] = array();
 		$GLOBALS['robokassa_test_checkbox_fields'] = array();
+		$GLOBALS['robokassa_test_log_entries'] = array();
+		$GLOBALS['robokassa_test_logger_throw'] = false;
 		$GLOBALS['robokassa_test_refunds'] = array();
 		$GLOBALS['robokassa_test_refund_orders'] = array();
 		$GLOBALS['robokassa_test_wc'] = new \Robokassa_Test_WC_Container();

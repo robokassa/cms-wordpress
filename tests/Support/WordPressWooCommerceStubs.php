@@ -7,6 +7,28 @@ if (!defined('HOUR_IN_SECONDS')) {
 	define('HOUR_IN_SECONDS', 3600);
 }
 
+class WC_Log_Handler_DB {
+}
+
+class WC_Logger {
+	private $handlers;
+
+	public function __construct($handlers = null) {
+		$this->handlers = $handlers;
+	}
+
+	public function debug($message, $context = array()) {
+		if (!empty($GLOBALS['robokassa_test_logger_throw'])) {
+			throw new \RuntimeException('logger unavailable');
+		}
+		$GLOBALS['robokassa_test_log_entries'][] = array(
+			'handlers' => $this->handlers,
+			'message' => $message,
+			'context' => $context,
+		);
+	}
+}
+
 class WP_Error {
 	private $code;
 	private $message;
@@ -420,7 +442,14 @@ function delete_option($key) {
 	return true;
 }
 
-function add_action() {
+function add_action($hook, $callback, $priority = 10, $acceptedArgs = 1) {
+	$GLOBALS['robokassa_test_actions'][$hook][] = array($callback, $acceptedArgs);
+}
+
+function do_action($hook, ...$args) {
+	foreach ($GLOBALS['robokassa_test_actions'][$hook] ?? array() as $action) {
+		call_user_func_array($action[0], array_slice($args, 0, $action[1]));
+	}
 }
 
 function add_filter() {
