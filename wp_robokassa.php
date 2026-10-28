@@ -1675,6 +1675,14 @@ if (!function_exists('getallheaders')) {
  */
 function robokassa_2check_send($order_id, $old_status, $new_status)
 {
+	$order = wc_get_order($order_id);
+	if (!$order instanceof WC_Order || !in_array(
+		$order->get_payment_method(),
+		array_column(robokassa_get_payment_methods_config(), 'gateway_id'),
+		true
+	)) {
+		return;
+	}
 
 	$payment_method = get_option('robokassa_payment_paymentMethod');
 	$sno = get_option('robokassa_payment_sno');
@@ -1697,13 +1705,6 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 
 		if ($new_status != $trigger_status) {
 			robokassa_payment_DEBUG('second_receipt_status_skipped');
-			return;
-		}
-
-		$order = new WC_Order($order_id);
-
-		if (empty($order)) {
-			robokassa_payment_DEBUG('second_receipt_order_missing', array('order_id' => (int)$order_id));
 			return;
 		}
 
