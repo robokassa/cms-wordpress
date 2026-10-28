@@ -346,17 +346,21 @@ function robokassa_prepare_redirect_config()
  * @param \WC_Order $order
  * @param string    $order_status
  *
- * @return void
+ * @return bool
  */
 function robokassa_mark_order_payment_complete(WC_Order $order, $order_status)
 {
-	$order->payment_complete();
+	if (!$order->payment_complete()) {
+		return false;
+	}
 
 	$custom_status = str_replace('wc-', '', (string)$order_status);
 
 	if ($custom_status !== '' && $order->get_status() !== $custom_status) {
-		$order->update_status($custom_status);
+		return $order->update_status($custom_status);
 	}
+
+	return true;
 }
 
 /**
@@ -1191,55 +1195,14 @@ function robokassa_payment_wp_robokassa_checkPayment()
 				return;
 			}
 
-			$password = robokassa_payment_get_callback_password(2);
-
-			if (!robokassa_payment_is_valid_callback_signature($_REQUEST, $password)) {
-				status_header(400);
-				echo 'BAD SIGN';
+			global $wpdb;
+			$result = (new \Robokassa\Payment\ClassicResultNotification($wpdb))->process($_REQUEST, $order_status);
+			if (is_wp_error($result)) {
+				status_header($result->get_error_data());
+				echo $result->get_error_message();
 				die;
 			}
-
-			$order = new WC_Order($_REQUEST['InvId']);
-			$order->add_order_note('Заказ успешно оплачен!');
-			robokassa_mark_order_payment_complete($order, $order_status);
-
-			global $woocommerce;
-			$woocommerce->cart->empty_cart();
-
-			if (function_exists('wcs_order_contains_subscription')) {
-				$subscriptions = wcs_get_subscriptions_for_order($_REQUEST['InvId']) ?: wcs_get_subscriptions_for_renewal_order($_REQUEST['InvId']);
-
-				if ($subscriptions == true) {
-					foreach ($subscriptions as $subscription) {
-						$subscription->update_status('active');
-					}
-				}
-			}
-
-			$returner = 'OK' . $_REQUEST['InvId'];
-
-			if (get_option('robokassa_payment_sms1_enabled') == 'on') {
-
-				try {
-					global $wpdb;
-
-					(new RobokassaSms(
-						(new RoboDataBase($wpdb)),
-						(new RobokassaPayAPI(
-							get_option('robokassa_payment_MerchantLogin'),
-							get_option('robokassa_payment_shoppass1'),
-							get_option('robokassa_payment_shoppass2')
-						)
-						),
-						$order->billing_phone,
-						get_option('robokassa_payment_sms1_text'),
-						(get_option('robokassa_payment_sms_translit') == 'on'),
-						$_REQUEST['InvId'],
-						1
-					))->send();
-				} catch (Exception $e) {
-				}
-			}
+			$returner = $result;
 		}
 
 		if ($_REQUEST['robokassa'] == 'success') {
@@ -1253,6 +1216,43 @@ function robokassa_payment_wp_robokassa_checkPayment()
 		}
 		echo $returner;
 		die;
+	}
+}
+
+function robokassa_payment_result_side_effects(WC_Order $order, $invoice_id)
+{
+	$cart = WC()->cart;
+	if ($cart) {
+		$cart->empty_cart();
+	}
+
+	if (function_exists('wcs_order_contains_subscription')) {
+		$subscriptions = wcs_get_subscriptions_for_order($invoice_id) ?: wcs_get_subscriptions_for_renewal_order($invoice_id);
+		if ($subscriptions) {
+			foreach ($subscriptions as $subscription) {
+				$subscription->update_status('active');
+			}
+		}
+	}
+
+	if (get_option('robokassa_payment_sms1_enabled') == 'on') {
+		try {
+			global $wpdb;
+			(new RobokassaSms(
+				new RoboDataBase($wpdb),
+				new RobokassaPayAPI(
+					get_option('robokassa_payment_MerchantLogin'),
+					get_option('robokassa_payment_shoppass1'),
+					get_option('robokassa_payment_shoppass2')
+				),
+				$order->get_billing_phone(),
+				get_option('robokassa_payment_sms1_text'),
+				get_option('robokassa_payment_sms_translit') == 'on',
+				$invoice_id,
+				1
+			))->send();
+		} catch (Exception $error) {
+		}
 	}
 }
 

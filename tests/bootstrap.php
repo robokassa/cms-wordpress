@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Support/WordPressWooCommerceStubs.php';
+require_once __DIR__ . '/Support/PaymentFunctionStubs.php';
 require_once __DIR__ . '/Support/TestCase.php';
 
 $GLOBALS['robokassa_test_options'] = array();

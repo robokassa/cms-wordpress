@@ -219,8 +219,9 @@ class WC_Order {
 			return;
 		}
 
-		$this->data = isset($GLOBALS['robokassa_test_orders'][$order])
-			? $GLOBALS['robokassa_test_orders'][$order]
+		$orders = $GLOBALS['robokassa_test_order_cache'] ?? $GLOBALS['robokassa_test_orders'];
+		$this->data = isset($orders[$order])
+			? $orders[$order]
 			: array();
 
 		foreach (array('billing_address_1', 'billing_address_2', 'billing_first_name', 'billing_last_name') as $field) {
@@ -278,6 +279,7 @@ class WC_Order {
 
 	public function add_order_note($note) {
 		$this->data['notes'][] = $note;
+		$this->save();
 	}
 
 	public function get_meta($key, $single = true) {
@@ -295,18 +297,52 @@ class WC_Order {
 	public function save() {
 		if ($this->get_id() > 0) {
 			$GLOBALS['robokassa_test_orders'][$this->get_id()] = $this->data;
+			if (isset($GLOBALS['robokassa_test_order_save_callback'])) {
+				call_user_func($GLOBALS['robokassa_test_order_save_callback'], $this->data);
+			}
 		}
+		return $this->get_id();
 	}
 
 	public function payment_complete() {
+		if (isset($GLOBALS['robokassa_test_payment_complete_callback'])) {
+			call_user_func($GLOBALS['robokassa_test_payment_complete_callback'], $this);
+		}
+		if (!empty($this->data['payment_failure'])) {
+			return false;
+		}
 		$this->data['payment_complete_calls'] = isset($this->data['payment_complete_calls'])
 			? $this->data['payment_complete_calls'] + 1
 			: 1;
 		$this->data['status'] = 'processing';
+		$this->data['date_paid'] = time();
+		$this->save();
+		return true;
 	}
 
 	public function update_status($status) {
 		$this->data['status'] = $status;
+		$this->save();
+		return true;
+	}
+
+	public function read_meta_data($force = false) {
+		if ($force && isset($GLOBALS['robokassa_test_orders'][$this->get_id()])) {
+			$orders = $GLOBALS['robokassa_test_order_cache'] ?? $GLOBALS['robokassa_test_orders'];
+			$this->data['meta'] = $orders[$this->get_id()]['meta'] ?? array();
+		}
+	}
+
+	public function get_date_paid($context = 'view') {
+		return $this->data['date_paid'] ?? null;
+	}
+
+	public function is_paid() {
+		return in_array($this->get_status(), array('processing', 'completed'), true);
+	}
+
+	public function get_billing_phone() {
+		return $this->data['billing_phone'] ?? '';
 	}
 
 	public function get_status() {
@@ -396,6 +432,24 @@ class wpdb {
 	public $last_error = '';
 }
 
+class WC_Data_Store {
+	public static function load($type) {
+		return new self();
+	}
+
+	public function get_current_class_name() {
+		return self::class;
+	}
+
+	public function clear_cached_data(array $orderIds) {
+		unset($GLOBALS['robokassa_test_order_cache']);
+	}
+}
+
+function wp_cache_delete($key, $group = '') {
+	return true;
+}
+
 class Robokassa_Test_Session {
 	private $values = array();
 
@@ -422,6 +476,10 @@ function get_option($key, $default = false) {
 	return array_key_exists($key, $GLOBALS['robokassa_test_options'])
 		? $GLOBALS['robokassa_test_options'][$key]
 		: $default;
+}
+
+function get_query_var($key, $default = '') {
+	return $default;
 }
 
 function update_option($key, $value, $autoload = null) {
