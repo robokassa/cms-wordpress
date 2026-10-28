@@ -207,6 +207,7 @@ class Robokassa_Test_Fee_Item {
 
 class WC_Order {
 	private $data;
+	private $changedMeta = array();
 	public $billing_address_1 = '';
 	public $billing_address_2 = '';
 	public $billing_first_name = '';
@@ -215,6 +216,7 @@ class WC_Order {
 	public function __construct($order = 0) {
 		if (is_array($order)) {
 			$this->data = $order;
+			$this->changedMeta = array_fill_keys(array_keys($order['meta'] ?? array()), true);
 			$this->attachOrderToItems();
 			return;
 		}
@@ -279,13 +281,15 @@ class WC_Order {
 
 	public function add_order_note($note) {
 		$data = apply_filters('woocommerce_new_order_note_data', array('comment_content' => $note), array('order_id' => $this->get_id()));
-		$this->data['notes'][] = $data['comment_content'];
-		$this->data['note_meta'][] = $data['comment_meta'] ?? array();
-		$this->save();
+		$GLOBALS['robokassa_test_orders'][$this->get_id()]['notes'][] = $data['comment_content'];
+		$GLOBALS['robokassa_test_orders'][$this->get_id()]['note_meta'][] = $data['comment_meta'] ?? array();
+		if (isset($GLOBALS['robokassa_test_order_save_callback'])) {
+			call_user_func($GLOBALS['robokassa_test_order_save_callback'], $GLOBALS['robokassa_test_orders'][$this->get_id()]);
+		}
 		if (isset($GLOBALS['robokassa_test_note_callback'])) {
 			call_user_func($GLOBALS['robokassa_test_note_callback'], $this, $note);
 		}
-		return count($this->data['notes']);
+		return count($GLOBALS['robokassa_test_orders'][$this->get_id()]['notes']);
 	}
 
 	public function get_meta($key, $single = true) {
@@ -294,14 +298,35 @@ class WC_Order {
 
 	public function update_meta_data($key, $value) {
 		$this->data['meta'][$key] = $value;
+		$this->changedMeta[$key] = true;
 	}
 
 	public function delete_meta_data($key) {
 		unset($this->data['meta'][$key]);
+		$this->changedMeta[$key] = true;
+	}
+
+	private function writeMeta() {
+		$meta = $GLOBALS['robokassa_test_orders'][$this->get_id()]['meta'] ?? array();
+		foreach ($this->changedMeta as $key => $changed) {
+			if (array_key_exists($key, $this->data['meta'] ?? array())) {
+				$meta[$key] = $this->data['meta'][$key];
+			} else {
+				unset($meta[$key]);
+			}
+		}
+		$this->changedMeta = array();
+		return $meta;
 	}
 
 	public function save() {
 		if ($this->get_id() > 0) {
+			$stored = $GLOBALS['robokassa_test_orders'][$this->get_id()] ?? array();
+			$meta = $this->writeMeta();
+			if ($meta || isset($stored['meta']) || isset($this->data['meta'])) { $this->data['meta'] = $meta; }
+			foreach (array('notes', 'note_meta') as $key) {
+				if (isset($stored[$key])) { $this->data[$key] = $stored[$key]; }
+			}
 			$GLOBALS['robokassa_test_orders'][$this->get_id()] = $this->data;
 			if (isset($GLOBALS['robokassa_test_order_save_callback'])) {
 				call_user_func($GLOBALS['robokassa_test_order_save_callback'], $this->data);
@@ -314,7 +339,10 @@ class WC_Order {
 		if (isset($GLOBALS['robokassa_test_meta_save_callback'])) {
 			call_user_func($GLOBALS['robokassa_test_meta_save_callback'], $this);
 		}
-		$this->save();
+		$GLOBALS['robokassa_test_orders'][$this->get_id()]['meta'] = $this->writeMeta();
+		if (isset($GLOBALS['robokassa_test_order_save_callback'])) {
+			call_user_func($GLOBALS['robokassa_test_order_save_callback'], $GLOBALS['robokassa_test_orders'][$this->get_id()]);
+		}
 	}
 
 	public function payment_complete() {
@@ -349,6 +377,7 @@ class WC_Order {
 		if ($force && isset($GLOBALS['robokassa_test_orders'][$this->get_id()])) {
 			$orders = $GLOBALS['robokassa_test_order_cache'] ?? $GLOBALS['robokassa_test_orders'];
 			$this->data['meta'] = $orders[$this->get_id()]['meta'] ?? array();
+			$this->changedMeta = array();
 		}
 	}
 
@@ -359,6 +388,11 @@ class WC_Order {
 	public function is_paid() {
 		return in_array($this->get_status(), array('processing', 'completed'), true);
 	}
+
+	public function get_billing_address_1() { return $this->data['billing_address_1'] ?? ''; }
+	public function get_billing_address_2() { return $this->data['billing_address_2'] ?? ''; }
+	public function get_billing_first_name() { return $this->data['billing_first_name'] ?? ''; }
+	public function get_billing_last_name() { return $this->data['billing_last_name'] ?? ''; }
 
 	public function get_billing_phone() {
 		return $this->data['billing_phone'] ?? '';

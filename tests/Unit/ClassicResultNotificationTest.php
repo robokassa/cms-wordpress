@@ -15,12 +15,12 @@ class ClassicResultNotificationTest extends TestCase
 		parent::setUp();
 		$this->setOptions(array(
 			'robokassa_payment_MerchantLogin' => 'merchant',
-			'robokassa_payment_shoppass2' => 'password2',
+			'robokassa_payment_shoppass2' => 'password2', 'robokassa_payment_sms1_text' => 'order {order_number}',
 		));
 		$this->database = new ResultLockDatabase();
 		$this->cart = new ResultCart();
 		$GLOBALS['robokassa_test_wc']->cart = $this->cart;
-		$GLOBALS['robokassa_test_orders'][42] = array('id' => 42, 'status' => 'pending');
+		$GLOBALS['robokassa_test_orders'][42] = array('id' => 42, 'status' => 'pending', 'billing_phone' => '79001234567');
 	}
 
 	private function request(string $invoiceId = '42'): array
@@ -213,9 +213,9 @@ class ClassicResultNotificationTest extends TestCase
 		$subscription = new ResultSubscription();
 		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
 		$smsRequests = array();
-		$GLOBALS['robokassa_test_stream_callback'] = function ($url) use (&$smsRequests) {
+		$GLOBALS['robokassa_test_http_callback'] = function ($method, $url) use (&$smsRequests) {
 			$smsRequests[] = $url;
-			return '{"result":true}';
+			return array('response' => array('code' => 200), 'body' => '{"result":true}');
 		};
 		$handler = new ClassicResultNotification($this->database);
 
@@ -224,11 +224,41 @@ class ClassicResultNotificationTest extends TestCase
 		$this->assertSame(array('active'), $subscription->statuses);
 		$this->assertCount(1, $smsRequests);
 		$this->assertStringContainsString('services.robokassa.ru/SMS/', $smsRequests[0]);
-		$this->assertSame(1, $this->database->smsChecks);
-		$this->assertSame(1, $this->database->smsInserts);
-		$this->assertSame(1, $this->database->smsUpdates);
+		$this->assertSame(0, $this->database->smsChecks);
+		$this->assertSame(0, $this->database->smsInserts);
+		$this->assertSame(0, $this->database->smsUpdates);
 		$this->assertSame(1, $this->cart->calls);
 	}
+	public function testPaymentAndCompletedSmsBothSendOnceDuringOneNotification(): void
+	{
+		$GLOBALS['wpdb'] = $this->database;
+		$this->setOptions(array('robokassa_payment_sms1_enabled' => 'on', 'robokassa_payment_sms2_enabled' => 'on', 'robokassa_payment_sms2_text' => 'completed {order_number}'));
+		$GLOBALS['robokassa_test_http_callback'] = function () { return array('response' => array('code' => 200), 'body' => '{"result":1}'); };
+		$GLOBALS['robokassa_test_after_payment_callback'] = function () { \do_action('woocommerce_order_status_completed', 42); return true; };
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertCount(2, $GLOBALS['robokassa_test_http_requests']);
+		$this->assertSame('sent', \wc_get_order(42)->get_meta('_robokassa_sms_1')['status']);
+		$this->assertSame('sent', \wc_get_order(42)->get_meta('_robokassa_sms_2')['status']);
+	}
+
+	public function testSmsLockTimeoutAllowsNotificationRetryWithoutLosingSms(): void
+	{
+		$GLOBALS['wpdb'] = $this->database;
+		$this->setOptions(array('robokassa_payment_sms1_enabled' => 'on'));
+		$this->database->smsLockResult = '0';
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		$this->assertSame('pending', \wc_get_order(42)->get_meta(ClassicResultNotification::PROGRESS_META_KEY)['sms']);
+		$this->assertSame(array(), $GLOBALS['robokassa_test_http_requests']);
+		$this->database->smsLockResult = '1';
+		$GLOBALS['robokassa_test_http_callback'] = function () { return array('response' => array('code' => 200), 'body' => '{"result":1}'); };
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertCount(1, $GLOBALS['robokassa_test_http_requests']);
+		$this->assertSame(1, $GLOBALS['robokassa_test_orders'][42]['payment_complete_calls']);
+	}
+
 	public function testResumesAfterCartFailureWithoutRepeatingPaymentStatusOrNote(): void
 	{
 		$this->cart->fail = true;
@@ -395,10 +425,10 @@ class ClassicResultNotificationTest extends TestCase
 		$GLOBALS['wpdb'] = $this->database;
 		$this->setOptions(array('robokassa_payment_sms1_enabled' => 'on'));
 		$calls = 0;
-		$GLOBALS['robokassa_test_stream_callback'] = function () use (&$calls, $throw) {
+		$GLOBALS['robokassa_test_http_callback'] = function () use (&$calls, $throw) {
 			$calls++;
 			if ($throw) { throw new \RuntimeException('unknown SMS outcome'); }
-			return '{"result":0}';
+			return array('response' => array('code' => 200), 'body' => '{"result":0}');
 		};
 		$handler = new ClassicResultNotification($this->database);
 		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
@@ -415,7 +445,7 @@ class ClassicResultNotificationTest extends TestCase
 		$GLOBALS['wpdb'] = $this->database;
 		$this->setOptions(array('robokassa_payment_sms1_enabled' => 'on'));
 		$calls = 0;
-		$GLOBALS['robokassa_test_stream_callback'] = function () use (&$calls) { $calls++; return '{"result":1}'; };
+		$GLOBALS['robokassa_test_http_callback'] = function () use (&$calls) { $calls++; return array('response' => array('code' => 200), 'body' => '{"result":1}'); };
 		$GLOBALS['robokassa_test_meta_save_callback'] = function ($order) {
 			if (($order->get_meta(ClassicResultNotification::PROGRESS_META_KEY)['sms'] ?? '') === 'sent') {
 				throw new \RuntimeException('save failed after SMS');
@@ -426,7 +456,7 @@ class ClassicResultNotificationTest extends TestCase
 		unset($GLOBALS['robokassa_test_meta_save_callback']);
 		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
 		$this->assertSame(1, $calls);
-		$this->assertCount(2, $GLOBALS['robokassa_test_orders'][42]['notes']);
+		$this->assertCount(1, $GLOBALS['robokassa_test_orders'][42]['notes']);
 	}
 
 	/** @dataProvider progressFailures */
@@ -498,6 +528,7 @@ class ResultLockDatabase extends \wpdb
 {
 	public $queries = array();
 	public $lockResult = '1';
+	public $smsLockResult = '1';
 	public $releases = 0;
 	public $onLock;
 	public $smsChecks = 0;
@@ -518,10 +549,13 @@ class ResultLockDatabase extends \wpdb
 	public function get_var($sql)
 	{
 		$this->queries[] = $sql;
+		if (strpos($sql, 'IS_USED_LOCK') !== false) { return '1'; }
+		if (strpos($sql, 'SHOW TABLES') !== false) { return null; }
 		if (strpos($sql, 'SELECT COUNT') !== false) {
 			$this->smsChecks++;
 			return '0';
 		}
+		if (strpos($sql, 'GET_LOCK') !== false && strpos($sql, 'robokassa_sms_') !== false) { return $this->smsLockResult; }
 		if (strpos($sql, 'GET_LOCK') !== false) {
 			if ($this->onLock) {
 				call_user_func($this->onLock);

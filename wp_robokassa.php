@@ -423,6 +423,7 @@ add_action('admin_menu', 'robokassa_payment_initMenu'); // Хук для доб�
 add_action('plugins_loaded', 'robokassa_payment_initWC'); // Хук инициализации плагина робокассы
 add_action('init', 'robokassa_payment_schedule_currency_labels_refresh');
 add_action('parse_request', 'robokassa_payment_wp_robokassa_checkPayment'); // Хук парсера запросов
+add_action('woocommerce_admin_order_data_after_order_details', array(RobokassaSms::class, 'renderOrderStatus'));
 add_action('woocommerce_order_status_completed', 'robokassa_payment_smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
 
 add_action('woocommerce_order_status_changed', 'robokassa_2check_send', 10, 3);
@@ -726,41 +727,12 @@ function robokassa_payment_ajax_save_marking_codes()
  */
 function robokassa_payment_smsWhenCompleted($order_id, $debug = '')
 {
-	//Отправка СМС-2 если необходимо
-	$mrhLogin = get_option('robokassa_payment_MerchantLogin');
-
-	if (get_option('robokassa_payment_test_onoff') == 'true') {
-		$pass1 = get_option('robokassa_payment_testshoppass1');
-		$pass2 = get_option('robokassa_payment_testshoppass2');
-	} else {
-		$pass1 = get_option('robokassa_payment_shoppass1');
-		$pass2 = get_option('robokassa_payment_shoppass2');
+	if (get_option('robokassa_payment_sms2_enabled') !== 'on') {
+		return;
 	}
-
-	$debug .= "pass1 = $pass1 \r\n";
-	$debug .= "pass2 = $pass2 \r\n";
-
-	if (get_option('robokassa_payment_sms2_enabled') == 'on') {
-		$debug .= "Условие СМС-2 верно! \r\n";
-
-		$order = wc_get_order($order_id);
-
-		$phone = $order->billing_phone;
-		$debug .= "phone = $phone \r\n";
-
-		$message = get_option('robokassa_payment_sms2_text');
-		$debug .= "message = $message \r\n";
-
-		$translit = (get_option('robokassa_payment_sms_translit') == 'on');
-		$debug .= "translit = $translit \r\n";
-		$debug .= "order_id = $order_id \r\n";
-
-		global $wpdb;
-		$roboDataBase = new RoboDataBase($wpdb);
-		$robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
-
-		$sms = new RobokassaSms($roboDataBase, $robokassa, $phone, $message, $translit, $order_id, 2);
-		$sms->send();
+	$order = wc_get_order($order_id);
+	if ($order instanceof WC_Order) {
+		return robokassa_payment_send_sms($order, 2);
 	}
 }
 
@@ -1221,19 +1193,24 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
 function robokassa_payment_send_result_sms(WC_Order $order)
 {
+	return robokassa_payment_send_sms($order, 1);
+}
+
+function robokassa_payment_send_sms(WC_Order $order, $type)
+{
 	global $wpdb;
 	return (new RobokassaSms(
 		new RoboDataBase($wpdb),
 		new RobokassaPayAPI(
 			get_option('robokassa_payment_MerchantLogin'),
-			get_option('robokassa_payment_shoppass1'),
-			get_option('robokassa_payment_shoppass2')
+			robokassa_payment_get_callback_password(1),
+			robokassa_payment_get_callback_password(2)
 		),
 		$order->get_billing_phone(),
-		get_option('robokassa_payment_sms1_text'),
+		get_option('robokassa_payment_sms' . $type . '_text'),
 		get_option('robokassa_payment_sms_translit') == 'on',
 		$order->get_id(),
-		1
+		$type
 	))->send();
 }
 

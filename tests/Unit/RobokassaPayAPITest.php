@@ -39,9 +39,9 @@ class RobokassaPayAPITest extends TestCase {
 			$_SERVER['SERVER_PROTOCOL'] = $protocol;
 		}
 		$requests = array();
-		$GLOBALS['robokassa_test_stream_callback'] = function ($url) use (&$requests) {
+		$GLOBALS['robokassa_test_http_callback'] = function ($method, $url, $args) use (&$requests) {
 			$requests[] = $url;
-			return '{"result":1}';
+			return array('response' => array('code' => 200), 'body' => '{"result":1}');
 		};
 		try {
 			$api = new RobokassaPayAPI('merchant', 'pass1', 'pass2');
@@ -60,6 +60,38 @@ class RobokassaPayAPITest extends TestCase {
 		} finally {
 			$this->restoreServerProtocol($previousProtocol);
 		}
+	}
+
+	/** @dataProvider smsReplies */
+	public function testSmsRejectsUnconfirmedResponses($response, ?bool $expected): void {
+		$GLOBALS['robokassa_test_http_callback'] = function ($method, $url, $args) use ($response) {
+			$this->assertSame('GET', $method);
+			$this->assertSame(0, $args['redirection']);
+			return $response;
+		};
+		$api = new RobokassaPayAPI('merchant', 'pass1', 'pass2');
+		if ($expected === null) {
+			$this->expectException(\RuntimeException::class);
+			$this->expectExceptionMessage('SMS response is unconfirmed');
+			$api->sendSms('79001234567', 'message');
+		} else {
+			$this->assertSame($expected, $api->sendSms('79001234567', 'message'));
+		}
+	}
+
+	public static function smsReplies(): array {
+		$cases = array();
+		foreach (array(true, 1, '1', false, 0, '0') as $index => $result) {
+			$cases['explicit result ' . $index] = array(array('response' => array('code' => 200), 'body' => json_encode(array('result' => $result))), in_array($result, array(true, 1, '1'), true));
+		}
+		foreach (array('invalid JSON' => '{', 'no result' => '{}', 'ambiguous' => '{"result":2}', 'scalar' => 'false') as $name => $body) {
+			$cases[$name] = array(array('response' => array('code' => 200), 'body' => $body), null);
+		}
+		$cases['string HTTP code'] = array(array('response' => array('code' => '200'), 'body' => '{"result":1}'), true);
+		$cases['timeout'] = array(new \WP_Error('timeout', 'private HTTP detail'), null);
+		$cases['server error'] = array(array('response' => array('code' => 500), 'body' => '{"result":1}'), null);
+		$cases['redirect'] = array(array('response' => array('code' => 302), 'body' => '{"result":1}'), null);
+		return $cases;
 	}
 
 	public static function serverProtocols(): array {

@@ -100,6 +100,10 @@ class RoboDataBase {
 		return $result;
 	}
 
+	public function hasError() {
+		return $this->db->last_error !== '';
+	}
+
 	/**
 	 * Подготавливает запрос к выполнению.
 	 *

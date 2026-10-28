@@ -241,20 +241,13 @@ class ClassicResultNotification
 
 	private function completeSms(\WC_Order $order, array &$progress)
 	{
-		if ($progress['sms'] === 'pending') {
-			// запрос sms не передаёт ключ идемпотентности, неизвестный исход не повторяем
-			$progress['sms'] = 'attempted';
-			$this->saveProgress($order, $progress);
-			try {
-				$result = robokassa_payment_send_result_sms($order);
-				$progress['sms'] = $result === true ? 'sent' : ($result === false ? 'failed' : 'uncertain');
-			} catch (\Throwable $error) {
-				$progress['sms'] = 'uncertain';
+		if (in_array($progress['sms'], array('pending', 'attempted'), true)) {
+			$result = robokassa_payment_send_result_sms($order);
+			if (is_wp_error($result)) {
+				throw new \RuntimeException('sms processing is unavailable');
 			}
+			$progress['sms'] = $result === true ? 'sent' : ($result === false ? 'failed' : 'uncertain');
 			$this->saveProgress($order, $progress);
-		}
-		if (in_array($progress['sms'], array('attempted', 'failed', 'uncertain'), true)) {
-			$this->ensureNote($order, 'sms_unconfirmed', 'Robokassa: отправка SMS об оплате не подтверждена. Проверьте доставку перед ручной отправкой. Автоматический повтор отключён для защиты от дубликатов.');
 		}
 	}
 }
