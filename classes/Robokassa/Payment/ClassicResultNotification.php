@@ -5,6 +5,8 @@ namespace Robokassa\Payment;
 class ClassicResultNotification
 {
 	const PROCESSED_META_KEY = '_robokassa_result_processed';
+	const PROGRESS_META_KEY = '_robokassa_result_progress';
+	const NOTE_META_KEY = '_robokassa_result_note';
 
 	private $database;
 
@@ -47,24 +49,212 @@ class ClassicResultNotification
 				return new \WP_Error('robokassa_result_order_missing', 'ORDER NOT FOUND', 404);
 			}
 			$order->read_meta_data(true);
-			if ($order->get_meta(self::PROCESSED_META_KEY, true) === 'yes'
-				|| $order->get_date_paid('edit') || $order->is_paid()) {
+			if ($order->get_meta(self::PROCESSED_META_KEY, true) === 'yes') {
 				return 'OK' . $invoiceId;
 			}
-
-			if (!robokassa_mark_order_payment_complete($order, $orderStatus)) {
-				return new \WP_Error('robokassa_result_payment_failed', 'RETRY LATER', 503);
+			$progress = $order->get_meta(self::PROGRESS_META_KEY, true);
+			if ($progress === '') {
+				// старые оплаченные заказы не запускают новый цикл обработки
+				if ($this->isPaid($order)) {
+					return 'OK' . $invoiceId;
+				}
+				$progress = array(
+					'version' => 1,
+					'target_status' => preg_replace('/^wc-/', '', (string)$orderStatus),
+					'done' => array(),
+					'sms' => get_option('robokassa_payment_sms1_enabled') === 'on' ? 'pending' : 'disabled',
+				);
+				$this->saveProgress($order, $progress);
 			}
+			if (!is_array($progress) || ($progress['version'] ?? null) !== 1
+				|| !isset($progress['target_status'], $progress['done'], $progress['sms'])
+				|| !is_array($progress['done'])) {
+				throw new \RuntimeException('invalid result progress');
+			}
+
+			$this->prepareSubscriptions($order, $progress);
+			$this->completePayment($order, $progress);
+			$this->completeStatus($order, $progress);
+			if (!empty($progress['payment_recovered'])) {
+				$this->ensureNote($order, 'payment_recovered', 'Robokassa: оплата сохранена, но завершение обработчиков WooCommerce не подтверждено. Проверьте склад, доступ к загрузкам и действия сторонних расширений.');
+			}
+			if (empty($progress['done']['note'])) {
+				$this->ensureNote($order, 'paid', 'Заказ успешно оплачен!');
+				$progress['done']['note'] = true;
+				$this->saveProgress($order, $progress);
+			}
+			if (empty($progress['done']['cart'])) {
+				$cart = WC()->cart;
+				if ($cart && !$cart->is_empty()) {
+					$cart->empty_cart();
+				}
+				$progress['done']['cart'] = true;
+				$this->saveProgress($order, $progress);
+			}
+			$this->completeSubscriptions($order, $progress);
+			$this->completeSms($order, $progress);
 			$order->update_meta_data(self::PROCESSED_META_KEY, 'yes');
-			$order->save();
-			$order->add_order_note('Заказ успешно оплачен!');
-			robokassa_payment_result_side_effects($order, $invoiceId);
+			$order->save_meta_data();
+			$order->read_meta_data(true);
+			if ($order->get_meta(self::PROCESSED_META_KEY, true) !== 'yes') {
+				throw new \RuntimeException('result completion was not saved');
+			}
 
 			return 'OK' . $invoiceId;
 		} catch (\Throwable $error) {
 			return new \WP_Error('robokassa_result_processing_failed', 'RETRY LATER', 503);
 		} finally {
 			$this->database->get_var($this->database->prepare('SELECT RELEASE_LOCK(%s)', $lockName));
+		}
+	}
+
+	private function isPaid(\WC_Order $order)
+	{
+		return $order->get_date_paid('edit') || $order->is_paid();
+	}
+
+	private function saveProgress(\WC_Order $order, array $progress)
+	{
+		// сохраняем только метаданные, не повторяя переходы статуса заказа
+		$order->update_meta_data(self::PROGRESS_META_KEY, $progress);
+		$order->save_meta_data();
+		$order->read_meta_data(true);
+		if ($order->get_meta(self::PROGRESS_META_KEY, true) !== $progress) {
+			throw new \RuntimeException('result progress was not saved');
+		}
+	}
+
+	private function completePayment(\WC_Order $order, array &$progress)
+	{
+		if (!empty($progress['done']['payment'])) {
+			return;
+		}
+		if (!$this->isPaid($order)) {
+			// ожидаемый статус сохраняется вместе с оплатой, до вызова внешних хуков
+			$captureStatus = function ($status, $orderId) use ($order, &$progress) {
+				if ((int)$orderId === $order->get_id()) {
+					$progress['payment_status'] = $status;
+					$order->update_meta_data(self::PROGRESS_META_KEY, $progress);
+				}
+				return $status;
+			};
+			add_filter('woocommerce_payment_complete_order_status', $captureStatus, PHP_INT_MAX, 2);
+			try {
+				if (!$order->payment_complete() || !$this->isPaid($order)) {
+					throw new \RuntimeException('payment was not completed');
+				}
+			} finally {
+				remove_filter('woocommerce_payment_complete_order_status', $captureStatus, PHP_INT_MAX);
+			}
+		} elseif (empty($progress['done']['payment'])) {
+			// произвольные хуки расширений нельзя безопасно повторять после сохранения оплаты
+			$progress['payment_recovered'] = true;
+		}
+		if (empty($progress['done']['payment'])) {
+			$progress['done']['payment'] = true;
+			$this->saveProgress($order, $progress);
+		}
+	}
+
+	private function completeStatus(\WC_Order $order, array &$progress)
+	{
+		if (!empty($progress['done']['status'])) {
+			return;
+		}
+		$target = $progress['target_status'];
+		// ручную смену статуса между попытками сохраняем
+		if ($target !== '' && $order->get_status() !== $target
+			&& $order->get_status() === ($progress['payment_status'] ?? '')) {
+			if (!$order->update_status($target)) {
+				throw new \RuntimeException('payment status was not saved');
+			}
+		}
+		$progress['done']['status'] = true;
+		$this->saveProgress($order, $progress);
+	}
+
+	private function ensureNote(\WC_Order $order, $key, $message)
+	{
+		if (wc_get_order_notes(array('order_id' => $order->get_id(), 'limit' => 1,
+			'meta_key' => self::NOTE_META_KEY, 'meta_value' => $key))) {
+			return;
+		}
+		// учитываем сбой между вставкой заметки и сохранением её метаданных
+		foreach (wc_get_order_notes(array('order_id' => $order->get_id(), 'search' => $message)) as $note) {
+			if ($note->content === $message) {
+				return;
+			}
+		}
+		// метка позволяет найти заметку после сбоя обработчиков
+		$markNote = function ($data, $args) use ($order, $key, $message) {
+			if ((int)$args['order_id'] === $order->get_id() && $data['comment_content'] === $message) {
+				$data['comment_meta'][self::NOTE_META_KEY] = $key;
+			}
+			return $data;
+		};
+		add_filter('woocommerce_new_order_note_data', $markNote, PHP_INT_MAX, 2);
+		try {
+			if (!$order->add_order_note($message)) {
+				throw new \RuntimeException('payment note was not saved');
+			}
+		} finally {
+			remove_filter('woocommerce_new_order_note_data', $markNote, PHP_INT_MAX);
+		}
+	}
+
+	private function prepareSubscriptions(\WC_Order $order, array &$progress)
+	{
+		if (!isset($progress['subscriptions'])) {
+			$subscriptions = function_exists('wcs_get_subscriptions_for_order')
+				? (wcs_get_subscriptions_for_order($order->get_id()) ?: wcs_get_subscriptions_for_renewal_order($order->get_id()))
+				: array();
+			$progress['subscriptions'] = array();
+			foreach ($subscriptions as $subscription) {
+				$progress['subscriptions'][$subscription->get_id()] = false;
+			}
+			$this->saveProgress($order, $progress);
+		}
+	}
+
+	private function completeSubscriptions(\WC_Order $order, array &$progress)
+	{
+		foreach ($progress['subscriptions'] as $id => $done) {
+			if ($done) {
+				continue;
+			}
+			$subscription = function_exists('wcs_get_subscription') ? wcs_get_subscription($id) : false;
+			if (!$subscription) {
+				throw new \RuntimeException('subscription is unavailable');
+			}
+			// активные и завершённые подписки не активируем повторно
+			if (!in_array($order->get_status(), array('cancelled', 'refunded', 'failed'), true)
+				&& in_array($subscription->get_status(), array('pending', 'on-hold'), true)) {
+				$subscription->update_status('active');
+				if ($subscription->get_status() !== 'active') {
+					throw new \RuntimeException('subscription was not activated');
+				}
+			}
+			$progress['subscriptions'][$id] = true;
+			$this->saveProgress($order, $progress);
+		}
+	}
+
+	private function completeSms(\WC_Order $order, array &$progress)
+	{
+		if ($progress['sms'] === 'pending') {
+			// запрос sms не передаёт ключ идемпотентности, неизвестный исход не повторяем
+			$progress['sms'] = 'attempted';
+			$this->saveProgress($order, $progress);
+			try {
+				$result = robokassa_payment_send_result_sms($order);
+				$progress['sms'] = $result === true ? 'sent' : ($result === false ? 'failed' : 'uncertain');
+			} catch (\Throwable $error) {
+				$progress['sms'] = 'uncertain';
+			}
+			$this->saveProgress($order, $progress);
+		}
+		if (in_array($progress['sms'], array('attempted', 'failed', 'uncertain'), true)) {
+			$this->ensureNote($order, 'sms_unconfirmed', 'Robokassa: отправка SMS об оплате не подтверждена. Проверьте доставку перед ручной отправкой. Автоматический повтор отключён для защиты от дубликатов.');
 		}
 	}
 }

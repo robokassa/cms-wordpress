@@ -278,8 +278,14 @@ class WC_Order {
 	}
 
 	public function add_order_note($note) {
-		$this->data['notes'][] = $note;
+		$data = apply_filters('woocommerce_new_order_note_data', array('comment_content' => $note), array('order_id' => $this->get_id()));
+		$this->data['notes'][] = $data['comment_content'];
+		$this->data['note_meta'][] = $data['comment_meta'] ?? array();
 		$this->save();
+		if (isset($GLOBALS['robokassa_test_note_callback'])) {
+			call_user_func($GLOBALS['robokassa_test_note_callback'], $this, $note);
+		}
+		return count($this->data['notes']);
 	}
 
 	public function get_meta($key, $single = true) {
@@ -304,6 +310,13 @@ class WC_Order {
 		return $this->get_id();
 	}
 
+	public function save_meta_data() {
+		if (isset($GLOBALS['robokassa_test_meta_save_callback'])) {
+			call_user_func($GLOBALS['robokassa_test_meta_save_callback'], $this);
+		}
+		$this->save();
+	}
+
 	public function payment_complete() {
 		if (isset($GLOBALS['robokassa_test_payment_complete_callback'])) {
 			call_user_func($GLOBALS['robokassa_test_payment_complete_callback'], $this);
@@ -314,13 +327,19 @@ class WC_Order {
 		$this->data['payment_complete_calls'] = isset($this->data['payment_complete_calls'])
 			? $this->data['payment_complete_calls'] + 1
 			: 1;
-		$this->data['status'] = 'processing';
+		$this->data['status'] = apply_filters('woocommerce_payment_complete_order_status', 'processing', $this->get_id());
 		$this->data['date_paid'] = time();
 		$this->save();
+		if (isset($GLOBALS['robokassa_test_after_payment_callback'])) {
+			return call_user_func($GLOBALS['robokassa_test_after_payment_callback'], $this);
+		}
 		return true;
 	}
 
 	public function update_status($status) {
+		if (isset($GLOBALS['robokassa_test_status_callback'])) {
+			call_user_func($GLOBALS['robokassa_test_status_callback'], $this, $status);
+		}
 		$this->data['status'] = $status;
 		$this->save();
 		return true;
@@ -510,7 +529,33 @@ function do_action($hook, ...$args) {
 	}
 }
 
-function add_filter() {
+function add_filter($hook, $callback, $priority = 10, $acceptedArgs = 1) {
+	if (in_array($hook, array('woocommerce_payment_complete_order_status', 'woocommerce_new_order_note_data'), true)) {
+		$GLOBALS['robokassa_test_filters'][$hook][$priority][] = array($callback, $acceptedArgs);
+	}
+}
+
+function remove_filter($hook, $callback, $priority = 10) {
+	foreach ($GLOBALS['robokassa_test_filters'][$hook][$priority] ?? array() as $index => $filter) {
+		if ($filter[0] === $callback) {
+			unset($GLOBALS['robokassa_test_filters'][$hook][$priority][$index]);
+		}
+	}
+}
+
+function wc_get_order_notes($args) {
+	$order = $GLOBALS['robokassa_test_orders'][$args['order_id']] ?? array();
+	$notes = array();
+	foreach ($order['notes'] ?? array() as $index => $content) {
+		if (isset($args['meta_key']) && ($order['note_meta'][$index][$args['meta_key']] ?? '') !== $args['meta_value']) {
+			continue;
+		}
+		if (isset($args['search']) && strpos($content, $args['search']) === false) {
+			continue;
+		}
+		$notes[] = (object) array('content' => $content, 'id' => $index + 1);
+	}
+	return $notes;
 }
 
 function register_activation_hook() {
@@ -523,7 +568,14 @@ function is_plugin_active($plugin) {
 	return $plugin === 'woocommerce/woocommerce.php';
 }
 
-function apply_filters($hook, $value) {
+function apply_filters($hook, $value, ...$args) {
+	$filters = $GLOBALS['robokassa_test_filters'][$hook] ?? array();
+	ksort($filters);
+	foreach ($filters as $group) {
+		foreach ($group as $filter) {
+			$value = call_user_func_array($filter[0], array_slice(array_merge(array($value), $args), 0, $filter[1]));
+		}
+	}
 	return $value;
 }
 

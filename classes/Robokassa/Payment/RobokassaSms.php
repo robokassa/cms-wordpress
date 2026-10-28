@@ -316,7 +316,7 @@ class RobokassaSms {
 	}
 
 	/**
-	 * @return void
+	 * @return bool|null
 	 * @throws \Exception
 	 */
 	public function send() {
@@ -324,8 +324,9 @@ class RobokassaSms {
 		$this->message = $this->transliterate();
 
 		if (!$this->checkIsSended()) {
-			$this->robokassa->sendSms($this->phone, $this->message);
+			$result = $this->robokassa->sendSms($this->phone, $this->message);
 			$this->recordLog($this->robokassa->getSendResult());
+			return $result;
 		}
 	}
 

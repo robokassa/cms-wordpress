@@ -52,6 +52,8 @@ $GLOBALS['robokassa_test_wc']->cart = new class($stateFile) {
 		$this->stateFile = $stateFile;
 	}
 
+	public function is_empty() { return false; }
+
 	public function empty_cart() {
 		$state = json_decode(file_get_contents($this->stateFile), true);
 		$state['cart_calls']++;

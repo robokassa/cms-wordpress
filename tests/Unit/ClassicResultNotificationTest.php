@@ -163,7 +163,7 @@ class ClassicResultNotificationTest extends TestCase
 
 		$this->assertSame(503, $result->get_error_data());
 		$this->assertSame('pending', $GLOBALS['robokassa_test_orders'][42]['status']);
-		$this->assertArrayNotHasKey('meta', $GLOBALS['robokassa_test_orders'][42]);
+		$this->assertEmpty(\wc_get_order(42)->get_meta(ClassicResultNotification::PROCESSED_META_KEY));
 		$this->assertSame(1, $this->database->releases);
 	}
 
@@ -229,25 +229,268 @@ class ClassicResultNotificationTest extends TestCase
 		$this->assertSame(1, $this->database->smsUpdates);
 		$this->assertSame(1, $this->cart->calls);
 	}
+	public function testResumesAfterCartFailureWithoutRepeatingPaymentStatusOrNote(): void
+	{
+		$this->cart->fail = true;
+		$subscription = new ResultSubscription();
+		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		$this->assertSame('', \wc_get_order(42)->get_meta(ClassicResultNotification::PROCESSED_META_KEY));
+		$this->assertSame(array(), $subscription->statuses);
+		$this->cart->fail = false;
+
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$state = $GLOBALS['robokassa_test_orders'][42];
+		$this->assertSame(1, $state['payment_complete_calls']);
+		$this->assertSame('custom-paid', $state['status']);
+		$this->assertSame(array('Заказ успешно оплачен!'), $state['notes']);
+		$this->assertSame(array('active'), $subscription->statuses);
+		$this->assertSame(2, $this->cart->calls);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertSame($state, $GLOBALS['robokassa_test_orders'][42]);
+	}
+
+	/** @dataProvider interruptedPaymentResults */
+	public function testResumesAfterPaymentPersistedWithoutReplayingWooCommerceHooks(bool $throw): void
+	{
+		$GLOBALS['robokassa_test_after_payment_callback'] = function () use ($throw) {
+			if ($throw) { throw new \RuntimeException('hook interrupted after payment'); }
+			return false;
+		};
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		unset($GLOBALS['robokassa_test_after_payment_callback']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$order = \wc_get_order(42);
+		$this->assertSame('custom-paid', $order->get_status());
+		$this->assertSame(1, $GLOBALS['robokassa_test_orders'][42]['payment_complete_calls']);
+		$this->assertTrue($order->get_meta(ClassicResultNotification::PROGRESS_META_KEY)['payment_recovered']);
+		$this->assertCount(2, $GLOBALS['robokassa_test_orders'][42]['notes']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertCount(2, $GLOBALS['robokassa_test_orders'][42]['notes']);
+	}
+
+	public static function interruptedPaymentResults(): array
+	{
+		return array('false result' => array(false), 'exception' => array(true));
+	}
+
+	/** @dataProvider manualStatuses */
+	public function testPreservesManualStatusWhileResumingAuxiliaryActions(string $status): void
+	{
+		$GLOBALS['robokassa_test_status_callback'] = function () { throw new \RuntimeException('status update unavailable'); };
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		unset($GLOBALS['robokassa_test_status_callback']);
+		$GLOBALS['robokassa_test_orders'][42]['status'] = $status;
+		$GLOBALS['robokassa_test_orders'][42]['date_paid'] = null;
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertSame($status, \wc_get_order(42)->get_status());
+		$this->assertSame(1, $GLOBALS['robokassa_test_orders'][42]['payment_complete_calls']);
+	}
+
+	public static function manualStatuses(): array
+	{
+		return array('cancelled' => array('cancelled'), 'refunded' => array('refunded'), 'custom' => array('manual-status'));
+	}
+
+	public function testRetriesFailedCustomStatusBeforeItsSave(): void
+	{
+		$GLOBALS['robokassa_test_status_callback'] = function () { throw new \RuntimeException('status failure'); };
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		unset($GLOBALS['robokassa_test_status_callback']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertSame('custom-paid', \wc_get_order(42)->get_status());
+		$this->assertSame(1, $GLOBALS['robokassa_test_orders'][42]['payment_complete_calls']);
+	}
+
+	public function testDoesNotDuplicateNoteAfterItsHookThrows(): void
+	{
+		$GLOBALS['robokassa_test_note_callback'] = function () { throw new \RuntimeException('note hook failed'); };
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		unset($GLOBALS['robokassa_test_note_callback']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-custom-paid'));
+		$this->assertSame(array('Заказ успешно оплачен!'), $GLOBALS['robokassa_test_orders'][42]['notes']);
+	}
+
+	public function testFindsInsertedNoteEvenWhenItsMetadataWasNotSaved(): void
+	{
+		$GLOBALS['robokassa_test_note_callback'] = function () { throw new \RuntimeException('note hook failed'); };
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		unset($GLOBALS['robokassa_test_note_callback'], $GLOBALS['robokassa_test_orders'][42]['note_meta']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertCount(1, $GLOBALS['robokassa_test_orders'][42]['notes']);
+	}
+
+	public function testResumesSubscriptionListWithoutReactivatingSuccessfulSubscriptions(): void
+	{
+		$first = new ResultSubscription();
+		$second = new ResultSubscription(); $second->id = 11; $second->fail = true;
+		$GLOBALS['robokassa_test_subscriptions'] = array($first, $second);
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		$this->assertSame(array('active'), $first->statuses);
+		$this->assertSame(array(), $second->statuses);
+		$second->fail = false;
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-custom-paid'));
+		$this->assertSame(array('active'), $first->statuses);
+		$this->assertSame(array('active'), $second->statuses);
+		$this->assertSame(1, $this->cart->calls);
+	}
+
+	public function testDoesNotReactivateSubscriptionWhenItsHookThrowsAfterSavingActiveStatus(): void
+	{
+		$subscription = new ResultSubscription(); $subscription->failAfterSave = true;
+		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertSame(array('active'), $subscription->statuses);
+	}
+
+	public function testDoesNotActivateSubscriptionAfterParentWasCancelledDuringRecovery(): void
+	{
+		$subscription = new ResultSubscription(); $subscription->fail = true;
+		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		$GLOBALS['robokassa_test_orders'][42]['status'] = 'cancelled';
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertSame(array(), $subscription->statuses);
+		$this->assertSame('cancelled', \wc_get_order(42)->get_status());
+	}
+
+	public function testMissingPlannedSubscriptionPreventsAcknowledgementUntilItIsAvailable(): void
+	{
+		$subscription = new ResultSubscription();
+		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
+		$this->cart->fail = true;
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		$this->cart->fail = false;
+		$GLOBALS['robokassa_test_subscriptions'] = array();
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		$this->assertSame('', \wc_get_order(42)->get_meta(ClassicResultNotification::PROCESSED_META_KEY));
+		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertSame(array('active'), $subscription->statuses);
+	}
+
+	public function testSupportsRenewalOrderAndPreservesCancelledSubscription(): void
+	{
+		$subscription = new ResultSubscription(); $subscription->status = 'cancelled';
+		$GLOBALS['robokassa_test_renewal_subscriptions'] = array($subscription);
+		$this->assertSame('OK42', (new ClassicResultNotification($this->database))->process($this->request(), 'wc-processing'));
+		$this->assertSame(array(), $subscription->statuses);
+		$this->assertTrue(\wc_get_order(42)->get_meta(ClassicResultNotification::PROGRESS_META_KEY)['subscriptions'][10]);
+	}
+
+	/** @dataProvider smsFailures */
+	public function testUnconfirmedSmsProducesOneWarningWithoutAutomaticResend(bool $throw): void
+	{
+		$GLOBALS['wpdb'] = $this->database;
+		$this->setOptions(array('robokassa_payment_sms1_enabled' => 'on'));
+		$calls = 0;
+		$GLOBALS['robokassa_test_stream_callback'] = function () use (&$calls, $throw) {
+			$calls++;
+			if ($throw) { throw new \RuntimeException('unknown SMS outcome'); }
+			return '{"result":0}';
+		};
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertSame(1, $calls);
+		$this->assertCount(2, $GLOBALS['robokassa_test_orders'][42]['notes']);
+		$this->assertSame($throw ? 'uncertain' : 'failed', \wc_get_order(42)->get_meta(ClassicResultNotification::PROGRESS_META_KEY)['sms']);
+	}
+
+	public static function smsFailures(): array { return array('rejected' => array(false), 'unknown' => array(true)); }
+
+	public function testDoesNotRepeatSmsWhenProgressSaveFailsAfterSending(): void
+	{
+		$GLOBALS['wpdb'] = $this->database;
+		$this->setOptions(array('robokassa_payment_sms1_enabled' => 'on'));
+		$calls = 0;
+		$GLOBALS['robokassa_test_stream_callback'] = function () use (&$calls) { $calls++; return '{"result":1}'; };
+		$GLOBALS['robokassa_test_meta_save_callback'] = function ($order) {
+			if (($order->get_meta(ClassicResultNotification::PROGRESS_META_KEY)['sms'] ?? '') === 'sent') {
+				throw new \RuntimeException('save failed after SMS');
+			}
+		};
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-processing')->get_error_data());
+		unset($GLOBALS['robokassa_test_meta_save_callback']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-processing'));
+		$this->assertSame(1, $calls);
+		$this->assertCount(2, $GLOBALS['robokassa_test_orders'][42]['notes']);
+	}
+
+	/** @dataProvider progressFailures */
+	public function testResumesWhenSavingStageOrCompletionFails(string $stage): void
+	{
+		$subscription = new ResultSubscription();
+		$GLOBALS['robokassa_test_subscriptions'] = array($subscription);
+		$GLOBALS['robokassa_test_meta_save_callback'] = function ($order) use ($stage) {
+			$progress = $order->get_meta(ClassicResultNotification::PROGRESS_META_KEY);
+			$fail = $stage === 'processed' ? $order->get_meta(ClassicResultNotification::PROCESSED_META_KEY) === 'yes'
+				: ($stage === 'subscription' ? !empty($progress['subscriptions'][10]) : !empty($progress['done'][$stage]));
+			if ($fail) { throw new \RuntimeException('stage save failed'); }
+		};
+		$handler = new ClassicResultNotification($this->database);
+		$this->assertSame(503, $handler->process($this->request(), 'wc-custom-paid')->get_error_data());
+		unset($GLOBALS['robokassa_test_meta_save_callback']);
+		$this->assertSame('OK42', $handler->process($this->request(), 'wc-completed'));
+		$this->assertSame(1, $GLOBALS['robokassa_test_orders'][42]['payment_complete_calls']);
+		$this->assertSame('custom-paid', \wc_get_order(42)->get_status());
+		$this->assertSame(1, $this->cart->calls);
+		$this->assertSame(array('active'), $subscription->statuses);
+		$this->assertSame(array('Заказ успешно оплачен!'), array_values(array_filter($GLOBALS['robokassa_test_orders'][42]['notes'], function ($note) { return $note === 'Заказ успешно оплачен!'; })));
+	}
+
+	public static function progressFailures(): array
+	{
+		return array('payment' => array('payment'), 'status' => array('status'), 'note' => array('note'), 'cart' => array('cart'), 'subscription' => array('subscription'), 'completion' => array('processed'));
+	}
+
 }
 
 class ResultSubscription
 {
 	public $statuses = array();
+	public $status = 'pending';
+	public $id = 10;
+	public $fail = false;
+	public $failAfterSave = false;
+
+	public function get_id() { return $this->id; }
+	public function get_status() { return $this->status; }
 
 	public function update_status($status)
 	{
+		if ($this->fail) { throw new \RuntimeException('subscription before save'); }
 		$this->statuses[] = $status;
+		$this->status = $status;
+		if ($this->failAfterSave) { throw new \RuntimeException('subscription after save'); }
 	}
 }
 
 class ResultCart
 {
 	public $calls = 0;
+	public $empty = false;
+	public $fail = false;
+
+	public function is_empty() { return $this->empty; }
 
 	public function empty_cart()
 	{
 		$this->calls++;
+		if ($this->fail) { throw new \RuntimeException('cart failure'); }
+		$this->empty = true;
 	}
 }
 

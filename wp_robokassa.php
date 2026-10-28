@@ -1219,41 +1219,22 @@ function robokassa_payment_wp_robokassa_checkPayment()
 	}
 }
 
-function robokassa_payment_result_side_effects(WC_Order $order, $invoice_id)
+function robokassa_payment_send_result_sms(WC_Order $order)
 {
-	$cart = WC()->cart;
-	if ($cart) {
-		$cart->empty_cart();
-	}
-
-	if (function_exists('wcs_order_contains_subscription')) {
-		$subscriptions = wcs_get_subscriptions_for_order($invoice_id) ?: wcs_get_subscriptions_for_renewal_order($invoice_id);
-		if ($subscriptions) {
-			foreach ($subscriptions as $subscription) {
-				$subscription->update_status('active');
-			}
-		}
-	}
-
-	if (get_option('robokassa_payment_sms1_enabled') == 'on') {
-		try {
-			global $wpdb;
-			(new RobokassaSms(
-				new RoboDataBase($wpdb),
-				new RobokassaPayAPI(
-					get_option('robokassa_payment_MerchantLogin'),
-					get_option('robokassa_payment_shoppass1'),
-					get_option('robokassa_payment_shoppass2')
-				),
-				$order->get_billing_phone(),
-				get_option('robokassa_payment_sms1_text'),
-				get_option('robokassa_payment_sms_translit') == 'on',
-				$invoice_id,
-				1
-			))->send();
-		} catch (Exception $error) {
-		}
-	}
+	global $wpdb;
+	return (new RobokassaSms(
+		new RoboDataBase($wpdb),
+		new RobokassaPayAPI(
+			get_option('robokassa_payment_MerchantLogin'),
+			get_option('robokassa_payment_shoppass1'),
+			get_option('robokassa_payment_shoppass2')
+		),
+		$order->get_billing_phone(),
+		get_option('robokassa_payment_sms1_text'),
+		get_option('robokassa_payment_sms_translit') == 'on',
+		$order->get_id(),
+		1
+	))->send();
 }
 
 /** @return bool */

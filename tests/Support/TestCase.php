@@ -25,6 +25,8 @@ abstract class TestCase extends PhpUnitTestCase {
 		unset($GLOBALS['robokassa_test_http_callback']);
 		unset($GLOBALS['robokassa_test_order_save_callback'], $GLOBALS['robokassa_test_payment_complete_callback']);
 		unset($GLOBALS['robokassa_test_stream_callback']);
+		unset($GLOBALS['robokassa_test_after_payment_callback'], $GLOBALS['robokassa_test_note_callback'], $GLOBALS['robokassa_test_meta_save_callback'], $GLOBALS['robokassa_test_status_callback']);
+		$GLOBALS['robokassa_test_filters'] = array();
 		unset($GLOBALS['robokassa_test_order_cache']);
 		$GLOBALS['robokassa_test_subscriptions'] = array();
 		$GLOBALS['robokassa_test_renewal_subscriptions'] = array();
