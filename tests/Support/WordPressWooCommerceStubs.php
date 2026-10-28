@@ -42,10 +42,22 @@ class WP_Post {
 class WC_Product {
 	private $meta = array();
 	private $title;
+	private $type;
+	private $parentId;
 
-	public function __construct($title = 'Product', array $meta = array()) {
+	public function __construct($title = 'Product', array $meta = array(), $type = 'simple', $parentId = 0) {
 		$this->title = $title;
 		$this->meta = $meta;
+		$this->type = $type;
+		$this->parentId = $parentId;
+	}
+
+	public function is_type($type) {
+		return $this->type === $type;
+	}
+
+	public function get_parent_id() {
+		return $this->parentId;
 	}
 
 	public function get_meta($key, $single = true) {
@@ -63,6 +75,15 @@ class WC_Product {
 	public function get_title() {
 		return $this->title;
 	}
+}
+
+function wc_get_product($productId) {
+	return isset($GLOBALS['robokassa_test_products'][$productId]) ? $GLOBALS['robokassa_test_products'][$productId] : false;
+}
+
+function woocommerce_wp_checkbox($field) {
+	$GLOBALS['robokassa_test_checkbox_fields'][] = $field;
+	echo '<p class="form-field"><input type="checkbox" id="' . esc_attr($field['id']) . '" /></p>';
 }
 
 class WC_Order_Item {

@@ -33,12 +33,14 @@ class MarkingManager {
 			return;
 		}
 
+		echo '<div class="options_group show_if_simple show_if_external show_if_variable">';
 		woocommerce_wp_checkbox(array(
 			'id' => self::PRODUCT_META_KEY,
 			'label' => 'Robokassa: маркируемый товар',
 			'description' => 'Для каждой единицы товара потребуется отсканировать код маркировки в карточке заказа. Код будет передан только во втором чеке.',
 			'desc_tip' => true,
 		));
+		echo '</div>';
 	}
 
 	/**
