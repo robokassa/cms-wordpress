@@ -75,7 +75,7 @@ class RobokassaPayAPI {
 		$this->mrh_pass2 = $pass2;
 		$this->method = $method;
 
-		$this->apiUrl = substr($_SERVER['SERVER_PROTOCOL'], 0, -4) . '://auth.robokassa.ru/Merchant/WebService/Service.asmx/';
+		$this->apiUrl = 'https://auth.robokassa.ru/Merchant/WebService/Service.asmx/';
 	}
 
 	/**
@@ -700,7 +700,7 @@ class RobokassaPayAPI {
 			'signature' => $this->getSignature("$this->mrh_login:$phone:$message:$this->mrh_pass1"),
 		);
 
-		$url = substr($_SERVER['SERVER_PROTOCOL'], 0, -4) . '://services.robokassa.ru/SMS/?' . http_build_query($data);
+		$url = 'https://services.robokassa.ru/SMS/?' . http_build_query($data);
 
 		$response = file_get_contents($url);
 		$parsed = json_decode($response, true);

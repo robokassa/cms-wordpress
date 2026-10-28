@@ -7,6 +7,81 @@ use Robokassa\Payment\RobokassaPayAPI;
 use Robokassa\Tests\Support\TestCase;
 
 class RobokassaPayAPITest extends TestCase {
+	/** @dataProvider serverProtocols */
+	public function testServiceApiAlwaysUsesHttps(?string $protocol): void {
+		$previousProtocol = $_SERVER['SERVER_PROTOCOL'] ?? null;
+		if ($protocol === null) {
+			unset($_SERVER['SERVER_PROTOCOL']);
+		} else {
+			$_SERVER['SERVER_PROTOCOL'] = $protocol;
+		}
+		$requests = array();
+		$GLOBALS['robokassa_test_stream_callback'] = function ($url) use (&$requests) {
+			$requests[] = $url;
+			return '<Currencies><Result><Code>0</Code></Result></Currencies>';
+		};
+		try {
+			$result = (new RobokassaPayAPI('merchant', 'pass1', 'pass2'))->getCurrLabels();
+
+			$this->assertSame(array('https://auth.robokassa.ru/Merchant/WebService/Service.asmx/GetCurrencies?MerchantLogin=merchant&Language=ru'), $requests);
+			$this->assertSame('0', $result['Result']['Code']);
+		} finally {
+			$this->restoreServerProtocol($previousProtocol);
+		}
+	}
+
+	/** @dataProvider serverProtocols */
+	public function testSmsAlwaysUsesHttpsAndPreservesSignedParameters(?string $protocol): void {
+		$previousProtocol = $_SERVER['SERVER_PROTOCOL'] ?? null;
+		if ($protocol === null) {
+			unset($_SERVER['SERVER_PROTOCOL']);
+		} else {
+			$_SERVER['SERVER_PROTOCOL'] = $protocol;
+		}
+		$requests = array();
+		$GLOBALS['robokassa_test_stream_callback'] = function ($url) use (&$requests) {
+			$requests[] = $url;
+			return '{"result":1}';
+		};
+		try {
+			$api = new RobokassaPayAPI('merchant', 'pass1', 'pass2');
+			$this->assertTrue($api->sendSms('79001234567', 'Заказ 42 оплачен'));
+			$this->assertCount(1, $requests);
+			$this->assertSame('https://services.robokassa.ru/SMS/', strtok($requests[0], '?'));
+			parse_str(parse_url($requests[0], PHP_URL_QUERY), $parameters);
+			$this->assertSame(array(
+				'login' => 'merchant',
+				'phone' => '79001234567',
+				'message' => 'Заказ 42 оплачен',
+				'signature' => strtoupper(md5('merchant:79001234567:Заказ 42 оплачен:pass1')),
+			), $parameters);
+			$this->assertSame($requests[0], $api->getRequest());
+			$this->assertSame('{"result":1}', $api->getReply());
+		} finally {
+			$this->restoreServerProtocol($previousProtocol);
+		}
+	}
+
+	public static function serverProtocols(): array {
+		return array(
+			'http 1.0' => array('HTTP/1.0'),
+			'http 1.1' => array('HTTP/1.1'),
+			'http 2' => array('HTTP/2'),
+			'http 2.0' => array('HTTP/2.0'),
+			'http 3' => array('HTTP/3'),
+			'missing cli' => array(null),
+		);
+	}
+
+	private function restoreServerProtocol(?string $protocol): void {
+		if ($protocol === null) {
+			unset($_SERVER['SERVER_PROTOCOL']);
+		} else {
+			$_SERVER['SERVER_PROTOCOL'] = $protocol;
+		}
+		unset($GLOBALS['robokassa_test_stream_callback']);
+	}
+
 	public function testGeneratesSupportedSignaturesAndRejectsUnknownAlgorithm(): void {
 		$api = new RobokassaPayAPI('merchant', 'pass1', 'pass2');
 
