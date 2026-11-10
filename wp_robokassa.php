@@ -5,7 +5,7 @@
  * Plugin URI: /wp-admin/admin.php?page=main_settings_rb.php
  * Author: Robokassa
  * Author URI: https://robokassa.com
- * Version: 1.9.1
+ * Version: 1.9.2
  */
 
 require_once('payment-widget.php');
@@ -1328,6 +1328,21 @@ function getRobokassaPasses()
 	];
 }
 
+function robokassa_payment_validate_receipt_quantities(WC_Order $order)
+{
+	foreach (array('line_item', 'fee') as $type) {
+		foreach ($order->get_items($type) as $item_id => $item) {
+			$quantity = $item->get_quantity();
+			if (!is_numeric($quantity) || !is_finite((float)$quantity) || (float)$quantity <= 0) {
+				throw new InvalidArgumentException(sprintf(
+					'Robokassa: количество у позиции заказа №%d должно быть больше нуля. Обратитесь в магазин для исправления заказа.',
+					$item_id
+				));
+			}
+		}
+	}
+}
+
 /**
  * Подготовка товарной номенклатуры для формирования чека
  *
@@ -1339,6 +1354,7 @@ function createRobokassaReceipt($order_id)
 {
 	global $woocommerce;
 	$order = new WC_Order($order_id);
+	robokassa_payment_validate_receipt_quantities($order);
 
 	$sno = get_option('robokassa_payment_sno');
 	$default_tax = robokassa_payment_get_default_tax();
@@ -1461,7 +1477,12 @@ function processRobokassaPayment($order_id, $label)
 	$mrhLogin = get_option('robokassa_payment_MerchantLogin');
 	$passes = getRobokassaPasses();
 	$order = wc_get_order($order_id);
-	$receipt = createRobokassaReceipt($order_id);
+	try {
+		$receipt = createRobokassaReceipt($order_id);
+	} catch (InvalidArgumentException $error) {
+		wc_print_notice($error->getMessage(), 'error');
+		return;
+	}
 
 	$rb = new RobokassaPayAPI($mrhLogin, $passes['pass1'], $passes['pass2']);
 
@@ -1671,6 +1692,13 @@ function robokassa_2check_send($order_id, $old_status, $new_status)
 			return;
 		}
 
+		try {
+			robokassa_payment_validate_receipt_quantities($order);
+		} catch (InvalidArgumentException $error) {
+			$order->add_order_note('Второй чек не отправлен. ' . $error->getMessage());
+			return;
+		}
+
 		$receipt_operation_id = (int)$order->get_meta('_robokassa_second_receipt_operation_id', true);
 
 		if ($receipt_operation_id <= 0) {
@@ -1866,6 +1894,12 @@ function robokassa_hold_confirm($order_id, $old_status, $new_status, $order) {
 	if (($option_value == 1)
 			&& $old_status === 'on-hold' && $new_status === 'processing') {
 		$order = wc_get_order($order_id);
+		try {
+			robokassa_payment_validate_receipt_quantities($order);
+		} catch (InvalidArgumentException $error) {
+			$order->add_order_note('Подтверждение холда не отправлено. ' . $error->getMessage());
+			return;
+		}
 		$shipping_total = $order->get_shipping_total();
 
 		$receipt_items = array();

@@ -736,6 +736,14 @@ function wc_get_checkout_url() {
 	return 'https://shop.example.test/checkout/';
 }
 
+function wc_add_notice($message, $type = 'success') {
+	$GLOBALS['robokassa_test_notices'][] = array('message' => $message, 'type' => $type);
+}
+
+function wc_print_notice($message, $type = 'success') {
+	echo '<div class="woocommerce-' . htmlspecialchars($type) . '">' . htmlspecialchars($message) . '</div>';
+}
+
 function get_page_link($page_id) {
 	return $page_id > 0 ? 'https://shop.example.test/?page_id=' . $page_id : false;
 }

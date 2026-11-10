@@ -293,6 +293,13 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 	 */
 	public function process_subscription_payment( $amount, $renewal_order, $retry = true, $previous_error = false ) {
 
+		try {
+			\robokassa_payment_validate_receipt_quantities($renewal_order);
+		} catch (\InvalidArgumentException $error) {
+			$renewal_order->add_order_note('Платёж по подписке не отправлен. ' . $error->getMessage());
+			return;
+		}
+
 		$taxes = $renewal_order->get_cart_tax();
 		$order_id = $renewal_order->get_id();
 
@@ -397,6 +404,12 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
 
 		/** @var bool|WC_Order|WC_Refund $order */
 		$order = \wc_get_order($order_id);
+		try {
+			\robokassa_payment_validate_receipt_quantities($order);
+		} catch (\InvalidArgumentException $error) {
+			\wc_add_notice($error->getMessage(), 'error');
+			return array('result' => 'failure');
+		}
 
 		return array(
 			'result' => 'success',
