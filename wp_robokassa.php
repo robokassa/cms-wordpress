@@ -1352,6 +1352,21 @@ function robokassa_payment_validate_receipt_quantities(WC_Order $order)
  */
 function createRobokassaReceipt($order_id)
 {
+	/**
+	 * Filter to allow custom receipt generation.
+	 * Return a non-null value to bypass default receipt creation.
+	 *
+	 * @param array|null $pre_receipt Custom receipt data or null to use default.
+	 * @param int        $order_id    Order ID.
+	 *
+	 * @since 1.6.6
+	 */
+	$pre_receipt = apply_filters('robokassa_receipt_pre', null, $order_id);
+
+	if ($pre_receipt !== null) {
+		return $pre_receipt;
+	}
+
 	global $woocommerce;
 	$order = new WC_Order($order_id);
 	robokassa_payment_validate_receipt_quantities($order);
@@ -1459,7 +1474,7 @@ function createRobokassaReceipt($order_id)
 		robokassa_payment_DEBUG('receipt_total_mismatch');
 	}
 
-	return apply_filters('wc_robokassa_receipt', $receipt);
+	return apply_filters('wc_robokassa_receipt', $receipt, $order_id);
 }
 
 /**
